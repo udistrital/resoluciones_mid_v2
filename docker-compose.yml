@@ -1,0 +1,37 @@
+version: '3.4'
+
+services: 
+
+  resoluciones_mid_v2:
+
+    image: golang:1.15-alpine
+    container_name: ${API_NAME}
+    volumes:
+      - go_src:/go
+      - .:/go/src/${API_BASE_DIR}/${API_NAME}
+    environment:
+      - GO111MODULE=on
+    env_file: 
+      - .env
+    ports: 
+      - "${RESOLUCIONES_MID_V2_HTTP_PORT}:${RESOLUCIONES_MID_V2_HTTP_PORT}"  
+    working_dir: /go/src
+    command: sh -c 'cd ${API_BASE_DIR}/${API_NAME};go get -u github.com/beego/bee ;go get -v -u ./...; pwd;go mod init;bee migrate -driver=postgres -conn="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_DB_PORT}/${POSTGRES_DB}?sslmode=disable&search_path=public"; bee run -downdoc=true -gendoc=true'
+
+
+  data_base:
+    container_name: ${RESOLUCIONES_LOCAL}
+    image: postgres:10.15-alpine
+    volumes: 
+        - postgres_data:/var/lib/postgresql/data
+    ports: 
+        - "${RESOLUCIONES_MID_V2_PGPORT}:${RESOLUCIONES_MID_V2_PGPORT}"        
+    env_file: 
+        - .env
+
+volumes:
+  go_src:
+  postgres_data:
+networks: 
+  back_end:
+    external: true
