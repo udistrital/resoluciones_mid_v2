@@ -9,12 +9,15 @@ package routers
 
 import (
 	"github.com/astaxie/beego"
+	"github.com/udistrital/resoluciones_mid_v2/controllers"
 )
 
 func init() {
 	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/",
-			beego.NSInclude(),
+		beego.NSNamespace("/gestion_resoluciones",
+			beego.NSInclude(
+				&controllers.GestionResolucionesController{},
+			),
 		),
 	)
 	beego.AddNamespace(ns)
