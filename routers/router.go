@@ -14,9 +14,9 @@ import (
 
 func init() {
 	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/gestion_resoluciones",
+		beego.NSNamespace("/gestion_plantillas",
 			beego.NSInclude(
-				&controllers.GestionResolucionesController{},
+				&controllers.GestionPlantillasController{},
 			),
 		),
 	)

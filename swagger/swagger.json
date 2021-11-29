@@ -1,0 +1,350 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Resoluciones MID API Versión 2",
+        "description": "API MID para el sistema de Resoluciones en su nueva versión",
+        "version": "1.0.0",
+        "termsOfService": "http://beego.me/",
+        "contact": {
+            "email": "computo@udistrital.edu.co"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    },
+    "basePath": "/v1",
+    "paths": {
+        "/gestion_plantillas/": {
+            "get": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "get GestionPlantillas",
+                "operationId": "GestionPlantillasController.GetAll",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "create GestionPlantillas",
+                "operationId": "GestionPlantillasController.Create",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for GestionPlantillas content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_plantillas/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "get GestionPlantillas by id",
+                "operationId": "GestionPlantillasController.GetOne",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The key for staticblock",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "update the GestionPlantillas",
+                "operationId": "GestionPlantillasController.Put",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The id you want to update",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for GestionPlantillas content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "delete the GestionPlantillas",
+                "operationId": "GestionPlantillasController.Delete",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The id you want to delete",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} delete success!"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.Articulo": {
+            "title": "Articulo",
+            "type": "object",
+            "properties": {
+                "Articulo": {
+                    "$ref": "#/definitions/models.ComponenteResolucion"
+                },
+                "Paragrafos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ComponenteResolucion"
+                    }
+                }
+            }
+        },
+        "models.ComponenteResolucion": {
+            "title": "ComponenteResolucion",
+            "type": "object",
+            "properties": {
+                "Activo": {
+                    "type": "boolean"
+                },
+                "ComponenteResolucionPadre": {
+                    "$ref": "#/definitions/models.ComponenteResolucion"
+                },
+                "FechaCreacion": {
+                    "type": "string"
+                },
+                "FechaModificacion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Numero": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionId": {
+                    "$ref": "#/definitions/models.Resolucion"
+                },
+                "Texto": {
+                    "type": "string"
+                },
+                "TipoComponente": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ContenidoResolucion": {
+            "title": "ContenidoResolucion",
+            "type": "object",
+            "properties": {
+                "Articulos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Articulo"
+                    }
+                },
+                "Resolucion": {
+                    "$ref": "#/definitions/models.Resolucion"
+                },
+                "Vinculacion": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
+                }
+            }
+        },
+        "models.Resolucion": {
+            "title": "Resolucion",
+            "type": "object",
+            "properties": {
+                "Activo": {
+                    "type": "boolean"
+                },
+                "ConsideracionResolucion": {
+                    "type": "string"
+                },
+                "CuadroResponsabilidades": {
+                    "type": "string"
+                },
+                "DependenciaFirmaId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "DependenciaId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "FechaCreacion": {
+                    "type": "string"
+                },
+                "FechaExpedicion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaModificacion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroResolucion": {
+                    "type": "string"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NuxeoUid": {
+                    "type": "string"
+                },
+                "Periodo": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PeriodoCarga": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PreambuloResolucion": {
+                    "type": "string"
+                },
+                "TipoResolucionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Titulo": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VigenciaCarga": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ResolucionVinculacionDocente": {
+            "title": "ResolucionVinculacionDocente",
+            "type": "object",
+            "properties": {
+                "Activo": {
+                    "type": "boolean"
+                },
+                "Dedicacion": {
+                    "type": "string"
+                },
+                "FacultadId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "FechaCreacion": {
+                    "type": "string"
+                },
+                "FechaModificacion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NivelAcademico": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "gestion_plantillas",
+            "description": "GestionPlantillasController operations for GestionPlantillas\n"
+        }
+    ]
+}
