@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -20,17 +21,16 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
 
 	var response map[string]interface{}
-	if err := SendJson(url, trequest, target, response); err != nil {
-		return err
-	}
-	ExtractData(response, datajson)
-	return nil
+	var err error
+	err = SendJson(url, trequest, &response, &datajson)
+	err = ExtractData(response, target)
+	return err
 }
 
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
 
-	if err := SendJson(url, trequest, target, datajson); err != nil {
+	if err := SendJson(url, trequest, target, &datajson); err != nil {
 		return err
 	}
 	return nil
@@ -40,11 +40,10 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
 
 	var response map[string]interface{}
-	if err := GetJson(url, response); err != nil {
-		return err
-	}
-	ExtractData(response, target)
-	return nil
+	var err error
+	err = GetJson(url, &response)
+	err = ExtractData(response, &target)
+	return err
 }
 
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
@@ -62,7 +61,7 @@ func GetRequestWSO2(endpoint string, service string, route string, target interf
 		beego.AppConfig.String(endpoint) + "/" +
 		beego.AppConfig.String(service) + "/" + route
 
-	if response, err := GetJsonWSO2Test(url, target); response == 200 && err == nil {
+	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {
 	} else {
 		return err
 	}
@@ -70,19 +69,29 @@ func GetRequestWSO2(endpoint string, service string, route string, target interf
 	return nil
 }
 
-func ExtractData(respuesta map[string]interface{}, v interface{}) {
+func ExtractData(respuesta map[string]interface{}, v interface{}) error {
+	var err error
+	if respuesta["Success"] == false {
+		err = errors.New(respuesta["Message"].(string))
+		panic(err)
+	}
 	datatype := fmt.Sprintf("%v", respuesta["Data"])
 	switch datatype {
 	case "map[]", "[map[]]": // response vacio
 		break
 	default:
-		formatdata.FillStructV(respuesta["Data"], v)
+		err = formatdata.FillStruct(respuesta["Data"], &v)
 		respuesta = nil
 	}
+	return err
 }
 
 func JsonDebug(i interface{}) {
 	formatdata.JsonPrint(i)
+}
+
+func iguales(a interface{}, b interface{}) bool {
+	return reflect.DeepEqual(a, b)
 }
 
 func SendJson(url string, trequest string, target interface{}, datajson interface{}) error {
