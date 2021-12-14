@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/astaxie/beego"
-	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/utils_oas/formatdata"
 )
 
@@ -56,9 +55,9 @@ func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 	return nil
 }
 
-func GetRequestWSO2(endpoint string, service string, route string, target interface{}) error {
+func GetRequestWSO2(service string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" +
-		beego.AppConfig.String(endpoint) + "/" +
+		beego.AppConfig.String("UrlcrudWSO2") + "/" +
 		beego.AppConfig.String(service) + "/" + route
 
 	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {
@@ -227,38 +226,6 @@ func diff(a, b time.Time) (year, month, day int) {
 		year--
 	}
 
-	return
-}
-
-//CargarReglasBase general
-func CargarReglasBase(dominio string) (reglas string, outputError map[string]interface{}) {
-	//carga de reglas desde el ruler
-	var reglasbase string = ``
-	var v []models.Predicado
-
-	url := "predicado?query=Dominio.Nombre:" + dominio + "&limit=-1"
-	if err := GetRequestLegacy("Urlruler", url, &v); err == nil {
-	} else {
-		outputError = map[string]interface{}{"funcion": "/CargarReglasBase", "err": err.Error(), "status": "404"}
-		return reglasbase, outputError
-	}
-	reglasbase = reglasbase + FormatoReglas(v) //funcion general para dar formato a reglas cargadas desde el ruler
-
-	//-----------------------------
-	return reglasbase, nil
-}
-
-func FormatoReglas(v []models.Predicado) (reglas string) {
-	var arregloReglas = make([]string, len(v))
-	reglas = ""
-	//var respuesta []models.FormatoPreliqu
-	for i := 0; i < len(v); i++ {
-		arregloReglas[i] = v[i].Nombre
-	}
-
-	for i := 0; i < len(arregloReglas); i++ {
-		reglas = reglas + arregloReglas[i] + "\n"
-	}
 	return
 }
 

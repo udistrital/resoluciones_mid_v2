@@ -167,6 +167,40 @@
                     }
                 }
             }
+        },
+        "/services/desagregado_planeacion": {
+            "post": {
+                "tags": [
+                    "services"
+                ],
+                "description": "Genera el detalle desagregado de salario y sus prestaciones segun los parámetros indicados",
+                "operationId": "ServicesController.Create",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for DesagregadoPlaneacion content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoDesagregado"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoDesagregado"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -235,6 +269,25 @@
                 },
                 "Vinculacion": {
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
+                }
+            }
+        },
+        "models.ObjetoDesagregado": {
+            "title": "ObjetoDesagregado",
+            "type": "object",
+            "properties": {
+                "Categoria": {
+                    "type": "string"
+                },
+                "Dedicacion": {
+                    "type": "string"
+                },
+                "NivelAcademico": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         },
@@ -345,6 +398,10 @@
         {
             "name": "gestion_plantillas",
             "description": "GestionPlantillasController operations for GestionPlantillas\n"
+        },
+        {
+            "name": "services",
+            "description": "ServicesController operations for Services\n"
         }
     ]
 }
