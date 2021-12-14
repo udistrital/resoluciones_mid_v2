@@ -19,6 +19,11 @@ func init() {
 				&controllers.GestionPlantillasController{},
 			),
 		),
+		beego.NSNamespace("/services",
+			beego.NSInclude(
+				&controllers.ServicesController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

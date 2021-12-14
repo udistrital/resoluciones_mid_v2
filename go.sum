@@ -203,7 +203,9 @@ github.com/mitchellh/gox v0.4.0/go.mod h1:Sd9lOJ0+aimLBi73mGofS1ycjY8lL3uZM3JPS4
 github.com/mitchellh/iochan v1.0.0/go.mod h1:JwYml1nuB7xOzsp52dPpHFffvOCDupsG0QubkSMEySY=
 github.com/mitchellh/mapstructure v0.0.0-20160808181253-ca63d7c062ee/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
+github.com/mndrix/golog v0.0.0-20170330170653-a28e2a269775 h1:KPqf9x/eMg3ZnHATLXcM1OgQMNVkPUv1QcGv6zTRMRg=
 github.com/mndrix/golog v0.0.0-20170330170653-a28e2a269775/go.mod h1:Q4YHYl483MNk6wwg3g8YsINpKe5S2UzUJCRSRlFaSU0=
+github.com/mndrix/ps v0.0.0-20170330174427-18e65badd6ab h1:fPrYMvMnWuED0MLhLyrny1fLaHhtiXK30pNyBGrk9Gs=
 github.com/mndrix/ps v0.0.0-20170330174427-18e65badd6ab/go.mod h1:dHgTaDInzkAqJv67VaX1IkK449M2UoBY68CZeI/bNCU=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
@@ -323,6 +325,8 @@ github.com/syndtr/goleveldb v0.0.0-20181127023241-353a9fca669c/go.mod h1:Z4AUp2K
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/udistrital/auditoria v0.0.0-20200115201815-9680ae9c2515 h1:HTZDLLQ5QiGANHPjsz2rtNoryMncPISVrQ4DIjveWI4=
 github.com/udistrital/auditoria v0.0.0-20200115201815-9680ae9c2515/go.mod h1:2g8J932brTzbNOcSHob/vjt+/GFfMQuRreLZhvGiUro=
+github.com/udistrital/golog v0.0.0-20171023162822-91dc4aca08d2 h1:IsxcFrpUKvkDVaOy8oXf5ZgrKzflj2PecOY1AwdTyI0=
+github.com/udistrital/golog v0.0.0-20171023162822-91dc4aca08d2/go.mod h1:Rs+FPloU9+szKb4cWeDGxlzMyS6E0N+6qFhSC6MkfIw=
 github.com/udistrital/utils_oas v0.0.0-20211011160436-7fa8127363aa h1:nzKR3AWWkX5b1A1hzNNHKLDnugkNWH8ll/Mb6mbdUMs=
 github.com/udistrital/utils_oas v0.0.0-20211011160436-7fa8127363aa/go.mod h1:ctr3PgpZazF32ukxlLZP3AVjq8b2zaZ4beG4cqkx5ZA=
 github.com/ugorji/go v0.0.0-20171122102828-84cb69a8af83/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
