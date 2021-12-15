@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
@@ -33,7 +32,7 @@ func (c *GestionPlantillasController) URLMapping() {
 // @Failure 500 Internal server error
 // @router / [post]
 func (c *GestionPlantillasController) Post() {
-	defer ErrorController(c)
+	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
 	var m models.ContenidoResolucion
 
@@ -59,7 +58,7 @@ func (c *GestionPlantillasController) Post() {
 // @Failure 500 Internal server error
 // @router /:id [get]
 func (c *GestionPlantillasController) GetOne() {
-	defer ErrorController(c)
+	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
 	idStr := c.Ctx.Input.Param(":id")
 	id, err := strconv.Atoi(idStr)
@@ -85,7 +84,7 @@ func (c *GestionPlantillasController) GetOne() {
 // @Failure 500 Internal server error
 // @router / [get]
 func (c *GestionPlantillasController) GetAll() {
-	defer ErrorController(c)
+	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
 	if l, err := helpers.ListarPlantillas(); err == nil {
 		c.Ctx.Output.SetStatus(200)
@@ -106,7 +105,7 @@ func (c *GestionPlantillasController) GetAll() {
 // @Failure 500 Internal server error
 // @router /:id [put]
 func (c *GestionPlantillasController) Put() {
-	defer ErrorController(c)
+	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
 	idStr := c.Ctx.Input.Param(":id")
 	_, err := strconv.Atoi(idStr)
@@ -139,7 +138,7 @@ func (c *GestionPlantillasController) Put() {
 // @Failure 500 Internal server error
 // @router /:id [delete]
 func (c *GestionPlantillasController) Delete() {
-	defer ErrorController(c)
+	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
 	idStr := c.Ctx.Input.Param(":id")
 	id, err := strconv.Atoi(idStr)
@@ -156,18 +155,4 @@ func (c *GestionPlantillasController) Delete() {
 		panic(err2)
 	}
 	c.ServeJSON()
-}
-
-func ErrorController(c *GestionPlantillasController) {
-	if err := recover(); err != nil {
-		logs.Error(err)
-		localError := err.(map[string]interface{})
-		c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "GestionPlantillasController" + "/" + (localError["funcion"]).(string))
-		c.Data["data"] = (localError["err"])
-		if status, ok := localError["status"]; ok {
-			c.Abort(status.(string))
-		} else {
-			c.Abort("500")
-		}
-	}
 }
