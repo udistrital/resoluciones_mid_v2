@@ -99,12 +99,12 @@ func CargarPlantilla(PlantillaId int) (plantilla models.ContenidoResolucion, out
 }
 
 func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interface{}) {
-	/* defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "ListarPlantillas", "err": err, "status": "500"}
 			panic(outputError)
 		}
-	}() */
+	}()
 	var res []models.Resolucion
 	var resv models.ResolucionVinculacionDocente
 	var dep models.Dependencia
