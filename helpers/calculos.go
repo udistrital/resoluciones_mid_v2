@@ -156,8 +156,7 @@ func CargarReglasBase(dominio string) (reglas string, outputError map[string]int
 	var v []models.Predicado
 
 	url := "predicado?query=Dominio.Nombre:" + dominio + "&limit=-1"
-	if err := GetRequestLegacy("Urlruler", url, &v); err == nil {
-	} else {
+	if err := GetRequestLegacy("Urlruler", url, &v); err != nil {
 		outputError = map[string]interface{}{"funcion": "/CargarReglasBase", "err": err.Error(), "status": "500"}
 		return reglasbase, outputError
 	}

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/utils_oas/formatdata"
 )
 
@@ -61,11 +62,10 @@ func GetRequestWSO2(service string, route string, target interface{}) error {
 		beego.AppConfig.String(service) + "/" + route
 
 	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {
+		return nil
 	} else {
 		return err
 	}
-
-	return nil
 }
 
 func ExtractData(respuesta map[string]interface{}, v interface{}) error {
@@ -315,4 +315,18 @@ func formatNumberString(x string, precision int, thousand string, decimal string
 	}
 
 	return result + extra
+}
+
+func ErrorController(c beego.Controller, controller string) {
+	if err := recover(); err != nil {
+		logs.Error(err)
+		localError := err.(map[string]interface{})
+		c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + controller + "/" + (localError["funcion"]).(string))
+		c.Data["data"] = (localError["err"])
+		if status, ok := localError["status"]; ok {
+			c.Abort(status.(string))
+		} else {
+			c.Abort("500")
+		}
+	}
 }

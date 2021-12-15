@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
@@ -29,7 +28,7 @@ func (c *ServicesController) URLMapping() {
 // @Failure 500 Internal server error
 // @router /desagregado_planeacion [post]
 func (c *ServicesController) DesagregadoPlaneacion() {
-	defer ErrorController2(c)
+	defer helpers.ErrorController(c.Controller, "ServicesController")
 
 	var d []models.ObjetoDesagregado
 
@@ -44,18 +43,4 @@ func (c *ServicesController) DesagregadoPlaneacion() {
 		panic(map[string]interface{}{"funcion": "DesagregadoPlaneacion", "err": err.Error(), "status": "400"})
 	}
 	c.ServeJSON()
-}
-
-func ErrorController2(c *ServicesController) {
-	if err := recover(); err != nil {
-		logs.Error(err)
-		localError := err.(map[string]interface{})
-		c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ServicesController" + "/" + (localError["funcion"]).(string))
-		c.Data["data"] = (localError["err"])
-		if status, ok := localError["status"]; ok {
-			c.Abort(status.(string))
-		} else {
-			c.Abort("500")
-		}
-	}
 }
