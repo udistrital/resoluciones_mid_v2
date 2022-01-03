@@ -79,7 +79,7 @@ func (c *GestionPlantillasController) GetOne() {
 // GetAll ...
 // @Title GetAll
 // @Description get GestionPlantillas
-// @Success 200 {object} models.ContenidoResolucion
+// @Success 200 {object} []models.ContenidoResolucion
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router / [get]

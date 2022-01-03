@@ -19,6 +19,11 @@ func init() {
 				&controllers.GestionPlantillasController{},
 			),
 		),
+		beego.NSNamespace("/gestion_resoluciones",
+			beego.NSInclude(
+				&controllers.GestionResolucionesController{},
+			),
+		),
 		beego.NSNamespace("/services",
 			beego.NSInclude(
 				&controllers.ServicesController{},

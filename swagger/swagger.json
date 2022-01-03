@@ -26,7 +26,10 @@
                     "200": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/models.ContenidoResolucion"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ContenidoResolucion"
+                            }
                         }
                     },
                     "400": {
@@ -168,6 +171,197 @@
                 }
             }
         },
+        "/gestion_resoluciones/": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get all ContenidoResolucion",
+                "operationId": "GestionResolucionesController.GetAll",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "query",
+                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "fields",
+                        "description": "Fields returned. e.g. col1,col2 ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "sortby",
+                        "description": "Sorted-by fields. e.g. col1,col2 ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "order",
+                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "description": "Limit the size of result set. Must be an integer",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "Start position of result set. Must be an integer",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ContenidoResolucion"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "crea una nueva resolución basado en una plantilla",
+                "operationId": "GestionResolucionesController.Create",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for ContenidoResolucion content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{int} Id de la nueva resolución"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_resoluciones/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get one ContenidoResolucion by id",
+                "operationId": "GestionResolucionesController.GetOne",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The key for staticblock",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "update the ContenidoResolucion",
+                "operationId": "GestionResolucionesController.Put",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The id you want to update",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Gestionresoluciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "delete the Gestionresoluciones",
+                "operationId": "GestionResolucionesController.Delete",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The id you want to delete",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{int} id"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/services/desagregado_planeacion": {
             "post": {
                 "tags": [
@@ -266,6 +460,9 @@
                 },
                 "Resolucion": {
                     "$ref": "#/definitions/models.Resolucion"
+                },
+                "Usuario": {
+                    "type": "string"
                 },
                 "Vinculacion": {
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
@@ -398,6 +595,10 @@
         {
             "name": "gestion_plantillas",
             "description": "GestionPlantillasController operations for GestionPlantillas\n"
+        },
+        {
+            "name": "gestion_resoluciones",
+            "description": "GestionResolucionesController operations for Gestionresoluciones\n"
         },
         {
             "name": "services",
