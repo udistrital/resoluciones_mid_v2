@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
@@ -26,7 +27,7 @@ func (c *GestionResolucionesController) URLMapping() {
 // @Title Create
 // @Description crea una nueva resolución basado en una plantilla
 // @Param	body		body 	models.ContenidoResolucion	true		"body for ContenidoResolucion content"
-// @Success 201 {int} Id de la nueva resolución
+// @Success 201 {object} int Id de la nueva resolución
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router / [post]
@@ -58,6 +59,21 @@ func (c *GestionResolucionesController) Post() {
 // @router /:id [get]
 func (c *GestionResolucionesController) GetOne() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	idStr := c.Ctx.Input.Param(":id")
+	id, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		panic(map[string]interface{}{"funcion": "GetOne", "err": "Error en los parametros de ingreso", "status": "400"})
+	}
+
+	if r, err2 := helpers.CargarResolucionCompleta(id); err2 == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla cargada con exito", "Data": r}
+	} else {
+		panic(err2)
+	}
+	c.ServeJSON()
 }
 
 // GetAll ...
@@ -69,12 +85,20 @@ func (c *GestionResolucionesController) GetOne() {
 // @Param	order	query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
 // @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
-// @Success 200 {object} []models.ContenidoResolucion
+// @Success 200 {object} []models.Resoluciones
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router / [get]
 func (c *GestionResolucionesController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	if l, err := helpers.ListarResoluciones(); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resoluciones cargadas con exito", "Data": l}
+	} else {
+		panic(err)
+	}
+	c.ServeJSON()
 }
 
 // Put ...
@@ -88,16 +112,53 @@ func (c *GestionResolucionesController) GetAll() {
 // @router /:id [put]
 func (c *GestionResolucionesController) Put() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	idStr := c.Ctx.Input.Param(":id")
+	_, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		panic(map[string]interface{}{"funcion": "Put", "err": "Error en los parametros de ingreso", "status": "400"})
+	}
+
+	var r models.ContenidoResolucion
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &r); err == nil {
+		if err := helpers.ActualizarResolucionCompleta(r); err == nil {
+			c.Ctx.Output.SetStatus(200)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resolución actualizada con exito", "Data": r}
+		} else {
+			panic(err)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "Put", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
 }
 
 // Delete ...
 // @Title Delete
 // @Description delete the Gestionresoluciones
 // @Param	id		path 	string	true		"The id you want to delete"
-// @Success 200 {int} id
+// @Success 200 {object} int Id de la resolucion anulada
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /:id [delete]
 func (c *GestionResolucionesController) Delete() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	idStr := c.Ctx.Input.Param(":id")
+	id, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		panic(map[string]interface{}{"funcion": "Delete", "err": "Error en los parametros de ingreso", "status": "400"})
+	}
+
+	if err2 := helpers.AnularResolucion(id); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		d := map[string]interface{}{"Id": id}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla eliminada con exito", "Data": d}
+	} else {
+		panic(err2)
+	}
+	c.ServeJSON()
 }

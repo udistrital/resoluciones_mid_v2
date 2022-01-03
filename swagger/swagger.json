@@ -160,7 +160,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} delete success!"
+                        "description": "{int} int \"Id de la resolucion anulada\""
                     },
                     "400": {
                         "description": "bad request"
@@ -222,7 +222,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.ContenidoResolucion"
+                                "$ref": "#/definitions/models.Resoluciones"
                             }
                         }
                     },
@@ -253,7 +253,11 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{int} Id de la nueva resolución"
+                        "description": "Id de la nueva resolución",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -351,7 +355,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{int} id"
+                        "description": "Id de la resolucion anulada",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -587,6 +595,46 @@
                 },
                 "NivelAcademico": {
                     "type": "string"
+                }
+            }
+        },
+        "models.Resoluciones": {
+            "title": "Resoluciones",
+            "type": "object",
+            "properties": {
+                "Dedicacion": {
+                    "type": "string"
+                },
+                "Estado": {
+                    "type": "string"
+                },
+                "Facultad": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NivelAcademico": {
+                    "type": "string"
+                },
+                "NumeroResolucion": {
+                    "type": "string"
+                },
+                "Periodo": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Semanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoResolucion": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         }

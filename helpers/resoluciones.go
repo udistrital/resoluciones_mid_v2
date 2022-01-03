@@ -11,12 +11,12 @@ import (
 )
 
 func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, outputError map[string]interface{}) {
-	/* defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "InsertarResolucion", "err": err, "status": "500"}
 			panic(outputError)
 		}
-	}() */
+	}()
 
 	var plantillas []models.Parametro
 	var plantilla models.ContenidoResolucion
@@ -154,9 +154,72 @@ func InsertarArticulos(articulos []models.Articulo, resolucionId int) (err error
 	return err
 }
 
-func ListarResoluciones() (r []models.Resoluciones, outputError map[string]interface{}) {
+func ListarResoluciones() (listaRes []models.Resoluciones, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ListarResoluciones", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
 
-	return r, outputError
+	var res []models.Resolucion
+	var resv models.ResolucionVinculacionDocente
+	var rest []models.ResolucionEstado
+	var dep models.Dependencia
+	var estado models.Parametro
+	var tipo models.Parametro
+	var err error
+
+	url := "resolucion?query=Activo:true"
+	if err = GetRequestNew("UrlcrudResoluciones", url, &res); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+
+	for _, r := range res {
+		url3 := "resolucion_estado?query=Activo:true,ResolucionId.Id:" + strconv.Itoa(r.Id)
+		if err = GetRequestNew("UrlcrudResoluciones", url3, &rest); err != nil {
+			panic(err.Error())
+		}
+
+		if len(rest) > 0 {
+			if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
+				panic(err.Error())
+			}
+		} else {
+			continue
+		}
+
+		url2 := "resolucion_vinculacion_docente/" + strconv.Itoa(r.Id)
+		if err = GetRequestNew("UrlcrudResoluciones", url2, &resv); err != nil {
+			panic(err.Error())
+		}
+
+		if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+			panic(err.Error())
+		}
+
+		if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(r.TipoResolucionId), &tipo); err != nil {
+			panic(err.Error())
+		}
+
+		resolucion := &models.Resoluciones{
+			Id:               r.Id,
+			NumeroResolucion: r.NumeroResolucion,
+			Vigencia:         r.Vigencia,
+			Periodo:          r.Periodo,
+			Semanas:          r.NumeroSemanas,
+			NivelAcademico:   resv.NivelAcademico,
+			Dedicacion:       resv.Dedicacion,
+			Facultad:         dep.Nombre,
+			Estado:           estado.Nombre,
+			TipoResolucion:   tipo.Nombre,
+		}
+
+		listaRes = append(listaRes, *resolucion)
+	}
+
+	return listaRes, outputError
 }
 
 func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoResolucion, outputError map[string]interface{}) {
@@ -301,5 +364,35 @@ func CambiarEstadoResolucion(resolucionId int, estado, usuario string) (err erro
 		return err
 	}
 
+	return nil
+}
+
+func AnularResolucion(ResolucionId int) (outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "AnularResolucion", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	if resolucion, err := CargarResolucionCompleta(ResolucionId); err != nil {
+		panic(err)
+	} else {
+		resolucion.Resolucion.Activo = false
+		resolucion.Vinculacion.Activo = false
+		for _, art := range resolucion.Articulos {
+			art.Articulo.Activo = false
+			for _, par := range art.Paragrafos {
+				par.Activo = false
+			}
+		}
+		if err2 := ActualizarResolucionCompleta(resolucion); err2 != nil {
+			panic(err2)
+		}
+		if err3 := CambiarEstadoResolucion(ResolucionId, "RANU", ""); err3 != nil {
+			logs.Error(err3)
+			panic(err3.Error())
+		}
+	}
 	return nil
 }
