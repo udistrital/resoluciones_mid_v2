@@ -64,7 +64,7 @@ func (c *GestionPlantillasController) GetOne() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "GetOne", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if p, err2 := helpers.CargarPlantilla(id); err2 == nil {
@@ -111,7 +111,7 @@ func (c *GestionPlantillasController) Put() {
 	_, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	var m models.ContenidoResolucion
@@ -144,7 +144,7 @@ func (c *GestionPlantillasController) Delete() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "Delete", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "Delete", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if err2 := helpers.BorrarPlantilla(id); err == nil {

@@ -66,7 +66,7 @@ func (c *GestionResolucionesController) GetOne() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "GetOne", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if r, err2 := helpers.CargarResolucionCompleta(id); err2 == nil {
@@ -96,7 +96,7 @@ func (c *GestionResolucionesController) GetAll() {
 
 	if l, err := helpers.ListarResoluciones(); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resoluciones cargadas con exito", "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": l}
 	} else {
 		panic(err)
 	}
@@ -119,7 +119,7 @@ func (c *GestionResolucionesController) Put() {
 	_, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	var r models.ContenidoResolucion
@@ -152,7 +152,7 @@ func (c *GestionResolucionesController) Delete() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "Delete", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "Delete", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if err2 := helpers.AnularResolucion(id); err == nil {
@@ -180,12 +180,12 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "ConsultaDocente", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "ConsultaDocente", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if r, err2 := helpers.ConsultaDocente(id); err2 == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resoluciones cargadas con exito", "Data": r}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": r}
 	} else {
 		panic(err2)
 	}
@@ -204,7 +204,7 @@ func (c *GestionResolucionesController) GetResolucionesExpedidas() {
 
 	if l, err := helpers.ListarResolucionesExpedidas(); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resoluciones cargadas con exito", "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": l}
 	} else {
 		panic(err)
 	}

@@ -17,6 +17,11 @@ import (
 	"github.com/udistrital/utils_oas/formatdata"
 )
 
+const (
+	ErrorParametros string = "Error en los parametros de ingreso"
+	CargaResExito   string = "Resoluciones cargadas con exito"
+)
+
 func SendRequestNew(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
 
