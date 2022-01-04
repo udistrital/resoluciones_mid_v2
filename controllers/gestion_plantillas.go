@@ -64,7 +64,7 @@ func (c *GestionPlantillasController) GetOne() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "GetOne", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if p, err2 := helpers.CargarPlantilla(id); err2 == nil {
@@ -79,7 +79,7 @@ func (c *GestionPlantillasController) GetOne() {
 // GetAll ...
 // @Title GetAll
 // @Description get GestionPlantillas
-// @Success 200 {object} models.ContenidoResolucion
+// @Success 200 {object} []models.ContenidoResolucion
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router / [get]
@@ -111,7 +111,7 @@ func (c *GestionPlantillasController) Put() {
 	_, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	var m models.ContenidoResolucion
@@ -133,7 +133,7 @@ func (c *GestionPlantillasController) Put() {
 // @Title Delete
 // @Description delete the GestionPlantillas
 // @Param	id		path 	string	true		"The id you want to delete"
-// @Success 200 {string} delete success!
+// @Success 200 {int} int "Id de la resolucion anulada"
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /:id [delete]
@@ -144,7 +144,7 @@ func (c *GestionPlantillasController) Delete() {
 	id, err := strconv.Atoi(idStr)
 
 	if err != nil {
-		panic(map[string]interface{}{"funcion": "Delete", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "Delete", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if err2 := helpers.BorrarPlantilla(id); err == nil {

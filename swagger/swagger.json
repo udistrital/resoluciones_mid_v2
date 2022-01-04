@@ -26,7 +26,10 @@
                     "200": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/models.ContenidoResolucion"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ContenidoResolucion"
+                            }
                         }
                     },
                     "400": {
@@ -157,7 +160,267 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} delete success!"
+                        "description": "{int} int \"Id de la resolucion anulada\""
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_resoluciones/": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get all ContenidoResolucion",
+                "operationId": "GestionResolucionesController.GetAll",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "query",
+                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "fields",
+                        "description": "Fields returned. e.g. col1,col2 ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "sortby",
+                        "description": "Sorted-by fields. e.g. col1,col2 ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "order",
+                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "description": "Limit the size of result set. Must be an integer",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "Start position of result set. Must be an integer",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "crea una nueva resolución basado en una plantilla",
+                "operationId": "GestionResolucionesController.Create",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for ContenidoResolucion content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Id de la nueva resolución",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_resoluciones/consultar_docente/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get Resoluciones by id del docente",
+                "operationId": "GestionResolucionesController.ConsultaDocente",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "id del docente",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_resoluciones/resoluciones_expedidas": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get Resoluciones expedidas",
+                "operationId": "GestionResolucionesController.GetResolucionesExpedidas",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_resoluciones/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get one ContenidoResolucion by id",
+                "operationId": "GestionResolucionesController.GetOne",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The key for staticblock",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "update the ContenidoResolucion",
+                "operationId": "GestionResolucionesController.Put",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The id you want to update",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Gestionresoluciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.ContenidoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "delete the Gestionresoluciones",
+                "operationId": "GestionResolucionesController.Delete",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The id you want to delete",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Id de la resolucion anulada",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -266,6 +529,13 @@
                 },
                 "Resolucion": {
                     "$ref": "#/definitions/models.Resolucion"
+                },
+                "ResolucionAnteriorId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Usuario": {
+                    "type": "string"
                 },
                 "Vinculacion": {
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
@@ -392,12 +662,56 @@
                     "type": "string"
                 }
             }
+        },
+        "models.Resoluciones": {
+            "title": "Resoluciones",
+            "type": "object",
+            "properties": {
+                "Dedicacion": {
+                    "type": "string"
+                },
+                "Estado": {
+                    "type": "string"
+                },
+                "Facultad": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NivelAcademico": {
+                    "type": "string"
+                },
+                "NumeroResolucion": {
+                    "type": "string"
+                },
+                "Periodo": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Semanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoResolucion": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
         }
     },
     "tags": [
         {
             "name": "gestion_plantillas",
             "description": "GestionPlantillasController operations for GestionPlantillas\n"
+        },
+        {
+            "name": "gestion_resoluciones",
+            "description": "GestionResolucionesController operations for Gestionresoluciones\n"
         },
         {
             "name": "services",
