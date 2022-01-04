@@ -268,6 +268,67 @@
                 }
             }
         },
+        "/gestion_resoluciones/consultar_docente/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get Resoluciones by id del docente",
+                "operationId": "GestionResolucionesController.ConsultaDocente",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "id del docente",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_resoluciones/resoluciones_expedidas": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get Resoluciones expedidas",
+                "operationId": "GestionResolucionesController.GetResolucionesExpedidas",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_resoluciones/{id}": {
             "get": {
                 "tags": [
@@ -468,6 +529,10 @@
                 },
                 "Resolucion": {
                     "$ref": "#/definitions/models.Resolucion"
+                },
+                "ResolucionAnteriorId": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "Usuario": {
                     "type": "string"

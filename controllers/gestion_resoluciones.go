@@ -21,6 +21,8 @@ func (c *GestionResolucionesController) URLMapping() {
 	c.Mapping("GetAll", c.GetAll)
 	c.Mapping("Put", c.Put)
 	c.Mapping("Delete", c.Delete)
+	c.Mapping("ConsultaDocente", c.ConsultaDocente)
+	c.Mapping("GetResolucionesExpedidas", c.GetResolucionesExpedidas)
 }
 
 // Post ...
@@ -39,7 +41,7 @@ func (c *GestionResolucionesController) Post() {
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
 		if idResolucion, err2 := helpers.InsertarResolucion(m); err2 == nil {
 			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Plantilla insertada con exito", "Data": idResolucion}
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Resolución insertada con exito", "Data": idResolucion}
 		} else {
 			panic(err)
 		}
@@ -69,7 +71,7 @@ func (c *GestionResolucionesController) GetOne() {
 
 	if r, err2 := helpers.CargarResolucionCompleta(id); err2 == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla cargada con exito", "Data": r}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resolución cargada con exito", "Data": r}
 	} else {
 		panic(err2)
 	}
@@ -156,9 +158,55 @@ func (c *GestionResolucionesController) Delete() {
 	if err2 := helpers.AnularResolucion(id); err == nil {
 		c.Ctx.Output.SetStatus(200)
 		d := map[string]interface{}{"Id": id}
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla eliminada con exito", "Data": d}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resolución anulada con exito", "Data": d}
 	} else {
 		panic(err2)
+	}
+	c.ServeJSON()
+}
+
+// ConsultaDocente ...
+// @Title ConsultaDocente
+// @Description get Resoluciones by id del docente
+// @Param	id		path 	string	true		"id del docente"
+// @Success 200 {object} []models.Resoluciones
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /consultar_docente/:id [get]
+func (c *GestionResolucionesController) ConsultaDocente() {
+	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	idStr := c.Ctx.Input.Param(":id")
+	id, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		panic(map[string]interface{}{"funcion": "ConsultaDocente", "err": "Error en los parametros de ingreso", "status": "400"})
+	}
+
+	if r, err2 := helpers.ConsultaDocente(id); err2 == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resoluciones cargadas con exito", "Data": r}
+	} else {
+		panic(err2)
+	}
+	c.ServeJSON()
+}
+
+// GetResolucionesExpedidas ...
+// @Title GetResolucionesExpedidas
+// @Description get Resoluciones expedidas
+// @Success 200 {object} []models.Resoluciones
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /resoluciones_expedidas [get]
+func (c *GestionResolucionesController) GetResolucionesExpedidas() {
+	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	if l, err := helpers.ListarResolucionesExpedidas(); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resoluciones cargadas con exito", "Data": l}
+	} else {
+		panic(err)
 	}
 	c.ServeJSON()
 }

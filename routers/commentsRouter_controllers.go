@@ -97,6 +97,24 @@ func init() {
             Filters: nil,
             Params: nil})
 
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionResolucionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionResolucionesController"],
+        beego.ControllerComments{
+            Method: "ConsultaDocente",
+            Router: "/consultar_docente/:id",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionResolucionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionResolucionesController"],
+        beego.ControllerComments{
+            Method: "GetResolucionesExpedidas",
+            Router: "/resoluciones_expedidas",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ServicesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ServicesController"],
         beego.ControllerComments{
             Method: "DesagregadoPlaneacion",

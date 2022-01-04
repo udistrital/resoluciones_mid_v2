@@ -19,12 +19,30 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 	}()
 
 	var plantillas []models.Parametro
+	var tipoRes models.Parametro
 	var plantilla models.ContenidoResolucion
 
 	url := "parametro?limit=0&query=Activo:true,ParametroPadreId.Id:" + strconv.Itoa(nuevaRes.Resolucion.TipoResolucionId)
 	if err := GetRequestNew("UrlcrudParametros", url, &plantillas); err != nil {
 		logs.Error(err)
 		panic(err.Error())
+	}
+	url2 := "parametro/" + strconv.Itoa(nuevaRes.Resolucion.TipoResolucionId)
+	if err := GetRequestNew("UrlcrudParametros", url2, &tipoRes); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+
+	if tipoRes.CodigoAbreviacion != "RVIN" {
+		var anteriorResvin models.ResolucionVinculacionDocente
+		url := "resolucion_vinculacion_docente/" + strconv.Itoa(nuevaRes.ResolucionAnteriorId)
+		if er := GetRequestNew("UrlcrudResoluciones", url, &anteriorResvin); er != nil {
+			logs.Error(er)
+			panic(er.Error())
+		}
+		nuevaRes.Vinculacion.Dedicacion = anteriorResvin.Dedicacion
+		nuevaRes.Vinculacion.NivelAcademico = anteriorResvin.NivelAcademico
+		nuevaRes.Vinculacion.FacultadId = anteriorResvin.FacultadId
 	}
 
 	if existe, id := validarExistenciaPlantilla(nuevaRes, plantillas); existe {
@@ -83,6 +101,19 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 	if err5 := CambiarEstadoResolucion(resolucionId, "RSOL", usuario); err5 != nil {
 		logs.Error(err5)
 		panic(err5.Error())
+	}
+
+	if tipoRes.CodigoAbreviacion != "RVIN" {
+		var modResp models.ModificacionResolucion
+		modRes := models.ModificacionResolucion{
+			ResolucionNuevaId:    &models.Resolucion{Id: resolucionId},
+			ResolucionAnteriorId: &models.Resolucion{Id: nuevaRes.ResolucionAnteriorId},
+			Activo:               true,
+		}
+		if err6 := SendRequestNew("UrlcrudResoluciones", "modificacion_resolucion", "POST", &modResp, &modRes); err6 != nil {
+			logs.Error(err6)
+			panic(err6.Error())
+		}
 	}
 
 	return resolucionId, outputError
@@ -217,6 +248,64 @@ func ListarResoluciones() (listaRes []models.Resoluciones, outputError map[strin
 		}
 
 		listaRes = append(listaRes, *resolucion)
+	}
+
+	return listaRes, outputError
+}
+
+func ListarResolucionesExpedidas() (listaRes []models.Resoluciones, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ListarResolucionesExpedidas", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+	var estado []models.Parametro
+	var resv models.ResolucionVinculacionDocente
+	var rest []models.ResolucionEstado
+	var dep models.Dependencia
+	var tipo models.Parametro
+	var err error
+
+	url := "parametro?query=CodigoAbreviacion:REXP"
+	if err = GetRequestNew("UrlcrudParametros", url, &estado); err != nil {
+		panic(err.Error())
+	}
+
+	if len(estado) > 0 {
+		url2 := "resolucion_estado?limit=0&query=Activo:true,EstadoResolucionId.Id:" + strconv.Itoa(estado[0].Id)
+		if err = GetRequestNew("UrlCrudResoluciones", url2, &rest); err != nil {
+			panic(err.Error())
+		}
+		for _, res := range rest {
+			url3 := "resolucion_vinculacion_docente/" + strconv.Itoa(res.ResolucionId.Id)
+			if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
+				panic(err.Error())
+			}
+
+			if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+				panic(err.Error())
+			}
+
+			if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(res.ResolucionId.TipoResolucionId), &tipo); err != nil {
+				panic(err.Error())
+			}
+
+			resolucion := &models.Resoluciones{
+				Id:               res.ResolucionId.Id,
+				NumeroResolucion: res.ResolucionId.NumeroResolucion,
+				Vigencia:         res.ResolucionId.Vigencia,
+				Periodo:          res.ResolucionId.Periodo,
+				Semanas:          res.ResolucionId.NumeroSemanas,
+				NivelAcademico:   resv.NivelAcademico,
+				Dedicacion:       resv.Dedicacion,
+				Facultad:         dep.Nombre,
+				Estado:           estado[0].Nombre,
+				TipoResolucion:   tipo.Nombre,
+			}
+
+			listaRes = append(listaRes, *resolucion)
+		}
 	}
 
 	return listaRes, outputError
@@ -395,4 +484,47 @@ func AnularResolucion(ResolucionId int) (outputError map[string]interface{}) {
 		}
 	}
 	return nil
+}
+
+func ConsultaDocente(DocenteId int) (listaRes []models.Resoluciones, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ConsultaDocente", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	var lista []models.Resoluciones
+	var err map[string]interface{}
+
+	if lista, err = ListarResoluciones(); err != nil {
+		panic(err)
+	}
+	var vinculaciones []models.VinculacionDocente
+	url := "vinculacion_docente?limit=0&query=Activo:true,PersonaId:" + strconv.Itoa(DocenteId)
+	if err2 := GetRequestNew("UrlcrudResoluciones", url, &vinculaciones); err2 != nil {
+		logs.Error(err2)
+		panic(err2.Error())
+	}
+	for _, vinculacion := range vinculaciones {
+		for _, resolucion := range lista {
+			if vinculacion.ResolucionVinculacionDocenteId.Id == resolucion.Id {
+				if !existe(resolucion.Id, listaRes) {
+					listaRes = append(listaRes, resolucion)
+				}
+				break
+			}
+		}
+	}
+
+	return listaRes, outputError
+}
+
+func existe(id int, listaRes []models.Resoluciones) bool {
+	for _, r := range listaRes {
+		if r.Id == id {
+			return true
+		}
+	}
+	return false
 }
