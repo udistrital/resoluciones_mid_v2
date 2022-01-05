@@ -273,7 +273,7 @@ func ListarResolucionesExpedidas() (listaRes []models.Resoluciones, outputError 
 	}
 
 	if len(estado) > 0 {
-		url2 := "resolucion_estado?limit=0&query=Activo:true,EstadoResolucionId.Id:" + strconv.Itoa(estado[0].Id)
+		url2 := "resolucion_estado?limit=0&query=Activo:true,EstadoResolucionId:" + strconv.Itoa(estado[0].Id)
 		if err = GetRequestNew("UrlCrudResoluciones", url2, &rest); err != nil {
 			panic(err.Error())
 		}
