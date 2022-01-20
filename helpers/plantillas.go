@@ -110,7 +110,7 @@ func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interf
 	var dep models.Dependencia
 	var tipos []models.Parametro
 
-	url := "parametro?query=CodigoAbreviacion:RTP,Activo:true"
+	url := "parametro?limit=0&query=CodigoAbreviacion:RTP,Activo:true"
 	if err := GetRequestNew("UrlcrudParametros", url, &tipos); err != nil {
 		logs.Error(err)
 		panic(err.Error())
@@ -123,7 +123,6 @@ func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interf
 			panic(err2.Error())
 		}
 		if len(res) != 0 {
-			JsonDebug(res)
 			if err3 := GetRequestNew("UrlCrudResoluciones", "resolucion_vinculacion_docente/"+strconv.Itoa(res[0].Id), &resv); err3 != nil {
 				logs.Error(err3)
 				panic(err3.Error())
@@ -141,6 +140,9 @@ func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interf
 			}
 			lista = append(lista, plantilla)
 		}
+	}
+	if lista == nil {
+		lista = []models.Plantilla{}
 	}
 	return lista, outputError
 }

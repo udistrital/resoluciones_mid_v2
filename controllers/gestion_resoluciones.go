@@ -94,9 +94,16 @@ func (c *GestionResolucionesController) GetOne() {
 func (c *GestionResolucionesController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	if l, err := helpers.ListarResoluciones(); err == nil {
+	limit, err1 := c.GetInt("limit")
+	offset, err2 := c.GetInt("offset")
+
+	if err1 != nil || err2 != nil {
+		panic(map[string]interface{}{"funcion": "GetAll", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if l, t, err := helpers.ListarResoluciones(limit, offset); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
 	} else {
 		panic(err)
 	}
@@ -202,9 +209,16 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 func (c *GestionResolucionesController) GetResolucionesExpedidas() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	if l, err := helpers.ListarResolucionesExpedidas(); err == nil {
+	limit, err1 := c.GetInt("limit")
+	offset, err2 := c.GetInt("offset")
+
+	if err1 != nil || err2 != nil {
+		panic(map[string]interface{}{"funcion": "GetResolucionesExpedidas", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if l, t, err := helpers.ListarResolucionesExpedidas(limit, offset); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
 	} else {
 		panic(err)
 	}

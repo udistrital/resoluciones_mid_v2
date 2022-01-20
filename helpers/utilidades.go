@@ -23,7 +23,7 @@ const (
 )
 
 func SendRequestNew(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	var response map[string]interface{}
 	var err error
@@ -33,7 +33,7 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 }
 
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	if err := SendJson(url, trequest, target, &datajson); err != nil {
 		return err
@@ -42,7 +42,7 @@ func SendRequestLegacy(endpoint string, route string, trequest string, target in
 }
 
 func GetRequestNew(endpoint string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	var response map[string]interface{}
 	var err error
@@ -52,7 +52,7 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 }
 
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	if err := GetJson(url, target); err != nil {
 		return err
