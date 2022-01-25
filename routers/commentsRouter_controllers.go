@@ -115,6 +115,51 @@ func init() {
             Filters: nil,
             Params: nil})
 
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "Post",
+            Router: "/",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "Put",
+            Router: "/:id",
+            AllowHTTPMethods: []string{"put"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "Delete",
+            Router: "/:id",
+            AllowHTTPMethods: []string{"delete"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "DocentesCargaHoraria",
+            Router: "/docentes_carga_horaria/:vigencia/:periodo/:dedicacion/:facultad/:nivel_academico",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "DocentesPrevinculados",
+            Router: "/docentes_previnculados/:resolucion_id",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ServicesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ServicesController"],
         beego.ControllerComments{
             Method: "DesagregadoPlaneacion",
