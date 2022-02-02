@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
+	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
 // Gestion_vinculacionesController operations for Gestion_vinculaciones
@@ -15,8 +17,8 @@ type GestionVinculacionesController struct {
 // URLMapping ...
 func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("Post", c.Post)
-	c.Mapping("GetOne", c.DocentesPrevinculados)
-	c.Mapping("GetAll", c.DocentesCargaHoraria)
+	c.Mapping("DocentesPrevinculados", c.DocentesPrevinculados)
+	c.Mapping("DocentesCargaHoraria", c.DocentesCargaHoraria)
 	c.Mapping("Put", c.Put)
 	c.Mapping("Delete", c.Delete)
 }
@@ -37,13 +39,25 @@ func (c *GestionVinculacionesController) Post() {
 // @Title DocentesPrevinculados
 // @Description Docentes previnculados a una resolución
 // @Param	resolucion_id		path 	string	true		"El id de la resolución"
-// @Success 200 {object} []models.VinculacionDocente
+// @Success 200 {object} []models.Vinculaciones
 // @Failure 400 bad request
 // @Failure 500 Internal server error
-// @router /docentes_previnculados/:resolucion_id [get]
+// @router /:resolucion_id [get]
 func (c *GestionVinculacionesController) DocentesPrevinculados() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	resolucionId := c.Ctx.Input.Param(":resolucion_id")
+	_, err := strconv.Atoi(resolucionId)
+
+	if err != nil {
+		panic(map[string]interface{}{"funcion": "DocentesPrevinculados", "err": "Error en los parametros de ingreso", "status": "400"})
+	}
+
+	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId); err2 == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
+	}
+	c.ServeJSON()
 }
 
 // DocentesCargaHoraria ...
@@ -54,7 +68,7 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 // @Param dedicacion query string false "dedicacion del docente"
 // @Param facultad query string false "facultad"
 // @Param nivel_academico query string false "nivel_academico"
-// @Success 200 {object} []models.DocentesCargaHoraria.CargasLectivas.CargaLectiva
+// @Success 200 {object} []models.CargaLectiva
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /docentes_carga_horaria/:vigencia/:periodo/:dedicacion/:facultad/:nivel_academico [get]
@@ -95,14 +109,28 @@ func (c *GestionVinculacionesController) Put() {
 
 }
 
-// Delete ...
-// @Title Delete
-// @Description delete the Gestion_vinculaciones
-// @Param	id		path 	string	true		"The id you want to delete"
-// @Success 200 {string} delete success!
-// @Failure 403 id is empty
-// @router /:id [delete]
-func (c *GestionVinculacionesController) Delete() {
+// DesvincularDocentes ...
+// @Title DesvincularDocentes
+// @Description Elimina las vinculaciones
+// @Param	body		body 	[]models.vinculaciones	true		"body for vinculaciones content"
+// @Success 201 {string} OK
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /desvincular_docentes [post]
+func (c *GestionVinculacionesController) DesvincularDocentes() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	var v []models.Vinculaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if err2 := helpers.RetirarVinculaciones(v); err2 == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Vinculaciones retiradas con exito", "Data": "OK"}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
 }
