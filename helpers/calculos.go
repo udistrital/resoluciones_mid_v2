@@ -129,7 +129,12 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 func CargarParametroPeriodo(vigencia, codigo string) (parametro float64, outputError map[string]interface{}) {
 	var s []models.ParametroPeriodo
 	var valor map[string]interface{}
-	url := "parametro_periodo?query=ParametroId.CodigoAbreviacion:" + codigo + ",PeriodoId.Year:" + vigencia
+	var url string
+	if codigo == "PSAL" {
+		url = "parametro_periodo?order=desc&sortby=Id&query=ParametroId.CodigoAbreviacion:" + codigo
+	} else {
+		url = "parametro_periodo?query=ParametroId.CodigoAbreviacion:" + codigo + ",PeriodoId.Year:" + vigencia
+	}
 	if err := GetRequestNew("UrlcrudParametros", url, &s); err != nil {
 		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo", "err": err.Error(), "status": "500"}
 		return parametro, outputError

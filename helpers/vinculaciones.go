@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -17,24 +16,31 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 	}()
 	var previnculaciones []models.VinculacionDocente
 
-	url := "vinculacion_docente?limit=0&query=Activo:true,ResolucionVinculacionDocenteId.Id:" + resolucionId
+	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=Activo:true,ResolucionVinculacionDocenteId.Id:" + resolucionId
 	if err := GetRequestNew("UrlcrudResoluciones", url, &previnculaciones); err != nil {
 		panic(err.Error())
 	}
 
 	for i := range previnculaciones {
-		categoria, err2 := BuscarCategoriaDocente(fmt.Sprintf("%d", previnculaciones[i].Vigencia), "1", fmt.Sprintf("%.f", previnculaciones[i].PersonaId))
-		if err2 != nil {
-			panic(err2)
-		}
+		/*
+		 * Buscar de agora:
+		 *		Nombre completo
+		 *		Tipo documento
+		 *		Lugar expedicion documento
+		 */
+
 		vinculacion := &models.Vinculaciones{
 			Id:                   previnculaciones[i].Id,
+			Nombre:               "",
 			PersonaId:            previnculaciones[i].PersonaId,
 			NumeroHorasSemanales: previnculaciones[i].NumeroHorasSemanales,
 			NumeroSemanas:        previnculaciones[i].NumeroSemanas,
-			Categoria:            strings.Trim(categoria.CategoriaDocente.Categoria, " "),
+			Categoria:            strings.Trim(previnculaciones[i].Categoria, " "),
 			Dedicacion:           previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion,
 			ValorContratoFormato: FormatMoney(int(previnculaciones[i].ValorContrato), 2),
+			NumeroContrato:       previnculaciones[i].NumeroContrato,
+			Vigencia:             previnculaciones[i].Vigencia,
+			ProyectoCurricularId: previnculaciones[i].ProyectoCurricularId,
 		}
 		vinculaciones = append(vinculaciones, *vinculacion)
 	}

@@ -19,7 +19,7 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("Post", c.Post)
 	c.Mapping("DocentesPrevinculados", c.DocentesPrevinculados)
 	c.Mapping("DocentesCargaHoraria", c.DocentesCargaHoraria)
-	c.Mapping("Put", c.Put)
+	c.Mapping("InformeVinculaciones", c.InformeVinculaciones)
 	c.Mapping("Delete", c.Delete)
 }
 
@@ -96,23 +96,37 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 	c.ServeJSON()
 }
 
-// Put ...
-// @Title Put
-// @Description update the Gestion_vinculaciones
-// @Param	id		path 	string	true		"The id you want to update"
-// @Param	body		body 	models.Gestion_vinculaciones	true		"body for Gestion_vinculaciones content"
-// @Success 200 {object} models.Gestion_vinculaciones
-// @Failure 403 :id is not int
-// @router /:id [put]
-func (c *GestionVinculacionesController) Put() {
+// InformeVinculaciones ...
+// @Title InformeVinculaciones
+// @Description Genera un informe de las vinculaciones
+// @Param	body		body 	[]models.Vinculaciones	true		"body for vinculaciones content"
+// @Success 200 {string} string Base64 encoded file
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /informe_vinculaciones [post]
+func (c *GestionVinculacionesController) InformeVinculaciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	var v []models.Vinculaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if i, err2 := helpers.GenerarInformeVinculaciones(v); err2 == nil {
+			c.Ctx.Output.SetStatus(200)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Informe generado con exito", "Data": i}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
 
 }
 
 // DesvincularDocentes ...
 // @Title DesvincularDocentes
 // @Description Elimina las vinculaciones
-// @Param	body		body 	[]models.vinculaciones	true		"body for vinculaciones content"
+// @Param	body		body 	[]models.Vinculaciones	true		"body for vinculaciones content"
 // @Success 201 {string} OK
 // @Failure 400 bad request
 // @Failure 500 Internal server error
