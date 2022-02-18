@@ -303,6 +303,35 @@
                 }
             }
         },
+        "/gestion_resoluciones/generar_resolucion/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "Genera el documento PDF de la resolución",
+                "operationId": "GestionResolucionesController.GenerarResolucion",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "id de la resolución",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} string Base64 encoded file"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_resoluciones/resoluciones_expedidas": {
             "get": {
                 "tags": [
@@ -478,7 +507,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.vinculaciones"
+                                "$ref": "#/definitions/models.Vinculaciones"
                             }
                         }
                     }
@@ -554,40 +583,36 @@
                 }
             }
         },
-        "/gestion_vinculaciones/{id}": {
-            "put": {
+        "/gestion_vinculaciones/informe_vinculaciones": {
+            "post": {
                 "tags": [
                     "gestion_vinculaciones"
                 ],
-                "description": "update the Gestion_vinculaciones",
-                "operationId": "GestionVinculacionesController.Put",
+                "description": "Genera un informe de las vinculaciones",
+                "operationId": "GestionVinculacionesController.InformeVinculaciones",
                 "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id",
-                        "description": "The id you want to update",
-                        "required": true,
-                        "type": "string"
-                    },
                     {
                         "in": "body",
                         "name": "body",
-                        "description": "body for Gestion_vinculaciones content",
+                        "description": "body for vinculaciones content",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Gestion_vinculaciones"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Vinculaciones"
+                            }
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
-                        "schema": {
-                            "$ref": "#/definitions/models.Gestion_vinculaciones"
-                        }
+                        "description": "{string} string Base64 encoded file"
                     },
-                    "403": {
-                        "description": ":id is not int"
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
                     }
                 }
             }
@@ -649,7 +674,10 @@
                     "201": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/models.ObjetoDesagregado"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ObjetoDesagregado"
+                            }
                         }
                     },
                     "400": {
@@ -982,6 +1010,9 @@
                 "Nombre": {
                     "type": "string"
                 },
+                "NumeroContrato": {
+                    "type": "string"
+                },
                 "NumeroHorasSemanales": {
                     "type": "integer",
                     "format": "int64"
@@ -996,16 +1027,16 @@
                 },
                 "ProyectoCurricularId": {
                     "type": "integer",
-                    "format": "int32"
+                    "format": "int64"
                 },
                 "ValorContratoFormato": {
                     "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
-        },
-        "models.vinculaciones": {
-            "title": "vinculaciones",
-            "type": "object"
         }
     },
     "tags": [
