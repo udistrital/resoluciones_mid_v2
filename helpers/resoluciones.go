@@ -221,7 +221,7 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 	}
 
 	for i := range res {
-		url3 := "resolucion_estado?query=Activo:true,ResolucionId.Id:" + strconv.Itoa(res[i].Id)
+		url3 := "resolucion_estado?order=desc&sortby=Id&query=Activo:true,ResolucionId.Id:" + strconv.Itoa(res[i].Id)
 		if err = GetRequestNew("UrlcrudResoluciones", url3, &rest); err != nil {
 			panic(err.Error())
 		}
@@ -505,6 +505,16 @@ func AnularResolucion(ResolucionId int) (outputError map[string]interface{}) {
 			panic(err3.Error())
 		}
 	}
+	if vinculaciones, err4 := ListarVinculaciones(strconv.Itoa(ResolucionId)); err4 != nil {
+		panic(err4)
+	} else {
+		if len(vinculaciones) > 0 {
+			if err5 := RetirarVinculaciones(vinculaciones); err5 != nil {
+				panic(err5)
+			}
+		}
+	}
+
 	return nil
 }
 

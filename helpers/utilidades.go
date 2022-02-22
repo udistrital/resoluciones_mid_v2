@@ -63,7 +63,7 @@ func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 
 func GetRequestWSO2(service string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" +
-		beego.AppConfig.String("UrlcrudWSO2") + "/" +
+		beego.AppConfig.String("UrlcrudWSO2") +
 		beego.AppConfig.String(service) + "/" + route
 
 	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {

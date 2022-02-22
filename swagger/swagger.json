@@ -303,6 +303,35 @@
                 }
             }
         },
+        "/gestion_resoluciones/generar_resolucion/{id}": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "Genera el documento PDF de la resolución",
+                "operationId": "GestionResolucionesController.GenerarResolucion",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "id de la resolución",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} string Base64 encoded file"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_resoluciones/resoluciones_expedidas": {
             "get": {
                 "tags": [
@@ -431,6 +460,198 @@
                 }
             }
         },
+        "/gestion_vinculaciones/": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "create Gestion_vinculaciones",
+                "operationId": "GestionVinculacionesController.Create",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Gestion_vinculaciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Gestion_vinculaciones"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.Gestion_vinculaciones"
+                        }
+                    },
+                    "403": {
+                        "description": "body is empty"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/desvincular_docentes": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Elimina las vinculaciones",
+                "operationId": "GestionVinculacionesController.DesvincularDocentes",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for vinculaciones content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Vinculaciones"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{string} OK"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/docentes_carga_horaria/{vigencia}/{periodo}/{dedicacion}/{facultad}/{nivel_academico}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Obtiene la carga horaria de los docentes desde condor.",
+                "operationId": "GestionVinculacionesController.DocentesCargaHoraria",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "año a consultar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "periodo",
+                        "description": "periodo a listar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "dedicacion",
+                        "description": "dedicacion del docente",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "facultad",
+                        "description": "facultad",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "nivel_academico",
+                        "description": "nivel_academico",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.CargaLectiva"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/informe_vinculaciones": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Genera un informe de las vinculaciones",
+                "operationId": "GestionVinculacionesController.InformeVinculaciones",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for vinculaciones content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Vinculaciones"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} string Base64 encoded file"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/{resolucion_id}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Docentes previnculados a una resolución",
+                "operationId": "GestionVinculacionesController.DocentesPrevinculados",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "resolucion_id",
+                        "description": "El id de la resolución",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Vinculaciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/services/desagregado_planeacion": {
             "post": {
                 "tags": [
@@ -453,7 +674,10 @@
                     "201": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/models.ObjetoDesagregado"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ObjetoDesagregado"
+                            }
                         }
                     },
                     "400": {
@@ -479,6 +703,64 @@
                     "items": {
                         "$ref": "#/definitions/models.ComponenteResolucion"
                     }
+                }
+            }
+        },
+        "models.CargaLectiva": {
+            "title": "CargaLectiva",
+            "type": "object",
+            "properties": {
+                "CategoriaNombre": {
+                    "type": "string"
+                },
+                "DependenciaAcademica": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Emerito": {
+                    "type": "boolean"
+                },
+                "IDCategoria": {
+                    "type": "string"
+                },
+                "IdProveedor": {
+                    "type": "string"
+                },
+                "anio": {
+                    "type": "string"
+                },
+                "docente_apellido": {
+                    "type": "string"
+                },
+                "docente_documento": {
+                    "type": "string"
+                },
+                "docente_nombre": {
+                    "type": "string"
+                },
+                "facultad_nombre": {
+                    "type": "string"
+                },
+                "horas_lectivas": {
+                    "type": "string"
+                },
+                "id_facultad": {
+                    "type": "string"
+                },
+                "id_proyecto": {
+                    "type": "string"
+                },
+                "id_tipo_vinculacion": {
+                    "type": "string"
+                },
+                "periodo": {
+                    "type": "string"
+                },
+                "proyecto_nombre": {
+                    "type": "string"
+                },
+                "tipo_vinculacion_nombre": {
+                    "type": "string"
                 }
             }
         },
@@ -541,6 +823,10 @@
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 }
             }
+        },
+        "models.Gestion_vinculaciones": {
+            "title": "Gestion_vinculaciones",
+            "type": "object"
         },
         "models.ObjetoDesagregado": {
             "title": "ObjetoDesagregado",
@@ -702,6 +988,55 @@
                     "format": "int64"
                 }
             }
+        },
+        "models.Vinculaciones": {
+            "title": "Vinculaciones",
+            "type": "object",
+            "properties": {
+                "Categoria": {
+                    "type": "string"
+                },
+                "Dedicacion": {
+                    "type": "string"
+                },
+                "Disponibilidad": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PersonaId": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ProyectoCurricularId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ValorContratoFormato": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
         }
     },
     "tags": [
@@ -712,6 +1047,10 @@
         {
             "name": "gestion_resoluciones",
             "description": "GestionResolucionesController operations for Gestionresoluciones\n"
+        },
+        {
+            "name": "gestion_vinculaciones",
+            "description": "Gestion_vinculacionesController operations for Gestion_vinculaciones\n"
         },
         {
             "name": "services",
