@@ -13,7 +13,7 @@ type VinculacionDocente struct {
 	SalarioMinimoId                int
 	ResolucionVinculacionDocenteId *ResolucionVinculacionDocente
 	DedicacionId                   int
-	ProyectoCurricularId           int16
+	ProyectoCurricularId           int
 	ValorContrato                  float64
 	Categoria                      string
 	Emerito                        bool

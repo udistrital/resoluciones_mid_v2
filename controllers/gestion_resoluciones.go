@@ -23,6 +23,7 @@ func (c *GestionResolucionesController) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 	c.Mapping("ConsultaDocente", c.ConsultaDocente)
 	c.Mapping("GetResolucionesExpedidas", c.GetResolucionesExpedidas)
+	c.Mapping("GenerarResolucion", c.GenerarResolucion)
 }
 
 // Post ...
@@ -94,9 +95,16 @@ func (c *GestionResolucionesController) GetOne() {
 func (c *GestionResolucionesController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	if l, err := helpers.ListarResoluciones(); err == nil {
+	limit, err1 := c.GetInt("limit")
+	offset, err2 := c.GetInt("offset")
+
+	if err1 != nil || err2 != nil {
+		panic(map[string]interface{}{"funcion": "GetAll", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if l, t, err := helpers.ListarResoluciones(limit, offset); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
 	} else {
 		panic(err)
 	}
@@ -202,11 +210,45 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 func (c *GestionResolucionesController) GetResolucionesExpedidas() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	if l, err := helpers.ListarResolucionesExpedidas(); err == nil {
+	limit, err1 := c.GetInt("limit")
+	offset, err2 := c.GetInt("offset")
+
+	if err1 != nil || err2 != nil {
+		panic(map[string]interface{}{"funcion": "GetResolucionesExpedidas", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if l, t, err := helpers.ListarResolucionesExpedidas(limit, offset); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
 	} else {
 		panic(err)
+	}
+	c.ServeJSON()
+}
+
+// GenerarResolucion ...
+// @Title GenerarResolucion
+// @Description Genera el documento PDF de la resolución
+// @Param	id		path 	string	true		"id de la resolución"
+// @Success 200 {string} string Base64 encoded file
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /generar_resolucion/:id [get]
+func (c *GestionResolucionesController) GenerarResolucion() {
+	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	idStr := c.Ctx.Input.Param(":id")
+	id, err := strconv.Atoi(idStr)
+
+	if err != nil {
+		panic(map[string]interface{}{"funcion": "GenerarResolucion", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if r, err2 := helpers.GenerarResolucion(id); err2 == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": r}
+	} else {
+		panic(err2)
 	}
 	c.ServeJSON()
 }

@@ -24,6 +24,11 @@ func init() {
 				&controllers.GestionResolucionesController{},
 			),
 		),
+		beego.NSNamespace("/gestion_vinculaciones",
+			beego.NSInclude(
+				&controllers.GestionVinculacionesController{},
+			),
+		),
 		beego.NSNamespace("/services",
 			beego.NSInclude(
 				&controllers.ServicesController{},
