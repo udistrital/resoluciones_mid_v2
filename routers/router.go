@@ -29,6 +29,11 @@ func init() {
 				&controllers.ServicesController{},
 			),
 		),
+		beego.NSNamespace("/expedir_resolucion",
+			beego.NSInclude(
+				&controllers.ExpedirResolucionController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }
