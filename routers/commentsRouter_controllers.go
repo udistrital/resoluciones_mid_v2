@@ -7,6 +7,42 @@ import (
 
 func init() {
 
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"],
+        beego.ControllerComments{
+            Method: "Cancelar",
+            Router: "/cancelar",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"],
+        beego.ControllerComments{
+            Method: "Expedir",
+            Router: "/expedir",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"],
+        beego.ControllerComments{
+            Method: "ExpedirModificacion",
+            Router: "/expedirModificacion",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ExpedirResolucionController"],
+        beego.ControllerComments{
+            Method: "ValidarDatosExpedicion",
+            Router: "/validar_datos_expedicion",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionPlantillasController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionPlantillasController"],
         beego.ControllerComments{
             Method: "Post",

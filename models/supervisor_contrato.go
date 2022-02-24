@@ -16,4 +16,5 @@ type SupervisorContrato struct {
 	DigitoVerificacion    int
 	FechaInicio           time.Time
 	FechaFin              time.Time
+	CargoId               *CargoSupervisorTemporal
 }

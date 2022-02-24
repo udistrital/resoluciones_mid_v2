@@ -15,6 +15,139 @@
     },
     "basePath": "/v1",
     "paths": {
+        "/expedir_resolucion/cancelar": {
+            "post": {
+                "tags": [
+                    "expedir_resolucion"
+                ],
+                "description": "create Cancelar",
+                "operationId": "ExpedirResolucionController.Cancelar",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Expedición a cancelar content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ExpedicionCancelacion"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{int} models.ExpedicionCancelacion"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "404": {
+                        "description": "aborted by server"
+                    }
+                }
+            }
+        },
+        "/expedir_resolucion/expedir": {
+            "post": {
+                "tags": [
+                    "expedir_resolucion"
+                ],
+                "description": "create Expedir",
+                "operationId": "ExpedirResolucionController.Expedir",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Expedicion Resolucion content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExpedicionResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{int} models.ExpedicionResolucion"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "404": {
+                        "description": "aborted by server"
+                    }
+                }
+            }
+        },
+        "/expedir_resolucion/expedirModificacion": {
+            "post": {
+                "tags": [
+                    "expedir_resolucion"
+                ],
+                "description": "create ExpedirModificacion",
+                "operationId": "ExpedirResolucionController.ExpedirModificacion",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Validar Datos Expedición content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ExpedicionResolucion"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{int} models.ExpedicionResolucion"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "404": {
+                        "description": "aborted by server"
+                    }
+                }
+            }
+        },
+        "/expedir_resolucion/validar_datos_expedicion": {
+            "post": {
+                "tags": [
+                    "expedir_resolucion"
+                ],
+                "description": "create ValidarDatosExpedicion",
+                "operationId": "ExpedirResolucionController.ValidarDatosExpedicion",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for Validar Datos Expedición content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ExpedicionResolucion"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{string}"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "404": {
+                        "description": "aborted by server"
+                    }
+                }
+            }
+        },
         "/gestion_plantillas/": {
             "get": {
                 "tags": [
@@ -691,6 +824,14 @@
         }
     },
     "definitions": {
+        "5512.\u003cnil\u003e.CancelacionContrato": {
+            "title": "CancelacionContrato",
+            "type": "object"
+        },
+        "5678.\u003cnil\u003e.ContratoVinculacion": {
+            "title": "ContratoVinculacion",
+            "type": "object"
+        },
         "models.Articulo": {
             "title": "Articulo",
             "type": "object",
@@ -824,6 +965,39 @@
                 }
             }
         },
+        "models.ExpedicionCancelacion": {
+            "title": "ExpedicionCancelacion",
+            "type": "object",
+            "properties": {
+                "FechaExpedicion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "IdResolucion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Vinculaciones": {
+                    "$ref": "#/definitions/5512.\u003cnil\u003e.CancelacionContrato"
+                }
+            }
+        },
+        "models.ExpedicionResolucion": {
+            "title": "ExpedicionResolucion",
+            "type": "object",
+            "properties": {
+                "FechaExpedicion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "IdResolucion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Vinculaciones": {
+                    "$ref": "#/definitions/5678.\u003cnil\u003e.ContratoVinculacion"
+                }
+            }
         "models.Gestion_vinculaciones": {
             "title": "Gestion_vinculaciones",
             "type": "object"
@@ -1055,6 +1229,10 @@
         {
             "name": "services",
             "description": "ServicesController operations for Services\n"
+        },
+        {
+            "name": "expedir_resolucion",
+            "description": "ExpedirResolucionController operations for ExpedirResolucion\n"
         }
     ]
 }
