@@ -368,7 +368,7 @@ func ValidarDatosExpedicion(m models.ExpedicionResolucion) (outputError map[stri
 		// }
 
 		var proycur []models.Dependencia
-		url = "dependencia?query=Id:" + strconv.FormatInt(int64(v.ProyectoCurricularId), 10)
+		url = "dependencia?query=Id:" + strconv.Itoa(v.ProyectoCurricularId)
 		if err := GetRequestLegacy("UrlcrudOikos", url, &proycur); err != nil { // If 6
 			beego.Error("Error en If 6 - Dependencia incorrectamente homologada asociada al docente identificado con "+strconv.Itoa(contrato.Contratista)+" en Ágora", err)
 			logs.Error(proycur)

@@ -824,11 +824,11 @@
         }
     },
     "definitions": {
-        "5512.\u003cnil\u003e.CancelacionContrato": {
+        "4966.\u003cnil\u003e.CancelacionContrato": {
             "title": "CancelacionContrato",
             "type": "object"
         },
-        "5678.\u003cnil\u003e.ContratoVinculacion": {
+        "5132.\u003cnil\u003e.ContratoVinculacion": {
             "title": "ContratoVinculacion",
             "type": "object"
         },
@@ -978,7 +978,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5512.\u003cnil\u003e.CancelacionContrato"
+                    "$ref": "#/definitions/4966.\u003cnil\u003e.CancelacionContrato"
                 }
             }
         },
@@ -995,9 +995,10 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5678.\u003cnil\u003e.ContratoVinculacion"
+                    "$ref": "#/definitions/5132.\u003cnil\u003e.ContratoVinculacion"
                 }
             }
+        },
         "models.Gestion_vinculaciones": {
             "title": "Gestion_vinculaciones",
             "type": "object"

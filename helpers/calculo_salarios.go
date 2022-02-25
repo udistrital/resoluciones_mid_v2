@@ -25,9 +25,13 @@ func CalculoSalarios(v []models.VinculacionDocente, periodo int) (total int, out
 		totalesSalario := CalcularTotalSalario(v)
 		vigencia := strconv.Itoa(int(v[0].Vigencia))
 		periodo := strconv.Itoa(periodo)
-		// disponibilidad := strconv.Itoa(v[0].Disponibilidad)
-
-		url := "/vinculacion_docente/get_valores_totales_x_disponibilidad/" + vigencia + "/" + periodo + "/" // + disponibilidad
+		var dv models.DisponibilidadVinculacion
+		var disponibilidad int
+		url := "disponibilidad_vinculacion?query=VinculacionDocenteId.Id:" + strconv.Itoa(v[0].Id)
+		if err := GetRequestNew("UrlCrudResoluciones", url, &dv); err == nil {
+			disponibilidad = int(dv.Id)
+		}
+		url = "/vinculacion_docente/get_valores_totales_x_disponibilidad/" + vigencia + "/" + periodo + "/" + strconv.Itoa(disponibilidad)
 		if err2 := GetRequestNew("UrlCrudResoluciones", url, &totalesDisponibilidad); err2 == nil {
 			total = int(totalesSalario) + totalesDisponibilidad
 		} else {
@@ -130,35 +134,6 @@ func CargarSalarioMinimo(vigencia string) (p models.SalarioMinimo, outputError m
 		return v[0], outputError
 	}
 	return v[0], nil
-}
-
-func EsDocentePlanta(idPersona string) (docentePlanta bool, outputError map[string]interface{}) {
-
-	var temp map[string]interface{}
-	var esDePlanta bool
-	url := "consultar_datos_docente/" + idPersona
-	if err := GetRequestLegacy("UrlcrudWSO2", url, &temp); err != nil {
-		outputError = map[string]interface{}{"funcion": "/EsDocentePlanta1", "err": err.Error(), "status": "404"}
-		return false, outputError
-	}
-	jsonDocentes, err1 := json.Marshal(temp)
-	if err1 != nil {
-		outputError = map[string]interface{}{"funcion": "/EsDocentePlanta2", "err": "Error en codificación de datos", "status": "404"}
-		return false, outputError
-	}
-	var tempDocentes models.ObjetoDocentePlanta
-	err2 := json.Unmarshal(jsonDocentes, &tempDocentes)
-	if err2 != nil {
-		outputError = map[string]interface{}{"funcion": "/EsDocentePlanta3", "err": "Error en decodificación de datos", "status": "404"}
-		return false, outputError
-	}
-	if tempDocentes.DocenteCollection.Docente[0].Planta == "true" {
-		esDePlanta = true
-	} else {
-		esDePlanta = false
-	}
-
-	return esDePlanta, nil
 }
 
 func CargarPuntoSalarial() (p models.PuntoSalarial, outputError map[string]interface{}) {
