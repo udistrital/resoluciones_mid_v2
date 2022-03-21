@@ -12,7 +12,7 @@ var parameters struct {
 	ProtocolAdmin       string
 	UrlcrudResoluciones string
 	UrlcrudAgora        string
-	UrlcrudKronos       string
+	UrlcrudCore         string
 	Urlruler            string
 	UrlcrudOikos        string
 	UrlcrudParametros   string
@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	parameters.ProtocolAdmin = os.Getenv("RESOLUCIONES_MID_V2_PROTOCOL_ADMIN")
 	parameters.UrlcrudResoluciones = os.Getenv("RESOLUCIONES_MID_V2_RESOLUCIONES_CRUD_URL")
 	parameters.UrlcrudAgora = os.Getenv("RESOLUCIONES_MID_V2_AGORA_URL")
-	parameters.UrlcrudKronos = os.Getenv("RESOLUCIONES_MID_V2_KRONOS_URL")
+	parameters.UrlcrudCore = os.Getenv("RESOLUCIONES_MID_V2_CORE_URL")
 	parameters.Urlruler = os.Getenv("RESOLUCIONES_MID_V2_RULER_URL")
 	parameters.UrlcrudOikos = os.Getenv("RESOLUCIONES_MID_V2_OIKOS_URL")
 	parameters.UrlcrudParametros = os.Getenv("RESOLUCIONES_MID_V2_PARAMETROS_URL")
@@ -47,7 +47,7 @@ func TestEndPointAgora(t *testing.T) {
 	BaseTestEndpoint(t, endpoint)
 }
 func TestEndPointKronos(t *testing.T) {
-	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudKronos, "/v1/", "", 1)
+	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudCore, "/v1/", "", 1)
 	BaseTestEndpoint(t, endpoint)
 }
 func TestEndPointRuler(t *testing.T) {
@@ -55,7 +55,7 @@ func TestEndPointRuler(t *testing.T) {
 	BaseTestEndpoint(t, endpoint)
 }
 func TestEndPointOikos(t *testing.T) {
-	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudOikos, "/v2/", "", 1)
+	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudOikos, "/v1/", "", 1)
 	BaseTestEndpoint(t, endpoint)
 }
 func TestEndPointWSO2(t *testing.T) {

@@ -180,6 +180,15 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
         beego.ControllerComments{
+            Method: "CalcularValorContratosSeleccionados",
+            Router: "/calcular_valor_contratos_seleccionados",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
             Method: "DesvincularDocentes",
             Router: "/desvincular_docentes",
             AllowHTTPMethods: []string{"post"},

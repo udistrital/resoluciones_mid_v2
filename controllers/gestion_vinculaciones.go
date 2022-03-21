@@ -20,19 +20,34 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("DocentesPrevinculados", c.DocentesPrevinculados)
 	c.Mapping("DocentesCargaHoraria", c.DocentesCargaHoraria)
 	c.Mapping("InformeVinculaciones", c.InformeVinculaciones)
-	c.Mapping("Delete", c.Delete)
+	c.Mapping("DesvincularDocentes", c.DesvincularDocentes)
+	c.Mapping("CalcularValorContratosSeleccionados", c.CalcularValorContratosSeleccionados)
 }
 
 // Post ...
-// @Title Create
-// @Description create Gestion_vinculaciones
-// @Param	body		body 	models.Gestion_vinculaciones	true		"body for Gestion_vinculaciones content"
-// @Success 201 {object} models.Gestion_vinculaciones
-// @Failure 403 body is empty
+// @Title Create Vinculaciones
+// @Description Registra las vinculaciones calculando los valores del contrato
+// @Param	body		body 	models.ObjetoPrevinculaciones	true		"body for ObjetoPrevinculaciones content"
+// @Success 201 {object} []models.ObjetoPrevinculaciones
+// @Failure 400 bad request
+// @Failure 500 Internal server error
 // @router / [post]
 func (c *GestionVinculacionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	var p models.ObjetoPrevinculaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if r, err2 := helpers.RegistrarVinculaciones(p); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Vinculaciones registradas con exito", "Data": r}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
 }
 
 // DocentesPrevinculados ...
@@ -145,6 +160,38 @@ func (c *GestionVinculacionesController) DesvincularDocentes() {
 		}
 	} else {
 		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// CalcularValorContratosSeleccionados ...
+// @Title CalcularValorContratosSeleccionados
+// @Description Calcula el valor total de los contratos seleccionados
+// @Param	body		body 	models.ObjetoPrevinculaciones	true		"body for vinculaciones content"
+// @Success 201 {string} Valor total de los contratos seleccionados
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /calcular_valor_contratos_seleccionados [post]
+func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	var p models.ObjetoPrevinculaciones
+	var total int
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if v, err1 := helpers.ConstruirVinculaciones(p); err1 == nil {
+			if w, err2 := helpers.CalcularSalarioPrecontratacion(v); err2 == nil {
+				total = int(helpers.CalcularTotalSalarios(w))
+				c.Ctx.Output.SetStatus(201)
+				c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "", "Data": helpers.FormatMoney(total, 2)}
+			} else {
+				panic(err2)
+			}
+		} else {
+			panic(err1)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": err.Error(), "status": "400"})
 	}
 	c.ServeJSON()
 }

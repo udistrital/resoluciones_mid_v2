@@ -15,13 +15,14 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
+// Función que orquesta el proceso de generación de la resolución en formato pdf
 func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[string]interface{}) {
-	/* defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "GenerarResolucion", "err": err, "status": "500"}
 			panic(outputError)
 		}
-	}() */
+	}()
 	var pdf *gofpdf.Fpdf
 	var err3 map[string]interface{}
 
@@ -46,6 +47,7 @@ func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[str
 	return
 }
 
+// Esta función genera un documento en formato pdf con las tablas de las vinculaciones proporcionadas
 func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedPdf string, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -79,6 +81,7 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 	return
 }
 
+// Esta función genera un documento en formato pdf con la información de la resolución registrada en la base de datos
 func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculaciones []models.Vinculaciones) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
 	imgPath := filepath.Join(beego.AppConfig.String("StaticPath"), "img")
@@ -255,6 +258,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	return pdf, nil
 }
 
+// Genera las tablas de las vinculaciones por proyecto curricular de acuerdo al tipo de resolución
 func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vinculaciones, lineHeight, fontSize float64, tipoRes string) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
 	var proyectoCurricular models.Dependencia
 	w := 18.0
@@ -336,9 +340,13 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 		if pdf.GetY()-y > lineHeight {
 			pdf.SetXY(x+w+4, y)
 		}
-		pdf.CellFormat(w+2, cellHeight, "", "1", 0, "C", false, 0, "")
+		x, y = pdf.GetXY()
+		pdf.MultiCell(w+2, lineHeight, vinc.TipoDocumento, "1", "C", false)
+		if pdf.GetY()-y > lineHeight {
+			pdf.SetXY(x+w+2, y)
+		}
 		pdf.CellFormat(w, cellHeight, fmt.Sprintf("%.f", vinc.PersonaId), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(w, cellHeight, "", "1", 0, "C", false, 0, "")
+		pdf.CellFormat(w, cellHeight, vinc.ExpedicionDocumento, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w, cellHeight, vinc.Categoria, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w-1, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w-3, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", 0, "C", false, 0, "")
@@ -390,13 +398,18 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			break
 		}
 
-		pdf.CellFormat(7, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
+		if tipoRes == "RVIN" || tipoRes == "RADD" {
+			pdf.CellFormat(7, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
+		} else {
+			pdf.CellFormat(7, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
+		}
 		pdf.Ln(-1)
 	}
 	pdf.Ln(lineHeight)
 	return pdf, outputError
 }
 
+// Genera la tabla del cuadro de responsabilidades que va l final de cada resolución
 func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp bool) *gofpdf.Fpdf {
 
 	headers := []string{"Funcion", "Nombre", "Cargo", "Firma"}
@@ -436,6 +449,7 @@ func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp b
 	return pdf
 }
 
+// Codifica el documento pdf en formato Base64
 func encodePDF(pdf *gofpdf.Fpdf) string {
 	var buffer bytes.Buffer
 	writer := bufio.NewWriter(&buffer)
@@ -446,6 +460,7 @@ func encodePDF(pdf *gofpdf.Fpdf) string {
 	return encodedFile
 }
 
+// Para un mes en inglés retorna el nombre del mes en español
 func TranslateMonth(engMonth string) (espMonth string) {
 	meses := map[string]string{
 		"January":   "Enero",

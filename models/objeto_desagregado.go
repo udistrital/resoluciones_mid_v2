@@ -5,4 +5,5 @@ type ObjetoDesagregado struct {
 	Dedicacion     string
 	Categoria      string
 	NivelAcademico string
+	EsDePlanta     bool
 }
