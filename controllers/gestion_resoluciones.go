@@ -200,6 +200,38 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 	c.ServeJSON()
 }
 
+// GetResolucionesAprobadas ...
+// @Title GetResolucionesAprobadas
+// @Description get Resoluciones aprobadas
+// @Success 200 {object} []models.Resoluciones
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /resoluciones_aprobadas [get]
+func (c *GestionResolucionesController) GetResolucionesAprobadas() {
+	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	query := c.GetString("query")
+	facultad := c.GetString("facultad")
+	tipoRes := c.GetString("tipoRes")
+	nivelA := c.GetString("nivelA")
+	dedicacion := c.GetString("dedicacion")
+	estadoRes := c.GetString("estadoRes")
+
+	limit, err1 := c.GetInt("limit")
+	offset, err2 := c.GetInt("offset")
+
+	if err1 != nil || err2 != nil {
+		panic(map[string]interface{}{"funcion": "GetResolucionesAprobadas", "err": helpers.ErrorParametros, "status": "400"})
+	}
+	if l, t, err := helpers.ListarResolucionesAprobadas(query, facultad, tipoRes, nivelA, dedicacion, estadoRes, limit, offset); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
+	} else {
+		panic(err)
+	}
+	c.ServeJSON()
+}
+
 // GetResolucionesExpedidas ...
 // @Title GetResolucionesExpedidas
 // @Description get Resoluciones expedidas
