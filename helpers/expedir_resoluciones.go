@@ -30,7 +30,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 
 	var respuestaPeticion map[string]interface{}
 	url := "contrato_general/maximo_dve"
-	if err := GetRequestNew("UrlcrudAgora", url, &cdve); err == nil { // If 1 - consecutivo contrato_general
+	if err := GetRequestLegacy("UrlcrudAgora", url, &cdve); err == nil { // If 1 - consecutivo contrato_general
 		numeroContratos := cdve
 		fmt.Println("numeroContratos:", numeroContratos)
 		// for vinculaciones
@@ -42,7 +42,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 			if err := GetRequestNew("UrlCrudResoluciones", url, &respuestaPeticion); err == nil { // If 1.1 - vinculacion_docente
 				contrato := vinculacion.ContratoGeneral
 				url = "tipo_contrato/" + strconv.Itoa(contrato.TipoContrato.Id)
-				if err := GetRequestNew("UrlcrudAgora", url, &tipoCon); err == nil { // If 1.1.1 - tipoContrato
+				if err := GetRequestLegacy("UrlcrudAgora", url, &tipoCon); err == nil { // If 1.1.1 - tipoContrato
 					var sup models.SupervisorContrato
 					acta := vinculacion.ActaInicio
 					aux1 := 181
@@ -70,14 +70,14 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 					sup, err := SupervisorActual(v.ResolucionVinculacionDocenteId.Id)
 					if err != nil { // If 1.1.2 - supervisorActual
 						fmt.Println("Error en If 1.1.2 - supervisorActual!")
-						logs.Error(err)
+						logs.Error(tipoCon)
 						outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err, "status": "502"}
 						return outputError
 					}
 					contrato.Supervisor = &sup
 					contrato.Condiciones = "Sin condiciones"
 					url = "informacion_proveedor?query=NumDocumento:" + strconv.Itoa(contrato.Contratista)
-					if err := GetRequestNew("UrlcrudAgora", url, &proveedor); err == nil { // If 1.1.3 - informacion_proveedor
+					if err := GetRequestLegacy("UrlcrudAgora", url, &proveedor); err == nil { // If 1.1.3 - informacion_proveedor
 						if proveedor != nil { // If 1.1.4 - proveedor
 							temp := proveedor[0].Id
 							contratoGeneral := make(map[string]interface{})
@@ -154,7 +154,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 							}
 							fmt.Println(contratoGeneral)
 							url = "contrato_general"
-							if err := SendRequestNew("UrlcrudAgora", url, "POST", &response, contratoGeneral); err == nil { // If 1.1.5 contrato_general
+							if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, contratoGeneral); err == nil { // If 1.1.5 contrato_general
 								aux1 := contrato.Id
 								aux2 := contrato.VigenciaContrato
 								var ce models.ContratoEstado
@@ -166,7 +166,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 								ce.Estado = &ec
 								var response2 models.ContratoEstado
 								url = "contrato_estado"
-								if err := SendRequestNew("UrlcrudAgora", url, "POST", &response2, &ce); err == nil { // If 1.1.6 contrato_estado
+								if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response2, &ce); err == nil { // If 1.1.6 contrato_estado
 									a := vinculacion.VinculacionDocente
 									var ai models.ActaInicio
 									ai.NumeroContrato = aux1
@@ -178,7 +178,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 									ai.FechaRegistro = time.Now()
 									var response3 models.ActaInicio
 									url = "acta_inicio"
-									if err := SendRequestNew("UrlcrudAgora", url, "POST", &response3, &ai); err == nil { // If 1.1.7 acta_inicio
+									if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response3, &ai); err == nil { // If 1.1.7 acta_inicio
 										var cd models.ContratoDisponibilidad
 										cd.NumeroContrato = aux1
 										fmt.Println("aux1 ", aux1)
@@ -191,7 +191,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 											cd.NumeroCdp = int(dv.Disponibilidad)
 											var response4 models.ContratoDisponibilidad
 											url = "contrato_disponibilidad"
-											if err := SendRequestNew("UrlcrudAgora", url, "POST", &response4, &cd); err == nil { // If 1.1.9 - contrato_disponibilidad
+											if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response4, &cd); err == nil { // If 1.1.9 - contrato_disponibilidad
 												a.PuntoSalarialId = vinculacion.VinculacionDocente.PuntoSalarialId
 												a.SalarioMinimoId = vinculacion.VinculacionDocente.SalarioMinimoId
 												v := a
@@ -234,7 +234,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 								}
 							} else { // If 1.1.5
 								fmt.Println("Error en If 1.1.5 - contrato_general (POST)!")
-								logs.Error(err)
+								logs.Error(response)
 								outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 								return outputError
 							}
@@ -243,19 +243,19 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 						}
 					} else { // If 1.1.3
 						fmt.Println("Error en If 1.1.3 - informacion_proveedor!")
-						logs.Error(err)
+						logs.Error(proveedor)
 						outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 						return outputError
 					}
 				} else { // If 1.1.1
 					fmt.Println("Error en If 1.1.1 - tipoContrato!")
-					logs.Error(err)
+					logs.Error(tipoCon)
 					outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 					return outputError
 				}
 			} else { // If 1.1
 				fmt.Println("Error en If 1.1 - vinculacion_docente!")
-				logs.Error(err)
+				logs.Error(respuestaPeticion)
 				outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 				return outputError
 			}
@@ -278,7 +278,7 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 					e.EstadoResolucionId = rest.EstadoResolucionId
 				} else { // If 1.2.2
 					fmt.Println("Error en If 1.2.2 - resolucion_estado/ (GET)!")
-					logs.Error(err)
+					logs.Error(rest)
 					outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 					return outputError
 				}
@@ -287,25 +287,25 @@ func Expedir2(m models.ExpedicionResolucion) (outputError map[string]interface{}
 					fmt.Println("Expedición exitosa")
 				} else { // If 1.2.3
 					fmt.Println("Error en If 1.2.3 - resolucion_estado/ (POST)!")
-					logs.Error(err)
+					logs.Error(response)
 					outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 					return outputError
 				}
 			} else { // If 1.2.1
 				fmt.Println("Error en If 1.2.1 - resolucion/ (PUT)!")
-				logs.Error(err)
+				logs.Error(response)
 				outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 				return outputError
 			}
 		} else { // If 1.2
 			fmt.Println("Error en If 1.2 - resolucion/!")
-			logs.Error(err)
+			logs.Error(r)
 			outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 			return outputError
 		}
 	} else { // If 1
 		fmt.Println("Error en If 1 - consecutivo contrato_general!")
-		logs.Error(err)
+		logs.Error(cdve)
 		outputError = map[string]interface{}{"funcion": "/Expedir ", "err": err.Error(), "status": "502"}
 		return outputError
 	}
@@ -351,21 +351,6 @@ func ValidarDatosExpedicion(m models.ExpedicionResolucion) (outputError map[stri
 			outputError = map[string]interface{}{"funcion": "/ValidarDatosExpedicion3", "err": "No existe el docente con este numero de documento", "status": "502"}
 			return outputError
 		}
-
-		// var dispoap []models.DisponibilidadApropiacion
-		// url = "disponibilidad_apropiacion?query=Id:" + strconv.Itoa(v.Disponibilidad)
-		// if err := GetRequestLegacy("UrlcrudKronos", url, &dispoap); err != nil { // If 4 - disponibilidad_apropiacion
-		// 	beego.Error("Error en If 4 - Disponibilidad no válida asociada al docente identificado con " + strconv.Itoa(contrato.Contratista) + " en Ágora")
-		// 	logs.Error(dispoap)
-		// 	outputError = map[string]interface{}{"funcion": "/ValidarDatosExpedicion3", "err": "No existe el docente con este numero de documento", "status": "502"}
-		// 	return outputError
-		// }
-		// if dispoap == nil {
-		// 	beego.Error("Error en If 5 - Disponibilidad no válida asociada al docente identificado con " + strconv.Itoa(contrato.Contratista) + " en Ágora")
-		// 	logs.Error(dispoap)
-		// 	outputError = map[string]interface{}{"funcion": "/ValidarDatosExpedicion3", "err": "No existe el docente con este numero de documento", "status": "502"}
-		// 	return outputError
-		// }
 
 		var proycur []models.Dependencia
 		url = "dependencia?query=Id:" + strconv.Itoa(v.ProyectoCurricularId)
@@ -634,7 +619,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												if err := GetRequestNew("UrlCrudResoluciones", url, &dv); err == nil { // If 1.11 - DisponibilidadVinculacion
 													cd.NumeroCdp = int(dv.Disponibilidad)
 													url = "contrato_disponibilidad"
-													if err := SendRequestNew("UrlcrudAgora", url, "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
+													if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
 														vinculacionModificacion.PuntoSalarialId = vinculacion.VinculacionDocente.PuntoSalarialId
 														vinculacionModificacion.SalarioMinimoId = vinculacion.VinculacionDocente.SalarioMinimoId
 														vinculacionModificacion.NumeroContrato = aux1
@@ -794,31 +779,31 @@ func Cancelar(m models.ExpedicionCancelacion) (outputError map[string]interface{
 
 						} else { // If 5
 							fmt.Println("Error en if 4 - contrato_estado (post)!", err)
-							logs.Error(contratoCancelado)
+							logs.Error(response)
 							outputError = map[string]interface{}{"funcion": "/Cancelar", "err": err.Error(), "status": "502"}
 							return outputError
 						}
 					} else { // If 4
 						fmt.Println("Error en if 4 - acta_inicio (put)!", err)
-						logs.Error(contratoCancelado)
+						logs.Error(response)
 						outputError = map[string]interface{}{"funcion": "/Cancelar", "err": err.Error(), "status": "502"}
 						return outputError
 					}
 				} else { // If 3
 					fmt.Println("Error en if 3 - acta_inicio (get)!", err)
-					logs.Error(contratoCancelado)
+					logs.Error(ai)
 					outputError = map[string]interface{}{"funcion": "/Cancelar", "err": err.Error(), "status": "502"}
 					return outputError
 				}
 			} else { // if 2
 				fmt.Println("Error en if 2 - contrato_cancelado (post)!", err)
-				logs.Error(contratoCancelado)
+				logs.Error(response)
 				outputError = map[string]interface{}{"funcion": "/Cancelar", "err": err.Error(), "status": "502"}
 				return outputError
 			}
 		} else { // If 1
 			fmt.Println("Error en if 1 - vinculacion_docente (get)!", err)
-			logs.Error(contratoCancelado)
+			logs.Error(v)
 			outputError = map[string]interface{}{"funcion": "/Cancelar", "err": err.Error(), "status": "502"}
 			return outputError
 		}

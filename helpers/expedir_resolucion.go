@@ -23,7 +23,7 @@ func SupervisorActual(id_resolucion int) (supervisor_actual models.SupervisorCon
 		if err := GetRequestLegacy("UrlcrudCore", url, &j); err == nil {
 			//If Supervisor (GET)
 			url = "supervisor_contrato?query=Documento:" + strconv.Itoa(j[0].TerceroId) + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha + "&CargoId.Cargo__startswith:DECANO|VICE"
-			if err := GetRequestNew("UrlcrudAgora", url, &s); err == nil {
+			if err := GetRequestLegacy("UrlcrudAgora", url, &s); err == nil {
 				fmt.Println(s[0])
 				return s[0], nil
 			} else { //If Jefe_dependencia (GET)

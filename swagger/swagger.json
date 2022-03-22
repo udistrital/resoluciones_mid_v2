@@ -465,6 +465,32 @@
                 }
             }
         },
+        "/gestion_resoluciones/resoluciones_aprobadas": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get Resoluciones aprobadas",
+                "operationId": "GestionResolucionesController.GetResolucionesAprobadas",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_resoluciones/resoluciones_expedidas": {
             "get": {
                 "tags": [

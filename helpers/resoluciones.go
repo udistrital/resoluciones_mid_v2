@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego/logs"
@@ -260,6 +261,93 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 
 	if listaRes == nil {
 		listaRes = []models.Resoluciones{}
+	}
+	return listaRes, total, outputError
+}
+
+func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro string, nivelFiltro string, dedFiltro string, estadoFiltro string, limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ListarResolucionesAprobadas", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	var estado, aux []models.Parametro
+	var rest []models.ResolucionEstado
+	var resv models.ResolucionVinculacionDocente
+	var dep models.Dependencia
+	var tipo models.Parametro
+	var err error
+	var n int
+
+	url := "parametro?query=CodigoAbreviacion:RAPR"
+	if err = GetRequestNew("UrlcrudParametros", url, &aux); err != nil {
+		panic(err.Error())
+	}
+	estado = append(estado, aux[0])
+	url = "parametro?query=CodigoAbreviacion:REXP"
+	if err = GetRequestNew("UrlcrudParametros", url, &aux); err != nil {
+		panic(err.Error())
+	}
+	estado = append(estado, aux[0])
+
+	for n < 2 {
+		if len(estado) > 0 {
+
+			if strings.Contains(estado[n].Nombre, estadoFiltro) {
+
+				url = "resolucion_estado?fields=Id&limit=0&query=" + query + ",EstadoResolucionId:" + strconv.Itoa(estado[n].Id)
+				if err = GetRequestNew("UrlCrudResoluciones", url, &rest); err != nil {
+					panic(err.Error())
+				}
+				total = len(rest)
+
+				url = "resolucion_estado?order=desc&sortby=Id&query=" + query + ",EstadoResolucionId:" + strconv.Itoa(estado[n].Id) + "&limit=" + strconv.Itoa(limit/2) + "&offset=" + strconv.Itoa(10*(offset-1))
+				if err = GetRequestNew("UrlCrudResoluciones", url, &rest); err != nil {
+					panic(err.Error())
+				}
+				for i := range rest {
+
+					url3 := "resolucion_vinculacion_docente/" + strconv.Itoa(rest[i].ResolucionId.Id)
+					if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
+						panic(err.Error())
+					}
+
+					if strings.Contains(resv.NivelAcademico, nivelFiltro) {
+						if strings.Contains(resv.Dedicacion, dedFiltro) {
+							if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+								panic(err.Error())
+							}
+
+							if strings.Contains(dep.Nombre, facFiltro) {
+								if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
+									panic(err.Error())
+								}
+
+								if strings.Contains(tipo.Nombre, tipoResFiltro) {
+
+									resolucion := &models.Resoluciones{
+										Id:               rest[i].ResolucionId.Id,
+										NumeroResolucion: rest[i].ResolucionId.NumeroResolucion,
+										Vigencia:         rest[i].ResolucionId.Vigencia,
+										NivelAcademico:   resv.NivelAcademico,
+										Dedicacion:       resv.Dedicacion,
+										Facultad:         dep.Nombre,
+										Estado:           estado[n].Nombre,
+										TipoResolucion:   tipo.Nombre,
+									}
+
+									listaRes = append(listaRes, *resolucion)
+								}
+							}
+						}
+					}
+				}
+
+			}
+		}
+		n++
 	}
 
 	return listaRes, total, outputError
