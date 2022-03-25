@@ -198,6 +198,24 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
         beego.ControllerComments{
+            Method: "CalcularValorContratosSeleccionados",
+            Router: "/calcular_valor_contratos_seleccionados",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "Desvincular",
+            Router: "/desvincular",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
             Method: "DesvincularDocentes",
             Router: "/desvincular_docentes",
             AllowHTTPMethods: []string{"post"},
@@ -218,6 +236,15 @@ func init() {
         beego.ControllerComments{
             Method: "InformeVinculaciones",
             Router: "/informe_vinculaciones",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "ModificarVinculacion",
+            Router: "/modificar_vinculacion",
             AllowHTTPMethods: []string{"post"},
             MethodParams: param.Make(),
             Filters: nil,

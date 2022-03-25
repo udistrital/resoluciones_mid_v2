@@ -22,6 +22,7 @@ const (
 	CargaResExito   string = "Resoluciones cargadas con exito"
 )
 
+// Envia una petición con datos al endpoint indicado y extrae la respuesta del campo Data para retornarla
 func SendRequestNew(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
@@ -32,6 +33,7 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 	return err
 }
 
+// Envia una petición
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
@@ -73,6 +75,8 @@ func GetRequestWSO2(service string, route string, target interface{}) error {
 	}
 }
 
+// Esta función extrae la información cuando se recibe encapsulada en una estructura
+// y da manejo a las respuestas que contienen arreglos de objetos vacíos
 func ExtractData(respuesta map[string]interface{}, v interface{}) error {
 	var err error
 	if respuesta["Success"] == false {
@@ -322,6 +326,7 @@ func formatNumberString(x string, precision int, thousand string, decimal string
 	return result + extra
 }
 
+// Manejo único de errores para controladores sin repetir código
 func ErrorController(c beego.Controller, controller string) {
 	if err := recover(); err != nil {
 		logs.Error(err)

@@ -23,5 +23,4 @@ type CargaLectiva struct {
 	CategoriaNombre       string
 	IDCategoria           string
 	IdProveedor           string
-	Emerito               bool
 }

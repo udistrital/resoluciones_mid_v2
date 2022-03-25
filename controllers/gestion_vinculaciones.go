@@ -17,22 +17,90 @@ type GestionVinculacionesController struct {
 // URLMapping ...
 func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("Post", c.Post)
+	c.Mapping("ModificarVinculacion", c.ModificarVinculacion)
 	c.Mapping("DocentesPrevinculados", c.DocentesPrevinculados)
 	c.Mapping("DocentesCargaHoraria", c.DocentesCargaHoraria)
 	c.Mapping("InformeVinculaciones", c.InformeVinculaciones)
-	c.Mapping("Delete", c.Delete)
+	c.Mapping("DesvincularDocentes", c.DesvincularDocentes)
+	c.Mapping("CalcularValorContratosSeleccionados", c.CalcularValorContratosSeleccionados)
 }
 
 // Post ...
-// @Title Create
-// @Description create Gestion_vinculaciones
-// @Param	body		body 	models.Gestion_vinculaciones	true		"body for Gestion_vinculaciones content"
-// @Success 201 {object} models.Gestion_vinculaciones
-// @Failure 403 body is empty
+// @Title Create Vinculaciones
+// @Description Registra las vinculaciones calculando los valores del contrato
+// @Param	body		body 	models.ObjetoPrevinculaciones	true		"body for ObjetoPrevinculaciones content"
+// @Success 201 {object} []models.ObjetoPrevinculaciones
+// @Failure 400 bad request
+// @Failure 500 Internal server error
 // @router / [post]
 func (c *GestionVinculacionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	var p models.ObjetoPrevinculaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if r, err2 := helpers.RegistrarVinculaciones(p); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones registradas con exito", "Data": r}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// ModificarVinculacion ...
+// @Title ModificarVinculaciones
+// @Description Registra la modificacion de una vinculacion
+// @Param	body		body 	models.ObjetoModificaciones	true		"body for ObjetoModificaciones content"
+// @Success 201 {object} models.VinculacionDocente "Vinculaciones modificadas con éxito"
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /modificar_vinculacion [post]
+func (c *GestionVinculacionesController) ModificarVinculacion() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	var p models.ObjetoModificaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if r, err2 := helpers.ModificarVinculaciones(p); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones modificadas con éxito", "Data": r}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// Desvincular ...
+// @Title Desvincular
+// @Description Registra la cancelación de una vinculacion
+// @Param	body		body 	models.ObjetoCancelaciones	true		"body for ObjetoCancelaciones content"
+// @Success 201 {object} []models.VinculacionDocente "Cancelaciones registradas con éxito"
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /desvincular [post]
+func (c *GestionVinculacionesController) Desvincular() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	var p models.ObjetoCancelaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if r, err2 := helpers.RegistrarCancelaciones(p); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Cancelaciones registradas con éxito", "Data": r}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "Desvincular", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
 }
 
 // DocentesPrevinculados ...
@@ -139,12 +207,44 @@ func (c *GestionVinculacionesController) DesvincularDocentes() {
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
 		if err2 := helpers.RetirarVinculaciones(v); err2 == nil {
 			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Vinculaciones retiradas con exito", "Data": "OK"}
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones retiradas con exito", "Data": "OK"}
 		} else {
 			panic(err2)
 		}
 	} else {
 		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// CalcularValorContratosSeleccionados ...
+// @Title CalcularValorContratosSeleccionados
+// @Description Calcula el valor total de los contratos seleccionados
+// @Param	body		body 	models.ObjetoPrevinculaciones	true		"body for vinculaciones content"
+// @Success 201 {string} Valor total de los contratos seleccionados
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /calcular_valor_contratos_seleccionados [post]
+func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	var p models.ObjetoPrevinculaciones
+	var total int
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if v, err1 := helpers.ConstruirVinculaciones(p); err1 == nil {
+			if w, err2 := helpers.CalcularSalarioPrecontratacion(v); err2 == nil {
+				total = int(helpers.CalcularTotalSalarios(w))
+				c.Ctx.Output.SetStatus(201)
+				c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "", "Data": helpers.FormatMoney(total, 2)}
+			} else {
+				panic(err2)
+			}
+		} else {
+			panic(err1)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": err.Error(), "status": "400"})
 	}
 	c.ServeJSON()
 }

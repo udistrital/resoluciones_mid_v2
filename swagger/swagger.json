@@ -650,16 +650,16 @@
                 "tags": [
                     "gestion_vinculaciones"
                 ],
-                "description": "create Gestion_vinculaciones",
-                "operationId": "GestionVinculacionesController.Create",
+                "description": "Registra las vinculaciones calculando los valores del contrato",
+                "operationId": "GestionVinculacionesController.Create Vinculaciones",
                 "parameters": [
                     {
                         "in": "body",
                         "name": "body",
-                        "description": "body for Gestion_vinculaciones content",
+                        "description": "body for ObjetoPrevinculaciones content",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Gestion_vinculaciones"
+                            "$ref": "#/definitions/models.ObjetoPrevinculaciones"
                         }
                     }
                 ],
@@ -667,11 +667,85 @@
                     "201": {
                         "description": "",
                         "schema": {
-                            "$ref": "#/definitions/models.Gestion_vinculaciones"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ObjetoPrevinculaciones"
+                            }
                         }
                     },
-                    "403": {
-                        "description": "body is empty"
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/calcular_valor_contratos_seleccionados": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Calcula el valor total de los contratos seleccionados",
+                "operationId": "GestionVinculacionesController.CalcularValorContratosSeleccionados",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for vinculaciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoPrevinculaciones"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{string} Valor total de los contratos seleccionados"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/desvincular": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Registra la cancelación de una vinculacion",
+                "operationId": "GestionVinculacionesController.Desvincular",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for ObjetoCancelaciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoCancelaciones"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "\"Cancelaciones registradas con éxito\"",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.VinculacionDocente"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
                     }
                 }
             }
@@ -802,6 +876,40 @@
                 }
             }
         },
+        "/gestion_vinculaciones/modificar_vinculacion": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Registra la modificacion de una vinculacion",
+                "operationId": "GestionVinculacionesController.ModificarVinculaciones",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for ObjetoModificaciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoModificaciones"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "\"Vinculaciones modificadas con éxito\"",
+                        "schema": {
+                            "$ref": "#/definitions/models.VinculacionDocente"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/{resolucion_id}": {
             "get": {
                 "tags": [
@@ -876,11 +984,11 @@
         }
     },
     "definitions": {
-        "4966.\u003cnil\u003e.CancelacionContrato": {
+        "5464.\u003cnil\u003e.CancelacionContrato": {
             "title": "CancelacionContrato",
             "type": "object"
         },
-        "5132.\u003cnil\u003e.ContratoVinculacion": {
+        "5630.\u003cnil\u003e.ContratoVinculacion": {
             "title": "ContratoVinculacion",
             "type": "object"
         },
@@ -899,6 +1007,30 @@
                 }
             }
         },
+        "models.CambioVinculacion": {
+            "title": "CambioVinculacion",
+            "type": "object",
+            "properties": {
+                "DocPresupuestal": {
+                    "$ref": "#/definitions/models.DocumentoPresupuestal"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VinculacionOriginal": {
+                    "$ref": "#/definitions/models.Vinculaciones"
+                }
+            }
+        },
         "models.CargaLectiva": {
             "title": "CargaLectiva",
             "type": "object",
@@ -909,9 +1041,6 @@
                 "DependenciaAcademica": {
                     "type": "integer",
                     "format": "int64"
-                },
-                "Emerito": {
-                    "type": "boolean"
                 },
                 "IDCategoria": {
                     "type": "string"
@@ -1017,6 +1146,49 @@
                 }
             }
         },
+        "models.DocumentoPresupuestal": {
+            "title": "DocumentoPresupuestal",
+            "type": "object",
+            "properties": {
+                "Afectacion": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MovimientoRubro"
+                    }
+                },
+                "AfectacionIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "Consecutivo": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Estado": {
+                    "type": "string"
+                },
+                "FechaRegistro": {
+                    "type": "string"
+                },
+                "Tipo": {
+                    "type": "string"
+                },
+                "ValorActual": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorInicial": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
         "models.ExpedicionCancelacion": {
             "title": "ExpedicionCancelacion",
             "type": "object",
@@ -1030,7 +1202,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/4966.\u003cnil\u003e.CancelacionContrato"
+                    "$ref": "#/definitions/5464.\u003cnil\u003e.CancelacionContrato"
                 }
             }
         },
@@ -1047,13 +1219,61 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5132.\u003cnil\u003e.ContratoVinculacion"
+                    "$ref": "#/definitions/5630.\u003cnil\u003e.ContratoVinculacion"
                 }
             }
         },
-        "models.Gestion_vinculaciones": {
-            "title": "Gestion_vinculaciones",
-            "type": "object"
+        "models.MovimientoRubro": {
+            "title": "MovimientoRubro",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "string"
+                },
+                "FechaRegistro": {
+                    "type": "string"
+                },
+                "IDPsql": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Padre": {
+                    "type": "string"
+                },
+                "RubroDetalle": {
+                    "$ref": "#/definitions/models.Rubro"
+                },
+                "Tipo": {
+                    "type": "string"
+                },
+                "ValorActual": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorInicial": {
+                    "type": "number",
+                    "format": "double"
+                }
+            }
+        },
+        "models.ObjetoCancelaciones": {
+            "title": "ObjetoCancelaciones",
+            "type": "object",
+            "properties": {
+                "CambiosVinculacion": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CambioVinculacion"
+                    }
+                },
+                "ModificacionResolucionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionNuevaId": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
+                }
+            }
         },
         "models.ObjetoDesagregado": {
             "title": "ObjetoDesagregado",
@@ -1065,8 +1285,56 @@
                 "Dedicacion": {
                     "type": "string"
                 },
+                "EsDePlanta": {
+                    "type": "boolean"
+                },
                 "NivelAcademico": {
                     "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ObjetoModificaciones": {
+            "title": "ObjetoModificaciones",
+            "type": "object",
+            "properties": {
+                "CambiosVinculacion": {
+                    "$ref": "#/definitions/models.CambioVinculacion"
+                },
+                "ModificacionResolucionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionNuevaId": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
+                }
+            }
+        },
+        "models.ObjetoPrevinculaciones": {
+            "title": "ObjetoPrevinculaciones",
+            "type": "object",
+            "properties": {
+                "Disponibilidad": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.DocumentoPresupuestal"
+                    }
+                },
+                "Docentes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CargaLectiva"
+                    }
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionData": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 },
                 "Vigencia": {
                     "type": "integer",
@@ -1216,6 +1484,116 @@
                 }
             }
         },
+        "models.Rubro": {
+            "title": "Rubro",
+            "type": "object",
+            "properties": {
+                "Codigo": {
+                    "type": "string"
+                },
+                "Descripcion": {
+                    "type": "string"
+                },
+                "Entidad": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "UnidadEjecutora": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.VinculacionDocente": {
+            "title": "VinculacionDocente",
+            "type": "object",
+            "properties": {
+                "Activo": {
+                    "type": "boolean"
+                },
+                "Categoria": {
+                    "type": "string"
+                },
+                "DedicacionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "DependenciaAcademica": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Emerito": {
+                    "type": "boolean"
+                },
+                "FechaCreacion": {
+                    "type": "string"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaModificacion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroRp": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PersonaId": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ProyectoCurricularId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PuntoSalarialId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionVinculacionDocenteId": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
+                },
+                "SalarioMinimoId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ValorContrato": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VigenciaRp": {
+                    "type": "number",
+                    "format": "double"
+                }
+            }
+        },
         "models.Vinculaciones": {
             "title": "Vinculaciones",
             "type": "object",
@@ -1229,6 +1607,9 @@
                 "Disponibilidad": {
                     "type": "integer",
                     "format": "int64"
+                },
+                "ExpedicionDocumento": {
+                    "type": "string"
                 },
                 "Id": {
                     "type": "integer",
@@ -1255,6 +1636,13 @@
                 "ProyectoCurricularId": {
                     "type": "integer",
                     "format": "int64"
+                },
+                "RegistroPresupuestal": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoDocumento": {
+                    "type": "string"
                 },
                 "ValorContratoFormato": {
                     "type": "string"
