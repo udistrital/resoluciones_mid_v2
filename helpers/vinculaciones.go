@@ -238,12 +238,12 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 
 // Registra la modificación de una vinculación asociada a la vinculación original
 func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.VinculacionDocente, outputError map[string]interface{}) {
-	/* defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "/ModificarVinculaciones", "err": err, "status": "500"}
 			panic(outputError)
 		}
-	}() */
+	}()
 	var vinculacion models.VinculacionDocente
 	var vin []models.VinculacionDocente
 	var err map[string]interface{}
@@ -279,9 +279,12 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	nuevaVinculacion = vin[0]
 
 	// Si el documento es RP se almacenan los datso relevantes
-	if obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
+	if obj.CambiosVinculacion.DocPresupuestal != nil && obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
 		nuevaVinculacion.NumeroRp = obj.CambiosVinculacion.DocPresupuestal.Consecutivo
 		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.DocPresupuestal.Vigencia)
+	} else {
+		nuevaVinculacion.NumeroRp = 0
+		nuevaVinculacion.VigenciaRp = 0
 	}
 
 	// Se desactiva la vinculación original
@@ -350,4 +353,29 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	}
 
 	return nuevaVinculacion, outputError
+}
+
+// Registra la cancelación de las vinculaciones seleccionadas como modificaciones
+func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.VinculacionDocente, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/RegistrarCancelaciones", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+	var cancelacionesRegistradas []models.VinculacionDocente
+	for i := range p.CambiosVinculacion {
+		cancelacion := models.ObjetoModificaciones{
+			CambiosVinculacion:       &p.CambiosVinculacion[i],
+			ResolucionNuevaId:        p.ResolucionNuevaId,
+			ModificacionResolucionId: p.ModificacionResolucionId,
+		}
+		if cancelacionRegistrada, err := ModificarVinculaciones(cancelacion); err != nil {
+			panic(err)
+		} else {
+			cancelacionesRegistradas = append(cancelacionesRegistradas, cancelacionRegistrada)
+		}
+	}
+
+	return cancelacionesRegistradas, outputError
 }

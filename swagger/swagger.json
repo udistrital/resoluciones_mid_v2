@@ -661,6 +661,43 @@
                 }
             }
         },
+        "/gestion_vinculaciones/desvincular": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Registra la cancelación de una vinculacion",
+                "operationId": "GestionVinculacionesController.Desvincular",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for ObjetoCancelaciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoCancelaciones"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "\"Cancelaciones registradas con éxito\"",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.VinculacionDocente"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/desvincular_docentes": {
             "post": {
                 "tags": [
@@ -1164,6 +1201,25 @@
                 "ValorInicial": {
                     "type": "number",
                     "format": "double"
+                }
+            }
+        },
+        "models.ObjetoCancelaciones": {
+            "title": "ObjetoCancelaciones",
+            "type": "object",
+            "properties": {
+                "CambiosVinculacion": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CambioVinculacion"
+                    }
+                },
+                "ModificacionResolucionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionNuevaId": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 }
             }
         },

@@ -77,6 +77,32 @@ func (c *GestionVinculacionesController) ModificarVinculacion() {
 	c.ServeJSON()
 }
 
+// Desvincular ...
+// @Title Desvincular
+// @Description Registra la cancelación de una vinculacion
+// @Param	body		body 	models.ObjetoCancelaciones	true		"body for ObjetoCancelaciones content"
+// @Success 201 {object} []models.VinculacionDocente "Cancelaciones registradas con éxito"
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /desvincular [post]
+func (c *GestionVinculacionesController) Desvincular() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	var p models.ObjetoCancelaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
+		if r, err2 := helpers.RegistrarCancelaciones(p); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Cancelaciones registradas con éxito", "Data": r}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "Desvincular", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
 // DocentesPrevinculados ...
 // @Title DocentesPrevinculados
 // @Description Docentes previnculados a una resolución

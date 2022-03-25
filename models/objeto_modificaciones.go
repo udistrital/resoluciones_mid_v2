@@ -8,6 +8,12 @@ type ObjetoModificaciones struct {
 	ModificacionResolucionId int
 }
 
+type ObjetoCancelaciones struct {
+	CambiosVinculacion       []CambioVinculacion
+	ResolucionNuevaId        *ResolucionVinculacionDocente
+	ModificacionResolucionId int
+}
+
 type CambioVinculacion struct {
 	NumeroHorasSemanales int
 	NumeroSemanas        int
