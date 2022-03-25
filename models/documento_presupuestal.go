@@ -20,4 +20,5 @@ type MovimientoRubro struct {
 	Estado        string
 	ValorActual   float64
 	ValorInicial  float64
+	RubroDetalle  *Rubro
 }

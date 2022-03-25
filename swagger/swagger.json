@@ -787,6 +787,40 @@
                 }
             }
         },
+        "/gestion_vinculaciones/modificar_vinculacion": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Registra la modificacion de una vinculacion",
+                "operationId": "GestionVinculacionesController.ModificarVinculaciones",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for ObjetoModificaciones content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ObjetoModificaciones"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "\"Vinculaciones modificadas con éxito\"",
+                        "schema": {
+                            "$ref": "#/definitions/models.VinculacionDocente"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/{resolucion_id}": {
             "get": {
                 "tags": [
@@ -861,11 +895,11 @@
         }
     },
     "definitions": {
-        "5441.\u003cnil\u003e.CancelacionContrato": {
+        "5464.\u003cnil\u003e.CancelacionContrato": {
             "title": "CancelacionContrato",
             "type": "object"
         },
-        "5607.\u003cnil\u003e.ContratoVinculacion": {
+        "5630.\u003cnil\u003e.ContratoVinculacion": {
             "title": "ContratoVinculacion",
             "type": "object"
         },
@@ -881,6 +915,30 @@
                     "items": {
                         "$ref": "#/definitions/models.ComponenteResolucion"
                     }
+                }
+            }
+        },
+        "models.CambioVinculacion": {
+            "title": "CambioVinculacion",
+            "type": "object",
+            "properties": {
+                "DocPresupuestal": {
+                    "$ref": "#/definitions/models.DocumentoPresupuestal"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VinculacionOriginal": {
+                    "$ref": "#/definitions/models.Vinculaciones"
                 }
             }
         },
@@ -1055,7 +1113,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5441.\u003cnil\u003e.CancelacionContrato"
+                    "$ref": "#/definitions/5464.\u003cnil\u003e.CancelacionContrato"
                 }
             }
         },
@@ -1072,7 +1130,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5607.\u003cnil\u003e.ContratoVinculacion"
+                    "$ref": "#/definitions/5630.\u003cnil\u003e.ContratoVinculacion"
                 }
             }
         },
@@ -1092,6 +1150,9 @@
                 },
                 "Padre": {
                     "type": "string"
+                },
+                "RubroDetalle": {
+                    "$ref": "#/definitions/models.Rubro"
                 },
                 "Tipo": {
                     "type": "string"
@@ -1125,6 +1186,22 @@
                 "Vigencia": {
                     "type": "integer",
                     "format": "int64"
+                }
+            }
+        },
+        "models.ObjetoModificaciones": {
+            "title": "ObjetoModificaciones",
+            "type": "object",
+            "properties": {
+                "CambiosVinculacion": {
+                    "$ref": "#/definitions/models.CambioVinculacion"
+                },
+                "ModificacionResolucionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionNuevaId": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 }
             }
         },
@@ -1296,6 +1373,116 @@
                 "Vigencia": {
                     "type": "integer",
                     "format": "int64"
+                }
+            }
+        },
+        "models.Rubro": {
+            "title": "Rubro",
+            "type": "object",
+            "properties": {
+                "Codigo": {
+                    "type": "string"
+                },
+                "Descripcion": {
+                    "type": "string"
+                },
+                "Entidad": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "UnidadEjecutora": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.VinculacionDocente": {
+            "title": "VinculacionDocente",
+            "type": "object",
+            "properties": {
+                "Activo": {
+                    "type": "boolean"
+                },
+                "Categoria": {
+                    "type": "string"
+                },
+                "DedicacionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "DependenciaAcademica": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Emerito": {
+                    "type": "boolean"
+                },
+                "FechaCreacion": {
+                    "type": "string"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaModificacion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroRp": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PersonaId": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ProyectoCurricularId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PuntoSalarialId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ResolucionVinculacionDocenteId": {
+                    "$ref": "#/definitions/models.ResolucionVinculacionDocente"
+                },
+                "SalarioMinimoId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ValorContrato": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VigenciaRp": {
+                    "type": "number",
+                    "format": "double"
                 }
             }
         },

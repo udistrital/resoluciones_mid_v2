@@ -233,5 +233,121 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 		}
 	}
 
-	return v, outputError
+	return vinculacionesRegistradas, outputError
+}
+
+// Registra la modificación de una vinculación asociada a la vinculación original
+func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.VinculacionDocente, outputError map[string]interface{}) {
+	/* defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/ModificarVinculaciones", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}() */
+	var vinculacion models.VinculacionDocente
+	var vin []models.VinculacionDocente
+	var err map[string]interface{}
+
+	// Recuperación de la vinculación original
+	url := "vinculacion_docente/" + strconv.Itoa(obj.CambiosVinculacion.VinculacionOriginal.Id)
+	if err := GetRequestNew("UrlcrudResoluciones", url, &vinculacion); err != nil {
+		panic("Cargando vinculacion original -> " + err.Error())
+	}
+
+	// Creación de la nueva vinculación
+	nuevaVinculacion := models.VinculacionDocente{
+		Vigencia:                       obj.CambiosVinculacion.VinculacionOriginal.Vigencia,
+		PersonaId:                      obj.CambiosVinculacion.VinculacionOriginal.PersonaId,
+		NumeroHorasSemanales:           obj.CambiosVinculacion.NumeroHorasSemanales,
+		NumeroSemanas:                  obj.CambiosVinculacion.NumeroSemanas,
+		ResolucionVinculacionDocenteId: obj.ResolucionNuevaId,
+		DedicacionId:                   vinculacion.DedicacionId,
+		ProyectoCurricularId:           vinculacion.ProyectoCurricularId,
+		Categoria:                      vinculacion.Categoria,
+		DependenciaAcademica:           vinculacion.DependenciaAcademica,
+		FechaInicio:                    obj.CambiosVinculacion.FechaInicio,
+		Activo:                         true,
+	}
+
+	vin = append(vin, nuevaVinculacion)
+
+	// calculo del valor del contrato para la nueva vinculación
+	if vin, err = CalcularSalarioPrecontratacion(vin); err != nil {
+		panic(err)
+	}
+
+	nuevaVinculacion = vin[0]
+
+	// Si el documento es RP se almacenan los datso relevantes
+	if obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
+		nuevaVinculacion.NumeroRp = obj.CambiosVinculacion.DocPresupuestal.Consecutivo
+		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.DocPresupuestal.Vigencia)
+	}
+
+	// Se desactiva la vinculación original
+	var vinc *models.VinculacionDocente
+	vinculacion.Activo = false
+	if err2 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &vinc, &vinculacion); err2 != nil {
+		panic("Desactivando vinculacion -> " + err2.Error())
+	}
+	vinc = nil
+
+	// Se registra la nueva vinculación
+	if err3 := SendRequestNew("UrlcrudResoluciones", "vinculacion_docente", "POST", &vinc, &nuevaVinculacion); err3 != nil {
+		panic("Registrando nueva vinculacion -> " + err3.Error())
+	}
+
+	// Se crea y se registra la modificación de la vinculación
+	var modvinc models.ModificacionVinculacion
+	modificacionVinculacion := models.ModificacionVinculacion{
+		ModificacionResolucionId:       &models.ModificacionResolucion{Id: obj.ModificacionResolucionId},
+		VinculacionDocenteCanceladaId:  &models.VinculacionDocente{Id: vinculacion.Id},
+		VinculacionDocenteRegistradaId: &models.VinculacionDocente{Id: vinc.Id},
+		Horas:                          float64(obj.CambiosVinculacion.NumeroHorasSemanales),
+		Activo:                         true,
+	}
+
+	if err4 := SendRequestNew("UrlcrudResoluciones", "modificacion_vinculacion", "POST", &modvinc, &modificacionVinculacion); err4 != nil {
+		panic("Registrando modificacion -> " + err4.Error())
+	}
+
+	var dvRegistrada models.DisponibilidadVinculacion
+	// Se registran los rubros de la disponibilidad segun el caso
+	if obj.CambiosVinculacion.DocPresupuestal == nil || obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
+		// Si no se cambia la disponibilidad se usa la misma de la vinculación original
+		var dv []models.DisponibilidadVinculacion
+
+		url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
+		if err5 := GetRequestNew("UrlcrudResoluciones", url, &dv); err5 != nil {
+			panic("Cargando disponibilidad_vinculacion -> " + err5.Error())
+		}
+		for i := range dv {
+			nuevaDv := &models.DisponibilidadVinculacion{
+				Disponibilidad:       dv[i].Disponibilidad,
+				Rubro:                dv[i].Rubro,
+				VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
+				Activo:               true,
+				Valor:                0,
+			}
+			if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
+				panic("Registrando disponibilidad -> " + err6.Error())
+			}
+		}
+	} else {
+		disponibilidad := obj.CambiosVinculacion.DocPresupuestal
+		for _, rubro := range disponibilidad.Afectacion {
+			nuevaDv := &models.DisponibilidadVinculacion{
+				Disponibilidad:       int(disponibilidad.Consecutivo),
+				Rubro:                rubro.Padre,
+				VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
+				Activo:               true,
+				Valor:                0,
+			}
+			if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
+				panic("Registrando disponibilidad -> " + err6.Error())
+			}
+		}
+	}
+
+	return nuevaVinculacion, outputError
 }
