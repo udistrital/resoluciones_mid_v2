@@ -517,6 +517,32 @@
                 }
             }
         },
+        "/gestion_resoluciones/resoluciones_inscritas": {
+            "get": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "get Resoluciones inscritas",
+                "operationId": "GestionResolucionesController.GetResolucionesInscritas",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Resoluciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_resoluciones/{id}": {
             "get": {
                 "tags": [
