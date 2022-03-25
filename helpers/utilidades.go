@@ -17,8 +17,14 @@ import (
 	"github.com/udistrital/utils_oas/formatdata"
 )
 
+const (
+	ErrorParametros string = "Error en los parametros de ingreso"
+	CargaResExito   string = "Resoluciones cargadas con exito"
+)
+
+// Envia una petición con datos al endpoint indicado y extrae la respuesta del campo Data para retornarla
 func SendRequestNew(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	var response map[string]interface{}
 	var err error
@@ -27,8 +33,9 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 	return err
 }
 
+// Envia una petición
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	if err := SendJson(url, trequest, target, &datajson); err != nil {
 		return err
@@ -37,7 +44,7 @@ func SendRequestLegacy(endpoint string, route string, trequest string, target in
 }
 
 func GetRequestNew(endpoint string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	var response map[string]interface{}
 	var err error
@@ -47,7 +54,7 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 }
 
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + "/" + route
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
 	if err := GetJson(url, target); err != nil {
 		return err
@@ -58,7 +65,7 @@ func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 
 func GetRequestWSO2(service string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" +
-		beego.AppConfig.String("UrlcrudWSO2") + "/" +
+		beego.AppConfig.String("UrlcrudWSO2") +
 		beego.AppConfig.String(service) + "/" + route
 
 	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {
@@ -68,6 +75,8 @@ func GetRequestWSO2(service string, route string, target interface{}) error {
 	}
 }
 
+// Esta función extrae la información cuando se recibe encapsulada en una estructura
+// y da manejo a las respuestas que contienen arreglos de objetos vacíos
 func ExtractData(respuesta map[string]interface{}, v interface{}) error {
 	var err error
 	if respuesta["Success"] == false {
@@ -317,6 +326,7 @@ func formatNumberString(x string, precision int, thousand string, decimal string
 	return result + extra
 }
 
+// Manejo único de errores para controladores sin repetir código
 func ErrorController(c beego.Controller, controller string) {
 	if err := recover(); err != nil {
 		logs.Error(err)

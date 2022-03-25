@@ -11,6 +11,114 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
+// Calcula el valor del contrato para cada docente utilizando el conjunto de reglas CDVE
+func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDocente) (docentes_a_insertar []models.VinculacionDocente, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/CalcularSalarioPrecontratacion", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	nivelAcademico := docentes_a_vincular[0].ResolucionVinculacionDocenteId.NivelAcademico
+	vigencia := strconv.Itoa(int(docentes_a_vincular[0].Vigencia))
+	var a string
+	var categoria string
+
+	salarioMinimo, err1 := CargarParametroPeriodo(vigencia, "SMMLV")
+	if err1 != nil {
+		logs.Error(err1)
+		panic(err1)
+	}
+
+	puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
+	if err != nil {
+		logs.Error(err)
+		panic(err)
+	}
+
+	for x, docente := range docentes_a_vincular {
+		p, err2 := EsDocentePlanta(strconv.Itoa(int(docente.PersonaId)))
+		if err2 != nil {
+			logs.Error(err2)
+			panic(err2)
+		}
+		if p && strings.ToLower(nivelAcademico) == "posgrado" {
+			categoria = strings.TrimSpace(docente.Categoria) + "ud"
+		} else {
+			categoria = strings.TrimSpace(docente.Categoria)
+		}
+
+		var predicados string
+		if strings.ToLower(nivelAcademico) == "posgrado" {
+			predicados = "valor_salario_minimo(" + strconv.Itoa(int(salarioMinimo)) + "," + vigencia + ")." + "\n"
+			docente.NumeroSemanas = 1
+		} else if strings.ToLower(nivelAcademico) == "pregrado" {
+			predicados = "valor_punto(" + strconv.Itoa(int(puntoSalarial)) + ", " + vigencia + ")." + "\n"
+		}
+
+		predicados = predicados + "categoria(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(categoria) + ", " + vigencia + ")." + "\n"
+		predicados = predicados + "vinculacion(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(docente.ResolucionVinculacionDocenteId.Dedicacion) + ", " + vigencia + ")." + "\n"
+		predicados = predicados + "horas(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strconv.Itoa(docente.NumeroHorasSemanales*docente.NumeroSemanas) + ", " + vigencia + ")." + "\n"
+		reglasbase, err4 := CargarReglasBase("CDVE")
+		if err4 != nil {
+			logs.Error(err4)
+			panic(err4)
+		}
+
+		reglasbase = reglasbase + predicados
+		m := NewMachine().Consult(reglasbase)
+		contratos := m.ProveAll("valor_contrato(" + strings.ToLower(nivelAcademico) + "," + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + vigencia + ",X).")
+
+		for _, solution := range contratos {
+			a = fmt.Sprintf("%s", solution.ByName_("X"))
+		}
+		salario, err5 := strconv.ParseFloat(a, 64)
+		if err5 != nil {
+			logs.Error(err5)
+			panic(err5.Error())
+		}
+		docentes_a_vincular[x].ValorContrato = salario
+
+	}
+	return docentes_a_vincular, nil
+}
+
+// Calcula el valor de la modificación del contrato de un docente
+func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasRestantes int, horasOriginales int, nivelAcademico string, periodo int) (salarioTotal float64, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/CalcularValorContratoReduccion", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+	var d []models.VinculacionDocente
+	var salarioSemanasReducidas float64
+	var salarioSemanasRestantes float64
+
+	d = append(d, v[0])
+
+	docentes, err := CalcularSalarioPrecontratacion(d)
+	if err != nil {
+		return salarioTotal, err
+	}
+	salarioSemanasReducidas = docentes[0].ValorContrato
+	//Para posgrados no se deben tener en cuenta las semanas restantes
+	if semanasRestantes > 0 && nivelAcademico == "PREGRADO" {
+		d[0].NumeroSemanas = semanasRestantes
+		d[0].NumeroHorasSemanales = horasOriginales
+		docentes, err := CalcularSalarioPrecontratacion(d)
+		if err != nil {
+			panic(err)
+		}
+		salarioSemanasRestantes = docentes[0].ValorContrato
+	}
+
+	salarioTotal = salarioSemanasReducidas + salarioSemanasRestantes
+	return salarioTotal, outputError
+}
+
+// Calcula el desagregado general unitario para los parámetros recibidos
 func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]interface{}, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -73,6 +181,11 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 		resultado["Categoria"] = (d[i].Categoria)
 		resultado["Dedicacion"] = (d[i].Dedicacion)
 		resultado["NivelAcademico"] = (d[i].NivelAcademico)
+		resultado["EsDePlanta"] = (d[i].EsDePlanta)
+
+		if strings.ToLower(obj.NivelAcademico) == "posgrado" && obj.EsDePlanta {
+			obj.Categoria = obj.Categoria + "UD"
+		}
 
 		salarios := m.ProveAll("sueldo_basico(" +
 			strings.ToLower(obj.NivelAcademico) + "," +
@@ -126,6 +239,7 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 	return resultados, outputError
 }
 
+// Carga el parámetro para el periodo/vigencia indicado y extrae el valor correspondiente
 func CargarParametroPeriodo(vigencia, codigo string) (parametro float64, outputError map[string]interface{}) {
 	var s []models.ParametroPeriodo
 	var valor map[string]interface{}
@@ -147,6 +261,7 @@ func CargarParametroPeriodo(vigencia, codigo string) (parametro float64, outputE
 	return valor["Valor"].(float64), outputError
 }
 
+// Calcula la sumatoria del valor de los contratos de una resolución
 func CalcularTotalSalarios(v []models.VinculacionDocente) (total float64) {
 	var sumatoria float64
 	for _, docente := range v {
@@ -156,6 +271,7 @@ func CalcularTotalSalarios(v []models.VinculacionDocente) (total float64) {
 	return sumatoria
 }
 
+// Carga el conjunto de reglas del API Ruler del dominio indicado
 func CargarReglasBase(dominio string) (reglas string, outputError map[string]interface{}) {
 	var reglasbase string = ``
 	var v []models.Predicado
@@ -170,6 +286,7 @@ func CargarReglasBase(dominio string) (reglas string, outputError map[string]int
 	return reglasbase, nil
 }
 
+// Compila un conjunto de reglas en forma de cadena de texto para su uso con el motor de reglas
 func FormatoReglas(v []models.Predicado) (reglas string) {
 	var arregloReglas = make([]string, len(v))
 	reglas = ""

@@ -23,7 +23,7 @@ func (c *ServicesController) URLMapping() {
 // @Title Create
 // @Description Genera el detalle desagregado de salario y sus prestaciones segun los parámetros indicados
 // @Param	body		body 	models.ObjetoDesagregado	true		"body for DesagregadoPlaneacion content"
-// @Success 201 {object} models.ObjetoDesagregado
+// @Success 201 {object} []models.ObjetoDesagregado
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /desagregado_planeacion [post]
