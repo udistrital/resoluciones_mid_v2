@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -265,6 +266,90 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 	return listaRes, total, outputError
 }
 
+func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro string, nivelFiltro string, dedFiltro string, estadoFiltro string, limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ListarResoluciones", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	var res []models.Resolucion
+	var resv models.ResolucionVinculacionDocente
+	var rest []models.ResolucionEstado
+	var dep models.Dependencia
+	var estado models.Parametro
+	var tipo models.Parametro
+	var err error
+
+	url0 := "resolucion_vinculacion_docente?limit=0&fields=Id"
+	if err = GetRequestNew("UrlcrudResoluciones", url0, &res); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+	total = len(res)
+
+	url := "resolucion?query=" + query + "&order=desc&sortby=Id&limit=" + strconv.Itoa(limit) + "&offset=" + strconv.Itoa(10*(offset-1))
+	if err = GetRequestNew("UrlcrudResoluciones", url, &res); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+
+	for i := range res {
+		url3 := "resolucion_estado?order=desc&sortby=Id&query=Activo:true,ResolucionId.Id:" + strconv.Itoa(res[i].Id)
+		if err = GetRequestNew("UrlcrudResoluciones", url3, &rest); err != nil {
+			panic(err.Error())
+		}
+		url2 := "resolucion_vinculacion_docente/" + strconv.Itoa(rest[0].ResolucionId.Id)
+		if err = GetRequestNew("UrlCrudResoluciones", url2, &resv); err != nil {
+			fmt.Println("sisi")
+			panic(err.Error())
+		}
+		if strings.Contains(strings.ToLower(resv.NivelAcademico), strings.ToLower(nivelFiltro)) {
+			if strings.Contains(strings.ToLower(resv.Dedicacion), strings.ToLower(dedFiltro)) {
+				if len(rest) > 0 {
+					if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
+						panic(err.Error())
+					}
+				} else {
+					continue
+				}
+				if strings.Contains(strings.ToLower(estado.Nombre), strings.ToLower(estadoFiltro)) {
+					if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+						panic(err.Error())
+					}
+					if strings.Contains(strings.ToLower(dep.Nombre), strings.ToLower(facFiltro)) {
+						if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(res[i].TipoResolucionId), &tipo); err != nil {
+							panic(err.Error())
+						}
+						if strings.Contains(strings.ToLower(tipo.Nombre), strings.ToLower(tipoResFiltro)) {
+							resolucion := &models.Resoluciones{
+								Id:               res[0].Id,
+								NumeroResolucion: res[0].NumeroResolucion,
+								Vigencia:         res[0].Vigencia,
+								Periodo:          res[0].Periodo,
+								Semanas:          res[0].NumeroSemanas,
+								NivelAcademico:   resv.NivelAcademico,
+								Dedicacion:       resv.Dedicacion,
+								Facultad:         dep.Nombre,
+								Estado:           estado.Nombre,
+								TipoResolucion:   tipo.Nombre,
+							}
+
+							listaRes = append(listaRes, *resolucion)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if listaRes == nil {
+		listaRes = []models.Resoluciones{}
+	}
+	return listaRes, total, outputError
+}
+
 func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro string, nivelFiltro string, dedFiltro string, estadoFiltro string, limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -295,7 +380,7 @@ func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro s
 	for n < 2 {
 		if len(estado) > 0 {
 
-			if strings.Contains(estado[n].Nombre, estadoFiltro) {
+			if strings.Contains(strings.ToLower(estado[n].Nombre), strings.ToLower(estadoFiltro)) {
 
 				url = "resolucion_estado?fields=Id&limit=0&query=" + query + ",EstadoResolucionId:" + strconv.Itoa(estado[n].Id)
 				if err = GetRequestNew("UrlCrudResoluciones", url, &rest); err != nil {
@@ -313,19 +398,17 @@ func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro s
 					if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
 						panic(err.Error())
 					}
-
-					if strings.Contains(resv.NivelAcademico, nivelFiltro) {
-						if strings.Contains(resv.Dedicacion, dedFiltro) {
+					if strings.Contains(strings.ToLower(resv.NivelAcademico), strings.ToLower(nivelFiltro)) {
+						if strings.Contains(strings.ToLower(resv.Dedicacion), strings.ToLower(dedFiltro)) {
 							if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
 								panic(err.Error())
 							}
-
-							if strings.Contains(dep.Nombre, facFiltro) {
+							if strings.Contains(strings.ToLower(dep.Nombre), strings.ToLower(facFiltro)) {
 								if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
 									panic(err.Error())
 								}
 
-								if strings.Contains(tipo.Nombre, tipoResFiltro) {
+								if strings.Contains(strings.ToLower(tipo.Nombre), strings.ToLower(tipoResFiltro)) {
 
 									resolucion := &models.Resoluciones{
 										Id:               rest[i].ResolucionId.Id,
@@ -349,7 +432,9 @@ func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro s
 		}
 		n++
 	}
-
+	if listaRes == nil {
+		listaRes = []models.Resoluciones{}
+	}
 	return listaRes, total, outputError
 }
 
