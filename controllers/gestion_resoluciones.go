@@ -203,6 +203,17 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 // GetResolucionesInscritas ...
 // @Title GetResolucionesInscritas
 // @Description get Resoluciones inscritas
+// @Param	query		query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
+// @Param	fields		query	string	false	"Fields returned. e.g. col1,col2 ..."
+// @Param	sortby		query	string	false	"Sorted-by fields. e.g. col1,col2 ..."
+// @Param	order		query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
+// @Param	limit		query	string	false	"Limit the size of result set. Must be an integer"
+// @Param	offset		query	string	false	"Start position of result set. Must be an integer"
+// @Param	facultad	query	string	false	"Nombre de la facultad"
+// @Param	tipoRes		query	string	false	"Tipo de la resolución"
+// @Param	nivelA		query	string	false	"Nivel académico"
+// @Param	dedicacion	query	string	false	"Dedicación de la resolución"
+// @Param	estadoRes	query	string	false	"Estado de la resolución"
 // @Success 200 {object} []models.Resoluciones
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -235,6 +246,17 @@ func (c *GestionResolucionesController) GetResolucionesInscritas() {
 // GetResolucionesAprobadas ...
 // @Title GetResolucionesAprobadas
 // @Description get Resoluciones aprobadas
+// @Param	query		query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
+// @Param	fields		query	string	false	"Fields returned. e.g. col1,col2 ..."
+// @Param	sortby		query	string	false	"Sorted-by fields. e.g. col1,col2 ..."
+// @Param	order		query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
+// @Param	limit		query	string	false	"Limit the size of result set. Must be an integer"
+// @Param	offset		query	string	false	"Start position of result set. Must be an integer"
+// @Param	facultad	query	string	false	"Nombre de la facultad"
+// @Param	tipoRes		query	string	false	"Tipo de la resolución"
+// @Param	nivelA		query	string	false	"Nivel académico"
+// @Param	dedicacion	query	string	false	"Dedicación de la resolución"
+// @Param	estadoRes	query	string	false	"Estado de la resolución"
 // @Success 200 {object} []models.Resoluciones
 // @Failure 400 bad request
 // @Failure 500 Internal server error
