@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
@@ -33,19 +32,7 @@ func (c *ExpedirResolucionController) URLMapping() {
 // @router /expedir [post]
 func (c *ExpedirResolucionController) Expedir() {
 
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionResolucion
 
@@ -73,19 +60,7 @@ func (c *ExpedirResolucionController) Expedir() {
 // @router /validar_datos_expedicion [post]
 func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionResolucion
 
@@ -112,19 +87,7 @@ func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 // @router /expedirModificacion [post]
 func (c *ExpedirResolucionController) ExpedirModificacion() {
 
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionResolucion
 	// If 13 - Unmarshal
@@ -151,19 +114,7 @@ func (c *ExpedirResolucionController) ExpedirModificacion() {
 // @router /cancelar [post]
 func (c *ExpedirResolucionController) Cancelar() {
 
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionCancelacion
 
