@@ -401,6 +401,37 @@
                 }
             }
         },
+        "/gestion_resoluciones/actualizar_estado": {
+            "post": {
+                "tags": [
+                    "gestion_resoluciones"
+                ],
+                "description": "Modifica el estado de una resolución",
+                "operationId": "GestionResolucionesController.ActualizarEstado",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for NuevoEstadoResolucion content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.NuevoEstadoResolucion"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "{string} string\t\tNuevo estado de la resolución"
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_resoluciones/consultar_docente/{id}": {
             "get": {
                 "tags": [
@@ -1120,11 +1151,11 @@
         }
     },
     "definitions": {
-        "5464.\u003cnil\u003e.CancelacionContrato": {
+        "5001.\u003cnil\u003e.CancelacionContrato": {
             "title": "CancelacionContrato",
             "type": "object"
         },
-        "5630.\u003cnil\u003e.ContratoVinculacion": {
+        "5167.\u003cnil\u003e.ContratoVinculacion": {
             "title": "ContratoVinculacion",
             "type": "object"
         },
@@ -1338,7 +1369,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5464.\u003cnil\u003e.CancelacionContrato"
+                    "$ref": "#/definitions/5001.\u003cnil\u003e.CancelacionContrato"
                 }
             }
         },
@@ -1355,7 +1386,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5630.\u003cnil\u003e.ContratoVinculacion"
+                    "$ref": "#/definitions/5167.\u003cnil\u003e.ContratoVinculacion"
                 }
             }
         },
@@ -1389,6 +1420,22 @@
                 "ValorInicial": {
                     "type": "number",
                     "format": "double"
+                }
+            }
+        },
+        "models.NuevoEstadoResolucion": {
+            "title": "NuevoEstadoResolucion",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "string"
+                },
+                "ResolucionId": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Usuario": {
+                    "type": "string"
                 }
             }
         },
