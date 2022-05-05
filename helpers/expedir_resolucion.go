@@ -19,38 +19,39 @@ func SupervisorActual(resolucionId int) (supervisor_actual models.SupervisorCont
 	if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {
 		//If Jefe_dependencia (GET)
 		url = "jefe_dependencia?query=DependenciaId:" + strconv.Itoa(r.DependenciaId) + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha
-		if err := GetRequestLegacy("UrlcrudCore", url, &j); err == nil {
+		if err := GetRequestLegacy("UrlcrudCore", url, &j); err == nil && len(j) > 0 {
 			//If Supervisor (GET)
-			url = "supervisor_contrato?order=desc&sortby=Id&query=Documento:" + strconv.Itoa(j[0].TerceroId) // + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha + "&CargoId.Cargo__startswith:DECANO|VICE"
-			if err := GetRequestLegacy("UrlcrudAgora", url, &s); err == nil {
+			url = "supervisor_contrato?order=desc&sortby=Id&query=Documento:" + strconv.Itoa(j[0].TerceroId) + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha + "&CargoId.Cargo__startswith:DECANO|VICE"
+			if err := GetRequestLegacy("UrlcrudAgora", url, &s); err == nil && len(s) > 0 {
 				fmt.Println(s)
 				return s[0], nil
 			} else { //If Jefe_dependencia (GET)
 				fmt.Println("He fallado un poquito en If Supervisor 1 (GET) en el método SupervisorActual, solucioname!!! ", err)
 				outputError = map[string]interface{}{"funcion": "/SupervisorActual3", "err": err.Error(), "status": "404"}
-				return s[0], outputError
+				return supervisor_actual, outputError
 			}
 		} else { //If Jefe_dependencia (GET)
 			fmt.Println("He fallado un poquito en If Jefe_dependencia 2 (GET) en el método SupervisorActual, solucioname!!! ", err)
 			outputError = map[string]interface{}{"funcion": "/SupervisorActua2", "err": err.Error(), "status": "404"}
-			return s[0], outputError
+			return supervisor_actual, outputError
 		}
 	} else { //If Resolucion (GET)
 		fmt.Println("He fallado un poquito en If Resolucion 3 (GET) en el método SupervisorActual, solucioname!!! ", err)
 		outputError = map[string]interface{}{"funcion": "/SupervisorActual", "err": err.Error(), "status": "404"}
-		return s[0], outputError
+		return supervisor_actual, outputError
 	}
 }
 
 // Calcula la fecha de fin de un contrato a partir de la fecha de inicio y el numero de semanas
 func CalcularFechaFin(fecha_inicio time.Time, numero_semanas int) (fecha_fin time.Time) {
-	var entero int
+	var mesEntero int
 	var decimal float32
-	meses := float32(numero_semanas) / 4
-	entero = int(meses)
-	decimal = meses - float32(entero)
-	numero_dias := ((decimal * 4) * 7)
+	dias := numero_semanas * 7
+	meses := float32(dias) / 30
+	mesEntero = int(meses)
+	decimal = meses - float32(mesEntero)
+	numero_dias := decimal * 30
 	f_i := fecha_inicio
-	after := f_i.AddDate(0, entero, int(numero_dias))
+	after := f_i.AddDate(0, mesEntero, int(numero_dias))
 	return after
 }
