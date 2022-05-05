@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -33,16 +34,17 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 	return err
 }
 
-// Envia una petición
+// Envia una petición con datos a endponts que responden con el body sin encapsular
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
-	if err := SendJson(url, trequest, target, &datajson); err != nil {
+	if err := SendJson(url, trequest, &target, &datajson); err != nil {
 		return err
 	}
 	return nil
 }
 
+// Envia una petición al endpoint indicado y extrae la respuesta del campo Data para retornarla
 func GetRequestNew(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
@@ -53,6 +55,7 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 	return err
 }
 
+// Envia una petición a endponts que responden con el body sin encapsular
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
 
@@ -111,6 +114,9 @@ func SendJson(url string, trequest string, target interface{}, datajson interfac
 	}
 	client := &http.Client{}
 	req, err := http.NewRequest(trequest, url, b)
+	// headers para asegurar compatibilidad con GestorDocumentalMid
+	req.Header.Set("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 	r, err := client.Do(req)
 	if err != nil {
 		beego.Error("error", err)
@@ -324,6 +330,22 @@ func formatNumberString(x string, precision int, thousand string, decimal string
 	}
 
 	return result + extra
+}
+
+// Obtiene los datos del usuario autenticado
+func GetUsuario(usuario string) (nombreUsuario map[string]interface{}, err error) {
+	if len(usuario) > 0 {
+		var decData map[string]interface{}
+		if data, err6 := base64.StdEncoding.DecodeString(usuario); err6 != nil {
+			return nombreUsuario, err6
+		} else {
+			if err7 := json.Unmarshal(data, &decData); err7 != nil {
+				return nombreUsuario, err7
+			}
+		}
+		nombreUsuario = decData["user"].(map[string]interface{})
+	}
+	return nombreUsuario, err
 }
 
 // Manejo único de errores para controladores sin repetir código

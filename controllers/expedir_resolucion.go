@@ -2,10 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
@@ -27,31 +25,17 @@ func (c *ExpedirResolucionController) URLMapping() {
 // @Title Expedir
 // @Description create Expedir
 // @Param	body		body 	models.ExpedicionResolucion	true		"body for Expedicion Resolucion content"
-// @Success 201 {int} models.ExpedicionResolucion
+// @Success 201 {object} models.ExpedicionResolucion
 // @Failure 400 bad request
-// @Failure 404 aborted by server
+// @Failure 500 Internal server error
 // @router /expedir [post]
 func (c *ExpedirResolucionController) Expedir() {
-
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.Expedir2(m); err == nil {
-			fmt.Println("Sisi")
+		if err := helpers.ExpedirResolucion(m); err == nil {
 			c.Ctx.Output.SetStatus(201)
 			c.Data["json"] = map[string]interface{}{"Success": true, "Status": "201", "Message": "Successful", "Data": m}
 		} else {
@@ -67,25 +51,12 @@ func (c *ExpedirResolucionController) Expedir() {
 // @Title ValidarDatosExpedicion
 // @Description create ValidarDatosExpedicion
 // @Param	body		body 	[]models.ExpedicionResolucion	true		"body for Validar Datos Expedición content"
-// @Success 201 {string}
+// @Success 201 {string} Ok
 // @Failure 400 bad request
-// @Failure 404 aborted by server
+// @Failure 500 Internal server error
 // @router /validar_datos_expedicion [post]
 func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
-
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionResolucion
 
@@ -105,26 +76,13 @@ func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 // ExpedirModificacion ...
 // @Title ExpedirModificacion
 // @Description create ExpedirModificacion
-// @Param	body		body 	[]models.ExpedicionResolucion	true		"body for Validar Datos Expedición content"
-// @Success 201 {int} models.ExpedicionResolucion
+// @Param	body		body 	models.ExpedicionResolucion	true		"body for Validar Datos Expedición content"
+// @Success 201 {object} models.ExpedicionResolucion
 // @Failure 400 bad request
-// @Failure 404 aborted by server
+// @Failure 500 Internal server error
 // @router /expedirModificacion [post]
 func (c *ExpedirResolucionController) ExpedirModificacion() {
-
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionResolucion
 	// If 13 - Unmarshal
@@ -144,31 +102,18 @@ func (c *ExpedirResolucionController) ExpedirModificacion() {
 // Cancelar ...
 // @Title Cancelar
 // @Description create Cancelar
-// @Param	body		body 	[]models.ExpedicionCancelacion	true		"body for Expedición a cancelar content"
-// @Success 201 {int} models.ExpedicionCancelacion
+// @Param	body		body 	models.ExpedicionCancelacion	true		"body for Expedición a cancelar content"
+// @Success 201 {object} models.ExpedicionCancelacion
 // @Failure 400 bad request
-// @Failure 404 aborted by server
+// @Failure 500 Internal server error
 // @router /cancelar [post]
 func (c *ExpedirResolucionController) Cancelar() {
-
-	defer func() {
-		if err := recover(); err != nil {
-			logs.Error(err)
-			localError := err.(map[string]interface{})
-			c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + "ExpedirResolucionController" + "/" + (localError["funcion"]).(string))
-			c.Data["data"] = (localError["err"])
-			if status, ok := localError["status"]; ok {
-				c.Abort(status.(string))
-			} else {
-				c.Abort("404")
-			}
-		}
-	}()
+	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
 	var m models.ExpedicionCancelacion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.Cancelar(m); err == nil {
+		if err := helpers.ExpedirCancelacion(m); err == nil {
 			c.Ctx.Output.SetStatus(201)
 			c.Data["json"] = map[string]interface{}{"Success": true, "Status": "201", "Message": "Successful", "Data": m}
 		} else {
