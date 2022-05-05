@@ -34,9 +34,9 @@ func TestResolucionesGetOne(t *testing.T) {
 }
 
 func TestResolucionesGetAll(t *testing.T) {
-	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/"); err == nil {
+	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones?limit=10&offset=0"); err == nil {
 		if response.StatusCode != 200 {
-			t.Error("Error TestResolucionesGetAll: Se esperaba 400 y se obtuvo", response.StatusCode)
+			t.Error("Error TestResolucionesGetAll: Se esperaba 200 y se obtuvo", response.StatusCode)
 			t.Fail()
 		} else {
 			t.Log("TestResolucionesGetAll Finalizado Correctamente (OK)")
@@ -50,7 +50,7 @@ func TestResolucionesGetAll(t *testing.T) {
 func TestResolucionesConsultaDocente(t *testing.T) {
 	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/consultar_docente/79777053"); err == nil {
 		if response.StatusCode != 200 {
-			t.Error("Error TestResolucionesConsultaDocente: Se esperaba 400 y se obtuvo", response.StatusCode)
+			t.Error("Error TestResolucionesConsultaDocente: Se esperaba 200 y se obtuvo", response.StatusCode)
 			t.Fail()
 		} else {
 			t.Log("TestResolucionesConsultaDocente Finalizado Correctamente (OK)")
@@ -61,16 +61,58 @@ func TestResolucionesConsultaDocente(t *testing.T) {
 	}
 }
 
-func TestResolucionesGetExpedidas(t *testing.T) {
-	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/resoluciones_expedidas"); err == nil {
+func TestGetResolucionesInscritas(t *testing.T) {
+	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/resoluciones_inscritas?limit=10&offset=0"); err == nil {
 		if response.StatusCode != 200 {
-			t.Error("Error TestResolucionesGetExpedidas: Se esperaba 400 y se obtuvo", response.StatusCode)
+			t.Error("Error TestGetResolucionesInscritas: Se esperaba 200 y se obtuvo", response.StatusCode)
+			t.Fail()
+		} else {
+			t.Log("TestGetResolucionesInscritas Finalizado Correctamente (OK)")
+		}
+	} else {
+		t.Error("Error TestGetResolucionesInscritas:", err.Error())
+		t.Fail()
+	}
+}
+
+func TestGetResolucionesAprobadas(t *testing.T) {
+	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/resoluciones_aprobadas?limit=10&offset=0"); err == nil {
+		if response.StatusCode != 200 {
+			t.Error("Error TestGetResolucionesAprobadas: Se esperaba 200 y se obtuvo", response.StatusCode)
+			t.Fail()
+		} else {
+			t.Log("TestGetResolucionesAprobadas Finalizado Correctamente (OK)")
+		}
+	} else {
+		t.Error("Error TestGetResolucionesAprobadas:", err.Error())
+		t.Fail()
+	}
+}
+
+func TestResolucionesGetExpedidas(t *testing.T) {
+	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/resoluciones_expedidas?limit=10&offset=0"); err == nil {
+		if response.StatusCode != 200 {
+			t.Error("Error TestResolucionesGetExpedidas: Se esperaba 200 y se obtuvo", response.StatusCode)
 			t.Fail()
 		} else {
 			t.Log("TestResolucionesGetExpedidas Finalizado Correctamente (OK)")
 		}
 	} else {
 		t.Error("Error TestResolucionesGetExpedidas:", err.Error())
+		t.Fail()
+	}
+}
+
+func TestResolucionesGenerarResolucion(t *testing.T) {
+	if response, err := http.Get("http://localhost:8529/v1/gestion_resoluciones/generar_resolucion/219"); err == nil {
+		if response.StatusCode != 200 {
+			t.Error("Error TestResolucionesGenerarResolucion: Se esperaba 200 y se obtuvo", response.StatusCode)
+			t.Fail()
+		} else {
+			t.Log("TestResolucionesGenerarResolucion Finalizado Correctamente (OK)")
+		}
+	} else {
+		t.Error("Error TestResolucionesGenerarResolucion:", err.Error())
 		t.Fail()
 	}
 }
