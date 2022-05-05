@@ -1,9 +1,6 @@
 package helpers
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +55,8 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 			}
 		} else if err2 != nil {
 			panic(err2.Error())
+		} else if p == nil || len(*p) == 0 {
+			return 0, nil
 		}
 	} else {
 		return 0, nil
@@ -90,17 +89,7 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 		panic(err4)
 	}
 
-	var decData map[string]interface{}
-	if data, err6 := base64.StdEncoding.DecodeString(nuevaRes.Usuario); err6 != nil {
-		panic(err6.Error())
-	} else {
-		if err7 := json.Unmarshal(data, &decData); err7 != nil {
-			panic(err7)
-		}
-	}
-	usuario := decData["user"].(map[string]interface{})["sub"].(string)
-
-	if err5 := CambiarEstadoResolucion(resolucionId, "RSOL", usuario); err5 != nil {
+	if err5 := CambiarEstadoResolucion(resolucionId, "RSOL", nuevaRes.Usuario); err5 != nil {
 		logs.Error(err5)
 		panic(err5.Error())
 	}
@@ -132,6 +121,7 @@ func InsertarResolucionCompleta(v models.ContenidoResolucion) (resolucionId int,
 	var resp models.Resolucion
 	v.Resolucion.Activo = true
 	v.Resolucion.DependenciaId = v.Vinculacion.FacultadId
+	v.Resolucion.DependenciaFirmaId = v.Resolucion.DependenciaId
 	v.Resolucion.Vigencia, _, _ = time.Now().Date()
 
 	if err := SendRequestNew("UrlCrudResoluciones", "resolucion", "POST", &resp, &v.Resolucion); err != nil {
@@ -269,7 +259,7 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro string, nivelFiltro string, dedFiltro string, estadoFiltro string, limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "ListarResoluciones", "err": err, "status": "500"}
+			outputError = map[string]interface{}{"funcion": "ListarResolucionesInscritas", "err": err, "status": "500"}
 			panic(outputError)
 		}
 	}()
@@ -300,9 +290,8 @@ func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro s
 		if err = GetRequestNew("UrlcrudResoluciones", url3, &rest); err != nil {
 			panic(err.Error())
 		}
-		url2 := "resolucion_vinculacion_docente/" + strconv.Itoa(rest[0].ResolucionId.Id)
+		url2 := "resolucion_vinculacion_docente/" + strconv.Itoa(res[i].Id)
 		if err = GetRequestNew("UrlCrudResoluciones", url2, &resv); err != nil {
-			fmt.Println("sisi")
 			panic(err.Error())
 		}
 		if strings.Contains(strings.ToLower(resv.NivelAcademico), strings.ToLower(nivelFiltro)) {
@@ -324,11 +313,11 @@ func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro s
 						}
 						if strings.Contains(strings.ToLower(tipo.Nombre), strings.ToLower(tipoResFiltro)) {
 							resolucion := &models.Resoluciones{
-								Id:               res[0].Id,
-								NumeroResolucion: res[0].NumeroResolucion,
-								Vigencia:         res[0].Vigencia,
-								Periodo:          res[0].Periodo,
-								Semanas:          res[0].NumeroSemanas,
+								Id:               res[i].Id,
+								NumeroResolucion: res[i].NumeroResolucion,
+								Vigencia:         res[i].Vigencia,
+								Periodo:          res[i].Periodo,
+								Semanas:          res[i].NumeroSemanas,
 								NivelAcademico:   resv.NivelAcademico,
 								Dedicacion:       resv.Dedicacion,
 								Facultad:         dep.Nombre,
@@ -637,17 +626,20 @@ func CambiarEstadoResolucion(resolucionId int, estado, usuario string) (err erro
 		}
 	}
 
-	var respNuevoEstado models.ResolucionEstado
-	nuevoEstado := models.ResolucionEstado{}
-	nuevoEstado.Activo = true
-	nuevoEstado.EstadoResolucionId = objEstado[0].Id
-	nuevoEstado.ResolucionId = &models.Resolucion{Id: resolucionId}
-	nuevoEstado.Usuario = usuario
-	err = SendRequestNew("UrlcrudResoluciones", "resolucion_estado", "POST", &respNuevoEstado, &nuevoEstado)
-	if err != nil {
+	if nombreUsuario, err := GetUsuario(usuario); err == nil {
+		var respNuevoEstado models.ResolucionEstado
+		nuevoEstado := models.ResolucionEstado{}
+		nuevoEstado.Activo = true
+		nuevoEstado.EstadoResolucionId = objEstado[0].Id
+		nuevoEstado.ResolucionId = &models.Resolucion{Id: resolucionId}
+		nuevoEstado.Usuario = nombreUsuario["sub"].(string)
+		err = SendRequestNew("UrlcrudResoluciones", "resolucion_estado", "POST", &respNuevoEstado, &nuevoEstado)
+		if err != nil {
+			return err
+		}
+	} else {
 		return err
 	}
-
 	return nil
 }
 
@@ -711,7 +703,7 @@ func ConsultaDocente(DocenteId int) (listaRes []models.Resoluciones, outputError
 		panic(err.Error())
 	}
 
-	url1 := "vinculacion_docente?limit=0&query=Activo:true,PersonaId:" + strconv.Itoa(DocenteId)
+	url1 := "vinculacion_docente?limit=0&order=desc&sortby=Id&query=Activo:true,PersonaId:" + strconv.Itoa(DocenteId)
 	if err = GetRequestNew("UrlcrudResoluciones", url1, &vinculaciones); err != nil {
 		panic(err.Error())
 	}

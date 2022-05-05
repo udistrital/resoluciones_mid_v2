@@ -48,6 +48,10 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 			panic(err4.Error())
 		}
 
+		if previnculaciones[i].NumeroContrato == nil {
+			previnculaciones[i].NumeroContrato = new(string)
+		}
+
 		vinculacion := &models.Vinculaciones{
 			Id:                   previnculaciones[i].Id,
 			Nombre:               persona.NomProveedor,
@@ -59,7 +63,7 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 			Categoria:            strings.Trim(previnculaciones[i].Categoria, " "),
 			Dedicacion:           previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion,
 			ValorContratoFormato: FormatMoney(int(previnculaciones[i].ValorContrato), 2),
-			NumeroContrato:       previnculaciones[i].NumeroContrato,
+			NumeroContrato:       *previnculaciones[i].NumeroContrato,
 			Vigencia:             previnculaciones[i].Vigencia,
 			ProyectoCurricularId: previnculaciones[i].ProyectoCurricularId,
 			Disponibilidad:       disponibilidad[0].Disponibilidad,
@@ -157,6 +161,7 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 	}()
 
 	var vinculaciones []models.VinculacionDocente
+	vigencia := strconv.Itoa(d.Vigencia)
 	for i := range d.Docentes {
 		docDocente, e1 := strconv.Atoi(d.Docentes[i].DocDocente)
 		horas, e2 := strconv.Atoi(d.Docentes[i].HorasLectivas)
@@ -168,6 +173,7 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 		vinculacion := &models.VinculacionDocente{
 			Vigencia:                       d.Vigencia,
 			PersonaId:                      float64(docDocente),
+			NumeroContrato:                 nil,
 			NumeroHorasSemanales:           horas,
 			NumeroSemanas:                  d.NumeroSemanas,
 			ResolucionVinculacionDocenteId: d.ResolucionData,
@@ -177,6 +183,24 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 			DedicacionId:                   dedicacionId,
 			Activo:                         true,
 		}
+
+		if d.ResolucionData.NivelAcademico == "PREGRADO" {
+			puntoSalarialId, _, err := CargarParametroPeriodo(vigencia, "PSAL")
+			if err != nil {
+				logs.Error(err)
+				panic(err)
+			}
+			vinculacion.PuntoSalarialId = puntoSalarialId
+		}
+		if d.ResolucionData.NivelAcademico == "POSGRADO" {
+			salarioMinimoId, _, err2 := CargarParametroPeriodo(vigencia, "SMMLV")
+			if err2 != nil {
+				logs.Error(err2)
+				panic(err2)
+			}
+			vinculacion.SalarioMinimoId = salarioMinimoId
+		}
+
 		vinculaciones = append(vinculaciones, *vinculacion)
 	}
 
@@ -201,7 +225,6 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 	if vinculaciones, err = CalcularSalarioPrecontratacion(vinculaciones); err != nil {
 		panic(err)
 	}
-
 	var vinculacionesRegistradas []models.VinculacionDocente
 	for i := range vinculaciones {
 		var vRegistrada models.VinculacionDocente
@@ -287,14 +310,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaVinculacion.VigenciaRp = 0
 	}
 
-	// Se desactiva la vinculación original
 	var vinc *models.VinculacionDocente
-	vinculacion.Activo = false
-	if err2 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &vinc, &vinculacion); err2 != nil {
-		panic("Desactivando vinculacion -> " + err2.Error())
-	}
-	vinc = nil
-
 	// Se registra la nueva vinculación
 	if err3 := SendRequestNew("UrlcrudResoluciones", "vinculacion_docente", "POST", &vinc, &nuevaVinculacion); err3 != nil {
 		panic("Registrando nueva vinculacion -> " + err3.Error())

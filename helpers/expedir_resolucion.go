@@ -8,22 +8,22 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
-func SupervisorActual(id_resolucion int) (supervisor_actual models.SupervisorContrato, outputError map[string]interface{}) {
+func SupervisorActual(resolucionId int) (supervisor_actual models.SupervisorContrato, outputError map[string]interface{}) {
 	var r models.Resolucion
 	var j []models.JefeDependencia
 	var s []models.SupervisorContrato
-	//var fecha = time.Now().Format("2006-01-02")   -- Se debe dejar este una vez se suba
-	var fecha = "2018-01-01"
+	var fecha = time.Now().Format("2006-01-02") // -- Se debe dejar este una vez se suba
+	// var fecha = "2018-01-01"
 	//If Resolucion (GET)
-	url := "resolucion/" + strconv.Itoa(id_resolucion)
+	url := "resolucion/" + strconv.Itoa(resolucionId)
 	if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {
 		//If Jefe_dependencia (GET)
 		url = "jefe_dependencia?query=DependenciaId:" + strconv.Itoa(r.DependenciaId) + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha
 		if err := GetRequestLegacy("UrlcrudCore", url, &j); err == nil {
 			//If Supervisor (GET)
-			url = "supervisor_contrato?query=Documento:" + strconv.Itoa(j[0].TerceroId) + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha + "&CargoId.Cargo__startswith:DECANO|VICE"
+			url = "supervisor_contrato?order=desc&sortby=Id&query=Documento:" + strconv.Itoa(j[0].TerceroId) // + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha + "&CargoId.Cargo__startswith:DECANO|VICE"
 			if err := GetRequestLegacy("UrlcrudAgora", url, &s); err == nil {
-				fmt.Println(s[0])
+				fmt.Println(s)
 				return s[0], nil
 			} else { //If Jefe_dependencia (GET)
 				fmt.Println("He fallado un poquito en If Supervisor 1 (GET) en el método SupervisorActual, solucioname!!! ", err)
@@ -42,6 +42,7 @@ func SupervisorActual(id_resolucion int) (supervisor_actual models.SupervisorCon
 	}
 }
 
+// Calcula la fecha de fin de un contrato a partir de la fecha de inicio y el numero de semanas
 func CalcularFechaFin(fecha_inicio time.Time, numero_semanas int) (fecha_fin time.Time) {
 	var entero int
 	var decimal float32

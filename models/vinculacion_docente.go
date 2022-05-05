@@ -4,7 +4,7 @@ import "time"
 
 type VinculacionDocente struct {
 	Id                             int
-	NumeroContrato                 string
+	NumeroContrato                 *string
 	Vigencia                       int
 	PersonaId                      float64
 	NumeroHorasSemanales           int
