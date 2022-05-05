@@ -72,7 +72,7 @@ func ListarDocentesHorasLectivas(vigencia, periodo, dedicacion, facultad, nivelA
 	}
 	var docentesCarga models.ObjetoCargaLectiva
 
-	url := fmt.Sprintf("carga_lectiva/%s/%s/%d/%s/%s", vigencia, "1", dedicacionOld, facultadOld, nivelAcademico)
+	url := fmt.Sprintf("carga_lectiva/%s/%s/%d/%s/%s", vigencia, periodo, dedicacionOld, facultadOld, nivelAcademico)
 	if err2 := GetRequestWSO2("NscrudAcademica", url, &docentesCarga); err2 != nil {
 		panic(err2.Error())
 	}

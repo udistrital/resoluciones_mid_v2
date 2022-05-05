@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -105,17 +107,33 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		}
 	*/
 
-	// Consultar supervisor de contrato de Argo con la dependencia homologada
-	var ordenadorGasto models.SupervisorContrato
-	var ordenadoresGasto []models.SupervisorContrato
-	if dependenciaId, errr := HomologarFacultad("new", strconv.Itoa(datos.Resolucion.DependenciaId)); errr != nil {
-		return doc, errr
+	// Consultar ordenador del gasto por core_amazon_crud
+	var ordenadorGasto models.OrdenadorGasto
+	var ordenadoresGasto []models.OrdenadorGasto
+	url := "ordenador_gasto?query=DependenciaId:" + strconv.Itoa(datos.Resolucion.DependenciaFirmaId)
+	if err := GetRequestLegacy("UrlcrudCore", url, &ordenadoresGasto); err != nil {
+		logs.Error(err)
+		panic(err.Error())
 	} else {
-		url := "supervisor_contrato?limit=1&sortby=Id&order=desc&query=DependenciaSupervisor:DEP" + dependenciaId
-		if nErr := GetRequestLegacy("UrlcrudAgora", url, &ordenadoresGasto); nErr != nil {
-
-		} else {
+		if len(ordenadoresGasto) > 0 {
 			ordenadorGasto = ordenadoresGasto[0]
+		} else {
+			if err := GetRequestLegacy("UrlcrudCore", "ordenador_gasto/1", &ordenadorGasto); err != nil {
+				logs.Error(err)
+				panic(err.Error())
+			}
+		}
+		var jefeDependencia []models.JefeDependencia
+		fechaActual := time.Now().Format("2006-01-02")
+		url2 := "jefe_dependencia?query=DependenciaId:" + strconv.Itoa(datos.Resolucion.DependenciaFirmaId) + ",FechaFin__gte:" + fechaActual + ",FechaInicio__lte:" + fechaActual
+		if err := GetRequestLegacy("UrlcrudCore", url2, &jefeDependencia); err != nil {
+			logs.Error(err)
+			panic(err.Error())
+		}
+		if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
+			ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
+		} else {
+			panic(err)
 		}
 	}
 
@@ -238,9 +256,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.Ln(lineHeight * 10)
 
 	pdf.SetFont("MinionPro-MediumCn", "", fontSize)
-	pdf.WriteAligned(0, lineHeight, ordenadorGasto.Nombre, "C")
+	pdf.WriteAligned(0, lineHeight, strings.ToUpper(ordenadorGasto.NombreOrdenador), "C")
 	pdf.Ln(lineHeight)
-	pdf.WriteAligned(0, lineHeight, ordenadorGasto.Cargo, "C")
+	pdf.WriteAligned(0, lineHeight, strings.ToUpper(ordenadorGasto.Cargo), "C")
 	pdf.Ln(lineHeight * 2)
 
 	var cuadroResponsabilidades []map[string]interface{}
@@ -478,4 +496,31 @@ func TranslateMonth(engMonth string) (espMonth string) {
 	}
 	espMonth, _ = meses[engMonth]
 	return
+}
+
+// Realiza el proceso de almacenar la resolución a traves del gestór documental
+func AlmacenarResolucionGestorDocumental(resolucionId int) (documento models.Documento, outputError map[string]interface{}) {
+	var doc models.DocumentoContainer
+	if documentoGenerado, err := GenerarResolucion(resolucionId); err == nil {
+		data := make([]map[string]interface{}, 0)
+		data = append(data, map[string]interface{}{
+			"IdTipoDocumento": 22,
+			"file":            documentoGenerado,
+			"nombre":          "ResolucionDVE" + strconv.Itoa(resolucionId),
+			"descripcion":     "Resolución de vinculación especial",
+			"metadatos":       map[string]interface{}{},
+		})
+		url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String("UrlGestorDocumental") + "document/upload"
+		if err := SendJson(url, "POST", &doc, data); err != nil {
+			logs.Error(err.Error())
+			outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": err.Error(), "status": "500"}
+		}
+	} else {
+		logs.Error(err)
+		outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": err, "status": "500"}
+	}
+	if doc.Status != "200" {
+		outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": doc.Error, "status": doc.Status}
+	}
+	return doc.Res, outputError
 }

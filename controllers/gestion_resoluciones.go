@@ -338,3 +338,29 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 	}
 	c.ServeJSON()
 }
+
+// ActualizarEstado ...
+// @Title ActualizarEstado
+// @Description Modifica el estado de una resolución
+// @Param	body		body 	models.NuevoEstadoResolucion	true		"body for NuevoEstadoResolucion content"
+// @Success 201 {string} string		Nuevo estado de la resolución
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /actualizar_estado [post]
+func (c *GestionResolucionesController) ActualizarEstado() {
+	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	var m models.NuevoEstadoResolucion
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
+		if err2 := helpers.CambiarEstadoResolucion(m.ResolucionId, m.Estado, m.Usuario); err2 == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Resolución insertada con exito", "Data": "OK"}
+		} else {
+			panic(err)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "ActualizarEstado", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}

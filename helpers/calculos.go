@@ -25,13 +25,13 @@ func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDoce
 	var a string
 	var categoria string
 
-	salarioMinimo, err1 := CargarParametroPeriodo(vigencia, "SMMLV")
+	_, salarioMinimo, err1 := CargarParametroPeriodo(vigencia, "SMMLV")
 	if err1 != nil {
 		logs.Error(err1)
 		panic(err1)
 	}
 
-	puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
+	_, puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
 	if err != nil {
 		logs.Error(err)
 		panic(err)
@@ -54,12 +54,12 @@ func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDoce
 			predicados = "valor_salario_minimo(" + strconv.Itoa(int(salarioMinimo)) + "," + vigencia + ")." + "\n"
 			docente.NumeroSemanas = 1
 		} else if strings.ToLower(nivelAcademico) == "pregrado" {
-			predicados = "valor_punto(" + strconv.Itoa(int(puntoSalarial)) + ", " + vigencia + ")." + "\n"
+			predicados = "valor_punto(" + strconv.Itoa(int(puntoSalarial)) + "," + vigencia + ")." + "\n"
 		}
 
-		predicados = predicados + "categoria(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(categoria) + ", " + vigencia + ")." + "\n"
-		predicados = predicados + "vinculacion(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(docente.ResolucionVinculacionDocenteId.Dedicacion) + ", " + vigencia + ")." + "\n"
-		predicados = predicados + "horas(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strconv.Itoa(docente.NumeroHorasSemanales*docente.NumeroSemanas) + ", " + vigencia + ")." + "\n"
+		predicados = predicados + "categoria(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(categoria) + "," + vigencia + ")." + "\n"
+		predicados = predicados + "vinculacion(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(docente.ResolucionVinculacionDocenteId.Dedicacion) + "," + vigencia + ")." + "\n"
+		predicados = predicados + "horas(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strconv.Itoa(docente.NumeroHorasSemanales*docente.NumeroSemanas) + "," + vigencia + ")." + "\n"
 		reglasbase, err4 := CargarReglasBase("CDVE")
 		if err4 != nil {
 			logs.Error(err4)
@@ -129,13 +129,13 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 
 	vigencia := strconv.Itoa(d[0].Vigencia)
 
-	puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
+	_, puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
 	if err != nil {
 		logs.Error(err)
 		panic(err)
 	}
 
-	salarioMinimo, err2 := CargarParametroPeriodo(vigencia, "SMMLV")
+	_, salarioMinimo, err2 := CargarParametroPeriodo(vigencia, "SMMLV")
 	if err2 != nil {
 		logs.Error(err2)
 		panic(err2)
@@ -240,7 +240,7 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 }
 
 // Carga el parámetro para el periodo/vigencia indicado y extrae el valor correspondiente
-func CargarParametroPeriodo(vigencia, codigo string) (parametro float64, outputError map[string]interface{}) {
+func CargarParametroPeriodo(vigencia, codigo string) (id int, parametro float64, outputError map[string]interface{}) {
 	var s []models.ParametroPeriodo
 	var valor map[string]interface{}
 	var url string
@@ -251,14 +251,14 @@ func CargarParametroPeriodo(vigencia, codigo string) (parametro float64, outputE
 	}
 	if err := GetRequestNew("UrlcrudParametros", url, &s); err != nil {
 		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo", "err": err.Error(), "status": "500"}
-		return parametro, outputError
+		return id, parametro, outputError
 	}
 	if err2 := json.Unmarshal([]byte(s[0].Valor), &valor); err2 != nil {
 		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-parse", "err": err2.Error(), "status": "500"}
-		return parametro, outputError
+		return id, parametro, outputError
 	}
 
-	return valor["Valor"].(float64), outputError
+	return s[0].Id, valor["Valor"].(float64), outputError
 }
 
 // Calcula la sumatoria del valor de los contratos de una resolución
