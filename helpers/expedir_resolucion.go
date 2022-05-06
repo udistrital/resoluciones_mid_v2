@@ -8,12 +8,12 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
-func SupervisorActual(resolucionId int) (supervisor_actual models.SupervisorContrato, outputError map[string]interface{}) {
+func SupervisorActual(resolucionId int) (supervisorActual models.SupervisorContrato, outputError map[string]interface{}) {
 	var r models.Resolucion
 	var j []models.JefeDependencia
 	var s []models.SupervisorContrato
-	var fecha = time.Now().Format("2006-01-02") // -- Se debe dejar este una vez se suba
-	// var fecha = "2018-01-01"
+	// var fecha = time.Now().Format("2006-01-02") // TODO -- Se debe dejar este una vez se suba
+	var fecha = "2018-01-01"
 	//If Resolucion (GET)
 	url := "resolucion/" + strconv.Itoa(resolucionId)
 	if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {
@@ -28,30 +28,30 @@ func SupervisorActual(resolucionId int) (supervisor_actual models.SupervisorCont
 			} else { //If Jefe_dependencia (GET)
 				fmt.Println("He fallado un poquito en If Supervisor 1 (GET) en el método SupervisorActual, solucioname!!! ", err)
 				outputError = map[string]interface{}{"funcion": "/SupervisorActual3", "err": err.Error(), "status": "404"}
-				return supervisor_actual, outputError
+				return supervisorActual, outputError
 			}
 		} else { //If Jefe_dependencia (GET)
 			fmt.Println("He fallado un poquito en If Jefe_dependencia 2 (GET) en el método SupervisorActual, solucioname!!! ", err)
 			outputError = map[string]interface{}{"funcion": "/SupervisorActua2", "err": err.Error(), "status": "404"}
-			return supervisor_actual, outputError
+			return supervisorActual, outputError
 		}
 	} else { //If Resolucion (GET)
 		fmt.Println("He fallado un poquito en If Resolucion 3 (GET) en el método SupervisorActual, solucioname!!! ", err)
 		outputError = map[string]interface{}{"funcion": "/SupervisorActual", "err": err.Error(), "status": "404"}
-		return supervisor_actual, outputError
+		return supervisorActual, outputError
 	}
 }
 
 // Calcula la fecha de fin de un contrato a partir de la fecha de inicio y el numero de semanas
-func CalcularFechaFin(fecha_inicio time.Time, numero_semanas int) (fecha_fin time.Time) {
+func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.Time) {
 	var mesEntero int
 	var decimal float32
-	dias := numero_semanas * 7
+	dias := numeroSemanas * 7
 	meses := float32(dias) / 30
 	mesEntero = int(meses)
 	decimal = meses - float32(mesEntero)
-	numero_dias := decimal * 30
-	f_i := fecha_inicio
-	after := f_i.AddDate(0, mesEntero, int(numero_dias))
+	numeroDias := decimal * 30
+	f := fechaInicio
+	after := f.AddDate(0, mesEntero, int(numeroDias))
 	return after
 }

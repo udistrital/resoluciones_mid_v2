@@ -374,13 +374,12 @@ func ValidarDatosExpedicion(m models.ExpedicionResolucion) (outputError map[stri
 }
 
 func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]interface{}) {
-
-	/* defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "/ExpedirModificacion", "err": err, "status": "502"}
 			panic(outputError)
 		}
-	}() */
+	}()
 
 	var temp int
 	var cdve int
@@ -760,12 +759,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 }
 
 func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]interface{}) {
-	/* defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "/ExpedirCancelacion", "err": err, "status": "502"}
 			panic(outputError)
 		}
-	}() */
+	}()
 
 	vin := m.Vinculaciones
 
