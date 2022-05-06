@@ -12,7 +12,7 @@ import (
 )
 
 // Calcula el valor del contrato para cada docente utilizando el conjunto de reglas CDVE
-func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDocente) (docentes_a_insertar []models.VinculacionDocente, outputError map[string]interface{}) {
+func CalcularSalarioPrecontratacion(docentesVincular []models.VinculacionDocente) (docentesInsertar []models.VinculacionDocente, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "/CalcularSalarioPrecontratacion", "err": err, "status": "500"}
@@ -20,8 +20,8 @@ func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDoce
 		}
 	}()
 
-	nivelAcademico := docentes_a_vincular[0].ResolucionVinculacionDocenteId.NivelAcademico
-	vigencia := strconv.Itoa(int(docentes_a_vincular[0].Vigencia))
+	nivelAcademico := docentesVincular[0].ResolucionVinculacionDocenteId.NivelAcademico
+	vigencia := strconv.Itoa(int(docentesVincular[0].Vigencia))
 	var a string
 	var categoria string
 
@@ -37,7 +37,7 @@ func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDoce
 		panic(err)
 	}
 
-	for x, docente := range docentes_a_vincular {
+	for x, docente := range docentesVincular {
 		p, err2 := EsDocentePlanta(strconv.Itoa(int(docente.PersonaId)))
 		if err2 != nil {
 			logs.Error(err2)
@@ -78,10 +78,10 @@ func CalcularSalarioPrecontratacion(docentes_a_vincular []models.VinculacionDoce
 			logs.Error(err5)
 			panic(err5.Error())
 		}
-		docentes_a_vincular[x].ValorContrato = salario
+		docentesVincular[x].ValorContrato = salario
 
 	}
-	return docentes_a_vincular, nil
+	return docentesVincular, nil
 }
 
 // Calcula el valor de la modificación del contrato de un docente

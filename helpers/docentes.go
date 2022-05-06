@@ -54,6 +54,7 @@ func BuscarDatosPersonalesDocente(personaId float64) (p models.InformacionPerson
 	}
 	persona := personas[0]
 	persona.NomProveedor = fmt.Sprintf("%s %s %s %s", persona.PrimerNombre, persona.SegundoNombre, persona.PrimerApellido, persona.SegundoApellido)
+	persona.CiudadExpedicionDocumento = strconv.Itoa(int(persona.IdCiudadExpedicionDocumento))
 
 	return persona, outputError
 }

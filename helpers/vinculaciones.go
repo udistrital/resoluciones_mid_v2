@@ -19,7 +19,7 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 	var previnculaciones []models.VinculacionDocente
 	var disponibilidad []models.DisponibilidadVinculacion
 	var persona models.InformacionPersonaNatural
-	var ciudad []map[string]interface{}
+	var ciudad map[string]interface{}
 	var err2 map[string]interface{}
 
 	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=Activo:true,ResolucionVinculacionDocenteId.Id:" + resolucionId
@@ -56,7 +56,7 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 			Id:                   previnculaciones[i].Id,
 			Nombre:               persona.NomProveedor,
 			TipoDocumento:        persona.TipoDocumento.ValorParametro,
-			ExpedicionDocumento:  ciudad[0]["Nombre"].(string),
+			ExpedicionDocumento:  ciudad["Nombre"].(string),
 			PersonaId:            previnculaciones[i].PersonaId,
 			NumeroHorasSemanales: previnculaciones[i].NumeroHorasSemanales,
 			NumeroSemanas:        previnculaciones[i].NumeroSemanas,
