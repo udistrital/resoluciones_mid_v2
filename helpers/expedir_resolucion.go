@@ -13,7 +13,7 @@ func SupervisorActual(resolucionId int) (supervisorActual models.SupervisorContr
 	var j []models.JefeDependencia
 	var s []models.SupervisorContrato
 	// var fecha = time.Now().Format("2006-01-02") // TODO -- Se debe dejar este una vez se suba
-	var fecha = "2018-01-01"
+	var fecha = "2021-01-01"
 	//If Resolucion (GET)
 	url := "resolucion/" + strconv.Itoa(resolucionId)
 	if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {

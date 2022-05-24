@@ -124,7 +124,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		}
 		var jefeDependencia []models.JefeDependencia
 		// var fechaActual = time.Now().Format("2006-01-02") // TODO -- Se debe dejar este una vez se suba
-		var fechaActual = "2018-01-01"
+		var fechaActual = "2021-01-01"
 		url2 := "jefe_dependencia?query=DependenciaId:" + strconv.Itoa(datos.Resolucion.DependenciaFirmaId) + ",FechaFin__gte:" + fechaActual + ",FechaInicio__lte:" + fechaActual
 		if err := GetRequestLegacy("UrlcrudCore", url2, &jefeDependencia); err != nil {
 			logs.Error(err)
