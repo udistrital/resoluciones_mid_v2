@@ -52,7 +52,7 @@ func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[str
 func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedPdf string, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "GenerarResolucion", "err": err, "status": "500"}
+			outputError = map[string]interface{}{"funcion": "GenerarInformeVinculaciones", "err": err, "status": "500"}
 			panic(outputError)
 		}
 	}()
@@ -84,6 +84,13 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 
 // Esta función genera un documento en formato pdf con la información de la resolución registrada en la base de datos
 func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculaciones []models.Vinculaciones) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ConstruirDocumentoResolucion", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
 	imgPath := filepath.Join(beego.AppConfig.String("StaticPath"), "img")
 	fontSize := 11.0
@@ -223,7 +230,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 			pdf, outputError = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, tipoResolucion.CodigoAbreviacion)
 			if outputError != nil {
-				return pdf, outputError
+				panic(outputError)
 			}
 
 			pdf.SetLeftMargin(20)
@@ -271,13 +278,23 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		cuadroResponsabilidades = make([]map[string]interface{}, 4)
 	}
 
-	pdf = ConstruirCuadroResp(pdf, cuadroResponsabilidades, true)
+	var err map[string]interface{}
+	if pdf, err = ConstruirCuadroResp(pdf, cuadroResponsabilidades, true); err != nil {
+		panic(err)
+	}
 
-	return pdf, nil
+	return pdf, outputError
 }
 
 // Genera las tablas de las vinculaciones por proyecto curricular de acuerdo al tipo de resolución
 func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vinculaciones, lineHeight, fontSize float64, tipoRes string) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ConstruirTablaVinculaciones", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
 	var proyectoCurricular models.Dependencia
 	w := 18.0
 	minHeight := 3.0 * lineHeight
@@ -291,7 +308,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			url := "dependencia/" + strconv.Itoa(int(vinc.ProyectoCurricularId))
 			if err2 := GetRequestLegacy("UrlcrudOikos", url, &proyectoCurricular); err2 != nil {
 				outputError = map[string]interface{}{"funcion": "/ConstruirTablaVinculaciones-dep", "err": err2.Error(), "status": "500"}
-				return doc, outputError
+				panic(outputError)
 			}
 			pdf.Ln(lineHeight * 2)
 			pdf.SetFont("Calibri", "", fontSize)
@@ -428,7 +445,13 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 }
 
 // Genera la tabla del cuadro de responsabilidades que va l final de cada resolución
-func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp bool) *gofpdf.Fpdf {
+func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp bool) (p *gofpdf.Fpdf, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ConstruirCuadroResp", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
 
 	headers := []string{"Funcion", "Nombre", "Cargo", "Firma"}
 
@@ -464,7 +487,7 @@ func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp b
 		pdf.Ln(-1)
 	}
 
-	return pdf
+	return pdf, outputError
 }
 
 // Codifica el documento pdf en formato Base64
