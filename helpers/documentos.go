@@ -70,6 +70,7 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 
 	pdf, err = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, "RVIN")
 	if err != nil {
+		logs.Error(err)
 		panic(err)
 	}
 	if pdf.Err() {
@@ -101,7 +102,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	var tipoResolucion models.Parametro
 	if err := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(datos.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
 		outputError = map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"}
-		return doc, outputError
+		panic(outputError)
 	}
 
 	/*
@@ -109,7 +110,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		var ordenadoresGasto []map[string]interface{}
 		if errr := GetRequestLegacy("UrlmidTerceros", "tipo/ordenadoresGasto", &ordenadoresGasto); errr != nil {
 			outputError = map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-ter", "err": errr.Error(), "status": "500"}
-			return doc, outputError
+			panic(outputError)
 		}
 	*/
 
@@ -137,10 +138,15 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			logs.Error(err)
 			panic(err.Error())
 		}
-		if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
-			ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
+		if len(jefeDependencia) > 0 {
+			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
+				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
+			} else {
+				logs.Error(err2)
+				panic(err2)
+			}
 		} else {
-			panic(err)
+			panic("No se encontró jefe para la dependencia en el periodo actual")
 		}
 	}
 
@@ -230,6 +236,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 			pdf, outputError = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, tipoResolucion.CodigoAbreviacion)
 			if outputError != nil {
+				logs.Error(outputError)
 				panic(outputError)
 			}
 
@@ -271,8 +278,8 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	var cuadroResponsabilidades []map[string]interface{}
 	if len(datos.Resolucion.CuadroResponsabilidades) > 0 {
 		if err := json.Unmarshal([]byte(datos.Resolucion.CuadroResponsabilidades), &cuadroResponsabilidades); err != nil {
-			outputError = map[string]interface{}{"funcion": "ConstruirDocumentoResolucion", "err": err.Error(), "status": "500"}
-			return nil, outputError
+			logs.Error(err.Error())
+			panic(err.Error())
 		}
 	} else {
 		cuadroResponsabilidades = make([]map[string]interface{}, 4)
@@ -280,6 +287,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 	var err map[string]interface{}
 	if pdf, err = ConstruirCuadroResp(pdf, cuadroResponsabilidades, true); err != nil {
+		logs.Error(err)
 		panic(err)
 	}
 
