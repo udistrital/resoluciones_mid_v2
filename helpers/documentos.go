@@ -19,12 +19,12 @@ import (
 
 // Función que orquesta el proceso de generación de la resolución en formato pdf
 func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[string]interface{}) {
-	defer func() {
+	/* defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "GenerarResolucion", "err": err, "status": "500"}
 			panic(outputError)
 		}
-	}()
+	}() */
 	var pdf *gofpdf.Fpdf
 	var err3 map[string]interface{}
 
@@ -86,12 +86,12 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 
 // Esta función genera un documento en formato pdf con la información de la resolución registrada en la base de datos
 func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculaciones []models.Vinculaciones) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
-	defer func() {
+	/* defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "ConstruirDocumentoResolucion", "err": err, "status": "500"}
 			panic(outputError)
 		}
-	}()
+	}() */
 
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
 	imgPath := filepath.Join(beego.AppConfig.String("StaticPath"), "img")
@@ -123,16 +123,12 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		panic(err.Error())
 	} else {
 		if len(ordenadoresGasto) > 0 {
-			logs.Info("Ordenador del gasto OK")
 			ordenadorGasto = ordenadoresGasto[0]
-			JsonDebug(ordenadoresGasto)
 		} else {
 			if err := GetRequestLegacy("UrlcrudCore", "ordenador_gasto/1", &ordenadorGasto); err != nil {
 				logs.Error(err)
 				panic(err.Error())
 			}
-			logs.Info("Ordenador del gasto OK")
-			JsonDebug(ordenadorGasto)
 		}
 		var jefeDependencia []models.JefeDependencia
 		var fechaActual = time.Now().Format("2006-01-02") // -- Se debe dejar este una vez se suba
@@ -143,10 +139,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			panic(err.Error())
 		}
 		if len(jefeDependencia) > 0 {
-			logs.Info("Jefe de dependencia OK")
-			JsonDebug(jefeDependencia)
 			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
-				logs.Info("Jefe de dependencia OK")
 				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
 			} else {
 				logs.Error(err2)
@@ -224,7 +217,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.SetFont("Calibri-Bold", "B", fontSize)
 	pdf.WriteAligned(0, lineHeight, "RESUELVE", "C")
 	pdf.Ln(lineHeight * 2)
-
+	logs.Info("Antes de Articulos")
 	for _, articulo := range datos.Articulos {
 
 		pdf.SetLeftMargin(20)
@@ -243,6 +236,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 			pdf, outputError = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, tipoResolucion.CodigoAbreviacion)
 			if outputError != nil {
+				logs.Info("Error en tablas de vinculaciones")
 				logs.Error(outputError)
 				panic(outputError)
 			}
@@ -261,7 +255,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			pdf.Ln(lineHeight)
 		}
 	}
-
+	logs.Info("Articulos OK")
 	pdf.Ln(lineHeight)
 	pdf.SetFont("Calibri-Bold", "B", fontSize)
 	pdf.WriteAligned(0, lineHeight, "COMUNÍQUESE Y CÚMPLASE", "C")
@@ -291,13 +285,14 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	} else {
 		cuadroResponsabilidades = make([]map[string]interface{}, 4)
 	}
-
+	logs.Info("Pre cuadro de responsabilidades")
+	JsonDebug(cuadroResponsabilidades)
 	var err map[string]interface{}
 	if pdf, err = ConstruirCuadroResp(pdf, cuadroResponsabilidades, true); err != nil {
 		logs.Error(err)
 		panic(err)
 	}
-
+	logs.Info("Cuadro de responsabilidades OK")
 	return pdf, outputError
 }
 
