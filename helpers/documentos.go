@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -101,8 +102,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 	var tipoResolucion models.Parametro
 	if err := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(datos.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
-		outputError = map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"}
-		panic(outputError)
+		panic(map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"})
 	}
 
 	/*
@@ -123,23 +123,30 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		panic(err.Error())
 	} else {
 		if len(ordenadoresGasto) > 0 {
+			logs.Info("Ordenador del gasto OK")
 			ordenadorGasto = ordenadoresGasto[0]
+			JsonDebug(ordenadoresGasto)
 		} else {
 			if err := GetRequestLegacy("UrlcrudCore", "ordenador_gasto/1", &ordenadorGasto); err != nil {
 				logs.Error(err)
 				panic(err.Error())
 			}
+			logs.Info("Ordenador del gasto OK")
+			JsonDebug(ordenadorGasto)
 		}
 		var jefeDependencia []models.JefeDependencia
-		// var fechaActual = time.Now().Format("2006-01-02") // TODO -- Se debe dejar este una vez se suba
-		var fechaActual = "2021-01-01"
+		var fechaActual = time.Now().Format("2006-01-02") // -- Se debe dejar este una vez se suba
+		// var fechaActual = "2021-01-01"
 		url2 := "jefe_dependencia?query=DependenciaId:" + strconv.Itoa(datos.Resolucion.DependenciaFirmaId) + ",FechaFin__gte:" + fechaActual + ",FechaInicio__lte:" + fechaActual
 		if err := GetRequestLegacy("UrlcrudCore", url2, &jefeDependencia); err != nil {
 			logs.Error(err)
 			panic(err.Error())
 		}
 		if len(jefeDependencia) > 0 {
+			logs.Info("Jefe de dependencia OK")
+			JsonDebug(jefeDependencia)
 			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
+				logs.Info("Jefe de dependencia OK")
 				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
 			} else {
 				logs.Error(err2)
