@@ -118,6 +118,38 @@ func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasResta
 	return salarioTotal, outputError
 }
 
+// Envia a Titan la información necesaria para calcular el valor de un contrato desagregado por rubros
+func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcademico string) (d map[string]interface{}, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "CalcularDesagregadoTitan", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	// var desagregado models.DesagregadoContrato
+	var desagregado map[string]interface{}
+	datos := &models.DatosVinculacion{
+		NumeroContrato: "",
+		Vigencia:       v.Vigencia,
+		Documento:      strconv.Itoa(int(v.PersonaId)),
+		Dedicacion:     dedicacion,
+		Categoria:      v.Categoria,
+		NumeroSemanas:  v.NumeroSemanas,
+		HorasSemanales: v.NumeroHorasSemanales,
+		NivelAcademico: nivelAcademico,
+	}
+	JsonDebug(datos)
+
+	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
+		logs.Error(err.Error())
+		panic("Consultando desagregado -> " + err.Error())
+	}
+	JsonDebug(desagregado)
+
+	return desagregado, outputError
+}
+
 // Calcula el desagregado general unitario para los parámetros recibidos
 func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]interface{}, outputError map[string]interface{}) {
 	defer func() {
