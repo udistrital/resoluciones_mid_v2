@@ -115,10 +115,10 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
 	resolucionId := c.Ctx.Input.Param(":resolucion_id")
-	_, err := strconv.Atoi(resolucionId)
+	id, err := strconv.Atoi(resolucionId)
 
-	if err != nil {
-		panic(map[string]interface{}{"funcion": "DocentesPrevinculados", "err": "Error en los parametros de ingreso", "status": "400"})
+	if err != nil || id <= 0 {
+		panic(map[string]interface{}{"funcion": "DocentesPrevinculados", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId); err2 == nil {
@@ -154,7 +154,7 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 	_, err4 := strconv.Atoi(facultad)
 
 	if (err1 != nil) || (err2 != nil) || (err4 != nil) || (vig == 0) || (per == 0) || (len(vigencia) != 4) {
-		panic(map[string]interface{}{"funcion": "DocentesCargaHoraria", "err": "Error en los parametros de ingreso", "status": "400"})
+		panic(map[string]interface{}{"funcion": "DocentesCargaHoraria", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if respuesta, err := helpers.ListarDocentesCargaHoraria(vigencia, periodo, dedicacion, facultad, nivelAcademico); err == nil {
@@ -236,7 +236,7 @@ func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 			if w, err2 := helpers.CalcularSalarioPrecontratacion(v); err2 == nil {
 				total = int(helpers.CalcularTotalSalarios(w))
 				c.Ctx.Output.SetStatus(201)
-				c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "", "Data": helpers.FormatMoney(total, 2)}
+				c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Cálculo exitoso", "Data": helpers.FormatMoney(total, 2)}
 			} else {
 				panic(err2)
 			}

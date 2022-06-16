@@ -58,9 +58,9 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 		}
 	}()
 	var err map[string]interface{}
-	var v models.VinculacionDocente
+	var v []models.VinculacionDocente
 
-	url := "vinculacion_docente/" + strconv.Itoa(vinculaciones[0].Id)
+	url := "vinculacion_docente?query=Id:" + strconv.Itoa(vinculaciones[0].Id)
 	if err := GetRequestNew("UrlcrudResoluciones", url, &v); err != nil {
 		logs.Error(err.Error())
 		panic(err.Error())
@@ -76,7 +76,7 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 	pdf.AddPage()
 	pdf.SetFont("Calibri", "", fontSize)
 
-	pdf, err = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, "RVIN", v.ResolucionVinculacionDocenteId.NivelAcademico)
+	pdf, err = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, "RVIN", v[0].ResolucionVinculacionDocenteId.NivelAcademico)
 	if err != nil {
 		logs.Error(err)
 		panic(err)
@@ -347,12 +347,12 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			pdf.CellFormat(w-1, lineHeight*2, "Dedicación", "1", 0, "C", false, 0, "")
 			x, y := pdf.GetXY()
 			if nivel == "PREGRADO" {
-				pdf.MultiCell(w-3, lineHeight, "Horas semanales", "1", "C", false)
+				pdf.MultiCell(w-2, lineHeight, "Horas semanales", "1", "C", false)
 			} else {
-				pdf.MultiCell(w-3, lineHeight, "Horas semestrales", "1", "C", false)
+				pdf.MultiCell(w-2, lineHeight, "Horas semestrales", "1", "C", false)
 			}
 			if pdf.GetY()-y > lineHeight {
-				pdf.SetXY(x+w-3, y)
+				pdf.SetXY(x+w-2, y)
 			}
 			x, y = pdf.GetXY()
 			pdf.MultiCell(w, lineHeight, "Periodo de vinculación", "1", "C", false)
@@ -412,9 +412,9 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 		pdf.CellFormat(w, cellHeight, vinc.Categoria, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w-1, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
 		if nivel == "PREGRADO" {
-			pdf.CellFormat(w-3, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", 0, "C", false, 0, "")
 		} else {
-			pdf.CellFormat(w-3, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales*vinc.NumeroSemanas), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales*vinc.NumeroSemanas), "1", 0, "C", false, 0, "")
 		}
 		switch tipoRes {
 		case "RVIN":

@@ -52,7 +52,7 @@ func (c *GestionPlantillasController) Post() {
 // GetOne ...
 // @Title GetOne
 // @Description get GestionPlantillas by id
-// @Param	id		path 	string	true		"The key for staticblock"
+// @Param	id		path 	string	true		"Id de la plantilla a consultar"
 // @Success 200 {object} models.ContenidoResolucion
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -63,7 +63,7 @@ func (c *GestionPlantillasController) GetOne() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, err := strconv.Atoi(idStr)
 
-	if err != nil {
+	if err != nil || id <= 0 {
 		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
@@ -88,7 +88,7 @@ func (c *GestionPlantillasController) GetAll() {
 
 	if l, err := helpers.ListarPlantillas(); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla cargada con exito", "Data": l}
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantillas consultadas con exito", "Data": l}
 	} else {
 		panic(err)
 	}

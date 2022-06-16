@@ -66,7 +66,7 @@ func (c *GestionResolucionesController) GetOne() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, err := strconv.Atoi(idStr)
 
-	if err != nil {
+	if err != nil || id <= 0 {
 		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
@@ -187,7 +187,7 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, err := strconv.Atoi(idStr)
 
-	if err != nil {
+	if err != nil || id <= 0 {
 		panic(map[string]interface{}{"funcion": "ConsultaDocente", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
@@ -326,7 +326,7 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, err := strconv.Atoi(idStr)
 
-	if err != nil {
+	if err != nil || id <= 0 {
 		panic(map[string]interface{}{"funcion": "GenerarResolucion", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
