@@ -220,7 +220,7 @@
                     {
                         "in": "path",
                         "name": "id",
-                        "description": "The key for staticblock",
+                        "description": "Id de la plantilla a consultar",
                         "required": true,
                         "type": "string"
                     }
@@ -1154,11 +1154,11 @@
         }
     },
     "definitions": {
-        "5405.\u003cnil\u003e.CancelacionContrato": {
+        "6014.\u003cnil\u003e.CancelacionContrato": {
             "title": "CancelacionContrato",
             "type": "object"
         },
-        "5571.\u003cnil\u003e.ContratoVinculacion": {
+        "6180.\u003cnil\u003e.ContratoVinculacion": {
             "title": "ContratoVinculacion",
             "type": "object"
         },
@@ -1372,7 +1372,7 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5405.\u003cnil\u003e.CancelacionContrato"
+                    "$ref": "#/definitions/6014.\u003cnil\u003e.CancelacionContrato"
                 }
             }
         },
@@ -1392,7 +1392,7 @@
                     "type": "string"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/5571.\u003cnil\u003e.ContratoVinculacion"
+                    "$ref": "#/definitions/6180.\u003cnil\u003e.ContratoVinculacion"
                 }
             }
         },

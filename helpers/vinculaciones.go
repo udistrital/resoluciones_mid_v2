@@ -239,30 +239,47 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 
 	for j := range vinculacionesRegistradas {
 
-		// var desagregado models.DesagregadoContrato
-		desagregado, err := CalcularDesagregadoTitan(vinculacionesRegistradas[j], d.ResolucionData.Dedicacion, d.ResolucionData.NivelAcademico)
-		if err != nil {
-			panic(err)
-		}
+		if d.ResolucionData.Dedicacion != "HCH" {
 
-		for _, disponibilidad := range d.Disponibilidad {
-			// for _, rubro := range disponibilidad.Afectacion {
-			// TODO La idea es cruzar los rubros (Afectacion) seleccionados en la Disponibilidad con los valores calculados para cada uno
-			// una vez salga kronos a producción, de manera que el valor calculado con Titan se corresponda con el rubro de Kronos
-			for nombre, valor := range desagregado {
-				if nombre != "NumeroContrato" && nombre != "Vigencia" {
-					dispVinculacion := &models.DisponibilidadVinculacion{
-						Disponibilidad:       int(disponibilidad.Consecutivo),
-						Rubro:                nombre, // rubro.Padre,
-						VinculacionDocenteId: &vinculacionesRegistradas[j],
-						Activo:               true,
-						Valor:                valor.(float64),
-					}
+			// var desagregado models.DesagregadoContrato
+			desagregado, err := CalcularDesagregadoTitan(vinculacionesRegistradas[j], d.ResolucionData.Dedicacion, d.ResolucionData.NivelAcademico)
+			if err != nil {
+				panic(err)
+			}
 
-					if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &dispVinculacion); err3 != nil {
-						logs.Error(err3.Error())
-						panic("Registrando disponibilidad -> " + err3.Error())
+			for _, disponibilidad := range d.Disponibilidad {
+				// for _, rubro := range disponibilidad.Afectacion {
+				// TODO La idea es cruzar los rubros (Afectacion) seleccionados en la Disponibilidad con los valores calculados para cada uno
+				// una vez salga kronos a producción, de manera que el valor calculado con Titan se corresponda con el rubro de Kronos
+				for nombre, valor := range desagregado {
+					if nombre != "NumeroContrato" && nombre != "Vigencia" {
+						dispVinculacion := &models.DisponibilidadVinculacion{
+							Disponibilidad:       int(disponibilidad.Consecutivo),
+							Rubro:                nombre, // rubro.Padre,
+							VinculacionDocenteId: &vinculacionesRegistradas[j],
+							Activo:               true,
+							Valor:                valor.(float64),
+						}
+
+						if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &dispVinculacion); err3 != nil {
+							logs.Error(err3.Error())
+							panic("Registrando disponibilidad -> " + err3.Error())
+						}
 					}
+				}
+			}
+		} else {
+			for _, disponibilidad := range d.Disponibilidad {
+				dispVinculacion := &models.DisponibilidadVinculacion{
+					Disponibilidad:       int(disponibilidad.Consecutivo),
+					Rubro:                "SueldoBasico", // nombre, // rubro.Padre,
+					VinculacionDocenteId: &vinculacionesRegistradas[j],
+					Activo:               true,
+					Valor:                vinculacionesRegistradas[j].ValorContrato,
+				}
+				if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &dispVinculacion); err3 != nil {
+					logs.Error(err3.Error())
+					panic("Registrando disponibilidad -> " + err3.Error())
 				}
 			}
 		}
@@ -360,55 +377,85 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		panic("Registrando modificacion -> " + err4.Error())
 	}
 
-	desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico)
-	if err != nil {
-		panic(err)
-	}
-
-	var dvRegistrada models.DisponibilidadVinculacion
-	// Se registran los rubros de la disponibilidad segun el caso
-	if obj.CambiosVinculacion.DocPresupuestal == nil || obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
-		// Si no se cambia la disponibilidad se usa la misma de la vinculación original
-		var dv []models.DisponibilidadVinculacion
-
-		url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
-		if err5 := GetRequestNew("UrlcrudResoluciones", url, &dv); err5 != nil {
-			panic("Cargando disponibilidad_vinculacion -> " + err5.Error())
+	if obj.ResolucionNuevaId.Dedicacion != "HCH" {
+		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico)
+		if err != nil {
+			panic(err)
 		}
-		for i := range dv {
-			nuevaDv := &models.DisponibilidadVinculacion{
-				Disponibilidad:       dv[i].Disponibilidad,
-				Rubro:                dv[i].Rubro,
-				VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
-				Activo:               true,
-				Valor:                desagregado[dv[i].Rubro].(float64),
+
+		var dvRegistrada models.DisponibilidadVinculacion
+		// Se registran los rubros de la disponibilidad segun el caso
+		if obj.CambiosVinculacion.DocPresupuestal == nil || obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
+			// Si no se cambia la disponibilidad se usa la misma de la vinculación original
+			var dv []models.DisponibilidadVinculacion
+
+			url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
+			if err5 := GetRequestNew("UrlcrudResoluciones", url, &dv); err5 != nil {
+				panic("Cargando disponibilidad_vinculacion -> " + err5.Error())
 			}
-			if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
-				panic("Registrando disponibilidad -> " + err6.Error())
-			}
-		}
-	} else {
-		disponibilidad := obj.CambiosVinculacion.DocPresupuestal
-		// for _, rubro := range disponibilidad.Afectacion {
-		// TODO La idea es cruzar los rubros (Afectacion) seleccionados en la Disponibilidad con los valores calculados para cada uno
-		// una vez salga kronos a producción, de manera que el valor calculado con Titan se corresponda con el rubro de Kronos
-		for nombre, valor := range desagregado {
-			if nombre != "NumeroContrato" && nombre != "Vigencia" {
+			for i := range dv {
 				nuevaDv := &models.DisponibilidadVinculacion{
-					Disponibilidad:       int(disponibilidad.Consecutivo),
-					Rubro:                nombre, // rubro.Padre,
+					Disponibilidad:       dv[i].Disponibilidad,
+					Rubro:                dv[i].Rubro,
 					VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 					Activo:               true,
-					Valor:                valor.(float64),
+					Valor:                desagregado[dv[i].Rubro].(float64),
 				}
 				if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
 					panic("Registrando disponibilidad -> " + err6.Error())
 				}
 			}
+		} else {
+			disponibilidad := obj.CambiosVinculacion.DocPresupuestal
+			// for _, rubro := range disponibilidad.Afectacion {
+			// TODO La idea es cruzar los rubros (Afectacion) seleccionados en la Disponibilidad con los valores calculados para cada uno
+			// una vez salga kronos a producción, de manera que el valor calculado con Titan se corresponda con el rubro de Kronos
+			for nombre, valor := range desagregado {
+				if nombre != "NumeroContrato" && nombre != "Vigencia" {
+					nuevaDv := &models.DisponibilidadVinculacion{
+						Disponibilidad:       int(disponibilidad.Consecutivo),
+						Rubro:                nombre, // rubro.Padre,
+						VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
+						Activo:               true,
+						Valor:                valor.(float64),
+					}
+					if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
+						panic("Registrando disponibilidad -> " + err6.Error())
+					}
+				}
+			}
+		}
+	} else {
+		var dvRegistrada models.DisponibilidadVinculacion
+		var numeroDisponibilidad int
+		// Se registran los rubros de la disponibilidad segun el caso
+		if obj.CambiosVinculacion.DocPresupuestal == nil || obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
+			// Si no se cambia la disponibilidad se usa la misma de la vinculación original
+			var dv []models.DisponibilidadVinculacion
+
+			url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
+			if err5 := GetRequestNew("UrlcrudResoluciones", url, &dv); err5 != nil {
+				panic("Cargando disponibilidad_vinculacion -> " + err5.Error())
+			}
+			numeroDisponibilidad = dv[0].Disponibilidad
+		} else {
+			numeroDisponibilidad = int(obj.CambiosVinculacion.DocPresupuestal.Consecutivo)
+		}
+		nuevaDv := &models.DisponibilidadVinculacion{
+			Disponibilidad:       numeroDisponibilidad,
+			Rubro:                "SueldoBasico",
+			VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
+			Activo:               true,
+			Valor:                nuevaVinculacion.ValorContrato,
+		}
+
+		if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err3 != nil {
+			logs.Error(err3.Error())
+			panic("Registrando disponibilidad -> " + err3.Error())
 		}
 	}
 
-	return nuevaVinculacion, outputError
+	return *vinc, outputError
 }
 
 // Registra la cancelación de las vinculaciones seleccionadas como modificaciones
