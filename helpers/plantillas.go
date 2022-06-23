@@ -89,7 +89,7 @@ func CargarPlantilla(PlantillaId int) (plantilla models.ContenidoResolucion, out
 	}
 
 	var tipoRes models.Parametro
-	if err2 := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(plantilla.Resolucion.TipoResolucionId), &tipoRes); err2 != nil {
+	if err2 := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(plantilla.Resolucion.TipoResolucionId), &tipoRes); err2 != nil {
 		logs.Error(err2)
 		panic(err2.Error())
 	}
@@ -123,7 +123,7 @@ func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interf
 			panic(err2.Error())
 		}
 		if len(res) != 0 {
-			if err3 := GetRequestNew("UrlCrudResoluciones", "resolucion_vinculacion_docente/"+strconv.Itoa(res[0].Id), &resv); err3 != nil {
+			if err3 := GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(res[0].Id), &resv); err3 != nil {
 				logs.Error(err3)
 				panic(err3.Error())
 			}
@@ -167,7 +167,7 @@ func BorrarPlantilla(PlantillaId int) (outputError map[string]interface{}) {
 			logs.Error(err)
 			panic(err.Error())
 		}
-		url = "resolucion_vinculacion_docente/" + strconv.Itoa(plantilla.Vinculacion.Id)
+		url = ResVinEndpoint + strconv.Itoa(plantilla.Vinculacion.Id)
 		if err = SendRequestNew("UrlCrudResoluciones", url, "PUT", &respuesta2, &plantilla.Vinculacion); err != nil {
 			logs.Error(err)
 			panic(err.Error())
@@ -214,6 +214,7 @@ func validarExistenciaPlantilla(plantilla models.ContenidoResolucion, tipos []mo
 		existe = existe || nombre == tipo.Nombre
 		if existe {
 			id = tipo.Id
+			break
 		}
 	}
 	return existe, id

@@ -19,8 +19,20 @@ import (
 )
 
 const (
-	ErrorParametros string = "Error en los parametros de ingreso"
-	CargaResExito   string = "Resoluciones cargadas con exito"
+	ErrorParametros     string = "Error en los parametros de ingreso"
+	CargaResExito       string = "Resoluciones cargadas con exito"
+	CampoMeses          string = "%.1f meses"
+	PasaA               string = "Pasa a %.1f"
+	ResolucionEndpoint  string = "resolucion/"
+	ParametroEndpoint   string = "parametro/"
+	VinculacionEndpoint string = "vinculacion_docente/"
+	ResVinEndpoint      string = "resolucion_vinculacion_docente/"
+	AppJson             string = "application/json"
+	Calibri             string = "Calibri"
+	CalibriBold         string = "Calibri-Bold"
+	MinionProBoldCn     string = "MinionPro-BoldCn"
+	MinionProMediumCn   string = "MinionPro-MediumCn"
+	MinionProBoldItalic string = "MinionProBoldItalic"
 )
 
 // Envia una petición con datos al endpoint indicado y extrae la respuesta del campo Data para retornarla
@@ -115,8 +127,8 @@ func SendJson(url string, trequest string, target interface{}, datajson interfac
 	client := &http.Client{}
 	req, err := http.NewRequest(trequest, url, b)
 	// headers para asegurar compatibilidad con GestorDocumentalMid
-	req.Header.Set("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Accept", AppJson)
+	req.Header.Add("Content-Type", AppJson)
 	r, err := client.Do(req)
 	if err != nil {
 		beego.Error("error", err)
@@ -177,7 +189,7 @@ func GetJsonWSO2(urlp string, target interface{}) error {
 	b := new(bytes.Buffer)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", urlp, b)
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", AppJson)
 	r, err := client.Do(req)
 	if err != nil {
 		beego.Error("error", err)
@@ -196,7 +208,7 @@ func GetJsonWSO2Test(urlp string, target interface{}) (status int, err error) {
 	b := new(bytes.Buffer)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", urlp, b)
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", AppJson)
 	r, err := client.Do(req)
 	if err != nil {
 		beego.Error("error", err)
