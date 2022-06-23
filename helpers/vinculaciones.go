@@ -115,21 +115,21 @@ func RetirarVinculaciones(vinculaciones []models.Vinculaciones) (outputError map
 			}
 
 			disponibilidades[0].VinculacionDocenteId.Activo = false
-			url2 := "vinculacion_docente/" + strconv.Itoa(vinculacion.Id)
+			url2 := VinculacionEndpoint + strconv.Itoa(vinculacion.Id)
 			if err3 := SendRequestNew("UrlcrudResoluciones", url2, "PUT", &vinculacion, disponibilidades[0].VinculacionDocenteId); err3 != nil {
 				panic("Desactivando vinculacion -> " + err3.Error())
 			}
 		} else {
 			modificacion[0].VinculacionDocenteCanceladaId.Activo = true
 			modificacion[0].VinculacionDocenteRegistradaId.Activo = false
-			url3 := "vinculacion_docente/" + strconv.Itoa(modificacion[0].VinculacionDocenteCanceladaId.Id)
+			url3 := VinculacionEndpoint + strconv.Itoa(modificacion[0].VinculacionDocenteCanceladaId.Id)
 			if err4 := SendRequestNew("UrlcrudResoluciones", url3, "PUT", &vinculacion, modificacion[0].VinculacionDocenteCanceladaId); err4 != nil {
 				panic("Restaurando vinculacion -> " + err4.Error())
 			}
 			if err5 := SendRequestNew("UrlcrudResoluciones", "modificacion_vinculacion/"+strconv.Itoa(modificacion[0].Id), "DELETE", &resp, nil); err5 != nil {
 				panic("Borrando modificación -> " + err5.Error())
 			}
-			url3 = "vinculacion_docente/" + strconv.Itoa(modificacion[0].VinculacionDocenteRegistradaId.Id)
+			url3 = VinculacionEndpoint + strconv.Itoa(modificacion[0].VinculacionDocenteRegistradaId.Id)
 			if err6 := SendRequestNew("UrlcrudResoluciones", url3, "PUT", &vinculacion, modificacion[0].VinculacionDocenteRegistradaId); err6 != nil {
 				panic("Desactivando vinculación -> " + err6.Error())
 			}
@@ -302,7 +302,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	var err map[string]interface{}
 
 	// Recuperación de la vinculación original
-	url := "vinculacion_docente/" + strconv.Itoa(obj.CambiosVinculacion.VinculacionOriginal.Id)
+	url := VinculacionEndpoint + strconv.Itoa(obj.CambiosVinculacion.VinculacionOriginal.Id)
 	if err := GetRequestNew("UrlcrudResoluciones", url, &vinculacion); err != nil {
 		panic("Cargando vinculacion original -> " + err.Error())
 	}

@@ -38,7 +38,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 		panic(err.Error())
 	}
 
-	if err := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(m.IdResolucion), &r); err != nil {
+	if err := GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(m.IdResolucion), &r); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
@@ -67,7 +67,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 		for _, vinculacion := range *vin { // For vinculaciones
 			numeroContratos = numeroContratos + 1
 			var v models.VinculacionDocente
-			url = "vinculacion_docente/" + strconv.Itoa(vinculacion.VinculacionDocente.Id)
+			url = VinculacionEndpoint + strconv.Itoa(vinculacion.VinculacionDocente.Id)
 			if err := GetRequestNew("UrlCrudResoluciones", url, &v); err == nil { // If 1.1 - vinculacion_docente
 				contrato := vinculacion.ContratoGeneral
 				url = "tipo_contrato/" + strconv.Itoa(contrato.TipoContrato.Id)
@@ -226,7 +226,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 												v.NumeroContrato = &aux1
 												v.Vigencia = aux2
 												v.FechaInicio = acta.FechaInicio
-												url = "vinculacion_docente/" + strconv.Itoa(v.Id)
+												url = VinculacionEndpoint + strconv.Itoa(v.Id)
 												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &v); err != nil { // If 1.1.10 - vinculacion_docente
 													fmt.Println("Error en If 1.1.10 - vinculacion_docente!")
 													logs.Error(err)
@@ -277,11 +277,11 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 			}
 		} // For vinculaciones
 		var r models.Resolucion
-		url = "resolucion/" + strconv.Itoa(m.IdResolucion)
+		url = ResolucionEndpoint + strconv.Itoa(m.IdResolucion)
 		if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil { // 1.2 - resolucion/
 			if err := CambiarEstadoResolucion(r.Id, "REXP", m.Usuario); err == nil {
 				r.FechaExpedicion = m.FechaExpedicion
-				url = "resolucion/" + strconv.Itoa(r.Id)
+				url = ResolucionEndpoint + strconv.Itoa(r.Id)
 				if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 1.2.1
 					fmt.Println("Error en If 1.2.1 - resolucion/ (PUT)!")
 					logs.Error(response)
@@ -293,7 +293,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 					panic(err)
 				} else {
 					r.NuxeoUid = documento.Enlace
-					url = "resolucion/" + strconv.Itoa(r.Id)
+					url = ResolucionEndpoint + strconv.Itoa(r.Id)
 					if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 1.2.1
 						fmt.Println("Error en If 1.2.1 - resolucion/ (PUT)!")
 						logs.Error(response)
@@ -330,7 +330,7 @@ func ValidarDatosExpedicion(m models.ExpedicionResolucion) (outputError map[stri
 
 	for _, vinculacion := range *vinc {
 		v := vinculacion.VinculacionDocente
-		url := "vinculacion_docente/" + strconv.Itoa(v.Id)
+		url := VinculacionEndpoint + strconv.Itoa(v.Id)
 		if err := GetRequestNew("UrlCrudResoluciones", url, &v); err != nil { // If 1- vinculacion_docente
 			beego.Error("Error en If 1 - Previnculación no valida", err)
 			logs.Error(v)
@@ -401,7 +401,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 		panic(err.Error())
 	}
 
-	if err := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(m.IdResolucion), &resolucion); err != nil {
+	if err := GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(m.IdResolucion), &resolucion); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
@@ -428,7 +428,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 		for _, vinculacion := range *vinc {
 			numeroContratos = numeroContratos + 1
 			v := vinculacion.VinculacionDocente
-			url = "vinculacion_docente/" + strconv.Itoa(v.Id)
+			url = VinculacionEndpoint + strconv.Itoa(v.Id)
 			if err := GetRequestNew("UrlCrudResoluciones", url, &v); err == nil { // If 1.1 - vinculacion_docente
 				contrato := vinculacion.ContratoGeneral
 				var sup models.SupervisorContrato
@@ -546,7 +546,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 							var actaInicioAnterior models.ActaInicio
 							vinculacionModificacion := modVin[0].VinculacionDocenteRegistradaId
 							vinculacionOriginal := modVin[0].VinculacionDocenteCanceladaId
-							url = "resolucion/" + strconv.Itoa(v.ResolucionVinculacionDocenteId.Id)
+							url = ResolucionEndpoint + strconv.Itoa(v.ResolucionVinculacionDocenteId.Id)
 							if err := GetRequestNew("UrlCrudResoluciones", url, &resolucion); err == nil { // If 1.5 - resolucion
 							} else {
 								fmt.Println("Error en If 1.5 - resolucion! ", err)
@@ -563,7 +563,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								horasTotales := horasIniciales + vinculacionModificacion.NumeroHorasSemanales
 								// Sólo si es reducción cambia la fecha fin del acta anterior y el valor del nuevo contrato
 								var tipoRes models.Parametro
-								url2 := "parametro/" + strconv.Itoa(resolucion.TipoResolucionId)
+								url2 := ParametroEndpoint + strconv.Itoa(resolucion.TipoResolucionId)
 								if err := GetRequestNew("UrlcrudParametros", url2, &tipoRes); err != nil {
 									logs.Error(err)
 									panic(err.Error())
@@ -662,7 +662,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 														vinculacionModificacion.NumeroContrato = &aux1
 														vinculacionModificacion.Vigencia = aux2
 														vinculacionModificacion.FechaInicio = acta.FechaInicio
-														url = "vinculacion_docente/" + strconv.Itoa(vinculacionModificacion.Id)
+														url = VinculacionEndpoint + strconv.Itoa(vinculacionModificacion.Id)
 														if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &vinculacionModificacion); err != nil {
 															fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
 															logs.Error(response)
@@ -717,11 +717,11 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 			}
 		}
 		var r models.Resolucion
-		url = "resolucion/" + strconv.Itoa(m.IdResolucion)
+		url = ResolucionEndpoint + strconv.Itoa(m.IdResolucion)
 		if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil { // If 2 - resolucion (GET)
 			if err := CambiarEstadoResolucion(r.Id, "REXP", m.Usuario); err == nil { // If 2.1 - Cambiar estado
 				r.FechaExpedicion = m.FechaExpedicion
-				url = "resolucion/" + strconv.Itoa(r.Id)
+				url = ResolucionEndpoint + strconv.Itoa(r.Id)
 				if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 2.2
 					fmt.Println("Error en If 2.2 - resolucion/ (PUT)!")
 					logs.Error(response)
@@ -733,7 +733,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 					panic(err)
 				} else {
 					r.NuxeoUid = documento.Enlace
-					url = "resolucion/" + strconv.Itoa(r.Id)
+					url = ResolucionEndpoint + strconv.Itoa(r.Id)
 					if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 2.4
 						fmt.Println("Error en If 2.4 - resolucion/ (PUT)!")
 						logs.Error(response)
@@ -811,7 +811,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 						url = "contrato_estado"
 						if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &ce); err == nil { // If 5 - contrato_estado
 							var r models.Resolucion
-							url = "resolucion/" + strconv.Itoa(m.IdResolucion)
+							url = ResolucionEndpoint + strconv.Itoa(m.IdResolucion)
 							if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {
 								if err := CambiarEstadoResolucion(r.Id, "REXP", vinculacion.ContratoCancelado.Usuario); err == nil {
 									r.FechaExpedicion = m.FechaExpedicion
