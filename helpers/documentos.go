@@ -428,16 +428,16 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 
 		switch tipoRes {
 		case "RVIN":
-			pdf.CellFormat(w, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			break
 		case "RCAN":
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)*7/30), "1", "C", false)
+			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w, lineHeight, "Pasa a", "TLR", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas-vinc.NumeroSemanas)*7/30), "BLR", "C", false)
+			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas-vinc.NumeroSemanas)/4), "BLR", "C", false)
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w, y)
 			}
@@ -454,7 +454,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			break
 		default:
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)*7/30), "1", "C", false)
+			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w, lineHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", "C", false)
 			pdf.SetX(x)
@@ -471,7 +471,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			x, y = pdf.GetXY()
 			pdf.MultiCell(w+1, lineHeight, vinc.ValorContratoFormato, "1", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w+1, lineHeight, fmt.Sprintf(CampoMeses, float32(semanas)*7/30), "1", "C", false)
+			pdf.MultiCell(w+1, lineHeight, fmt.Sprintf(CampoMeses, float32(semanas)/4), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w+1, lineHeight, "", "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
@@ -662,7 +662,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			}
 
 			pdf.CellFormat(w-3, cellHeight, valorHoras, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 
 			cellHeight = lineHeight * 4
 			pdf.CellFormat(7, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
@@ -698,7 +698,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			}
 			pdf.CellFormat((w*2)-2, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, cellHeight*2, valorHoras, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w-2, cellHeight*2, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, cellHeight*2, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
 		}
 
@@ -707,7 +707,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-5, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, cellHeight, valorHoras, "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w, cellHeight*2, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w, cellHeight*2, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
 		}
 
@@ -793,7 +793,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 
 			if tipoRes == "RADD" || tipoRes == "RRED" {
 				pdf.CellFormat(w-3, lineHeight, valorHorasAnterior, "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w-2, lineHeight, fmt.Sprintf(CampoMeses, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight, fmt.Sprintf(CampoMeses, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			}
 
 			filaValores := "Valores a "
@@ -806,7 +806,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 				break
 			case "RCAN":
 				filaValores += "reversar"
-				pdf.CellFormat(w, lineHeight, fmt.Sprintf(CampoMeses, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w, lineHeight, fmt.Sprintf(CampoMeses, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 				break
 			}
 			pdf.Ln(-1)
@@ -827,17 +827,17 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 				} else {
 					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales+vinc.NumeroHorasSemanales)*float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas+vinc.NumeroSemanas)), "1", 0, "C", false, 0, "")
 				}
-				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas+vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas+vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			case "RRED":
 				if nivel == "PREGRADO" {
 					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, float32(vinc.NumeroHorasSemanales-modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
 				} else {
 					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, float32(vinc.NumeroHorasSemanales-modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales)*float32(vinc.NumeroSemanas-modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)), "1", 0, "C", false, 0, "")
 				}
-				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, float32(vinc.NumeroSemanas-modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, float32(vinc.NumeroSemanas-modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 				break
 			case "RCAN":
-				pdf.CellFormat(w, lineHeight*2, fmt.Sprintf(PasaA, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas-vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w, lineHeight*2, fmt.Sprintf(PasaA, float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas-vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 				break
 			}
 			x, y = pdf.GetXY()
