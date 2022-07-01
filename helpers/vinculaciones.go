@@ -257,7 +257,7 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 							Disponibilidad:       int(disponibilidad.Consecutivo),
 							Rubro:                nombre,
 							NombreRubro:          "", // rubro.Padre,
-							VinculacionDocenteId: &vinculacionesRegistradas[j],
+							VinculacionDocenteId: &models.VinculacionDocente{Id: vinculacionesRegistradas[j].Id},
 							Activo:               true,
 							Valor:                valor.(float64),
 						}
@@ -275,7 +275,7 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 					Disponibilidad:       int(disponibilidad.Consecutivo),
 					Rubro:                "SueldoBasico", // nombre, // rubro.Padre,
 					NombreRubro:          "",
-					VinculacionDocenteId: &vinculacionesRegistradas[j],
+					VinculacionDocenteId: &models.VinculacionDocente{Id: vinculacionesRegistradas[j].Id},
 					Activo:               true,
 					Valor:                vinculacionesRegistradas[j].ValorContrato,
 				}
