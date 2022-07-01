@@ -255,7 +255,8 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 					if nombre != "NumeroContrato" && nombre != "Vigencia" {
 						dispVinculacion := &models.DisponibilidadVinculacion{
 							Disponibilidad:       int(disponibilidad.Consecutivo),
-							Rubro:                nombre, // rubro.Padre,
+							Rubro:                nombre,
+							NombreRubro:          "", // rubro.Padre,
 							VinculacionDocenteId: &vinculacionesRegistradas[j],
 							Activo:               true,
 							Valor:                valor.(float64),
@@ -273,6 +274,7 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 				dispVinculacion := &models.DisponibilidadVinculacion{
 					Disponibilidad:       int(disponibilidad.Consecutivo),
 					Rubro:                "SueldoBasico", // nombre, // rubro.Padre,
+					NombreRubro:          "",
 					VinculacionDocenteId: &vinculacionesRegistradas[j],
 					Activo:               true,
 					Valor:                vinculacionesRegistradas[j].ValorContrato,
@@ -397,6 +399,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 				nuevaDv := &models.DisponibilidadVinculacion{
 					Disponibilidad:       dv[i].Disponibilidad,
 					Rubro:                dv[i].Rubro,
+					NombreRubro:          dv[i].NombreRubro,
 					VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 					Activo:               true,
 					Valor:                desagregado[dv[i].Rubro].(float64),
@@ -414,7 +417,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 				if nombre != "NumeroContrato" && nombre != "Vigencia" {
 					nuevaDv := &models.DisponibilidadVinculacion{
 						Disponibilidad:       int(disponibilidad.Consecutivo),
-						Rubro:                nombre, // rubro.Padre,
+						Rubro:                nombre,
+						NombreRubro:          "", // rubro.Padre,
 						VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 						Activo:               true,
 						Valor:                valor.(float64),
@@ -444,6 +448,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaDv := &models.DisponibilidadVinculacion{
 			Disponibilidad:       numeroDisponibilidad,
 			Rubro:                "SueldoBasico",
+			NombreRubro:          "",
 			VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 			Activo:               true,
 			Valor:                nuevaVinculacion.ValorContrato,
