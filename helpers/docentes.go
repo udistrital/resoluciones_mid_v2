@@ -105,10 +105,10 @@ func ListarDocentesCargaHoraria(vigencia, periodo, dedicacion, facultad, nivelAc
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].NombreTipoVinculacion = dedicacion
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].IDTipoVinculacion = fmt.Sprintf("%d", HomologarDedicacionNombre(dedicacion, "new"))
 		if dedicacion == "TCO" {
-			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "20"
+			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "40"
 		}
 		if dedicacion == "MTO" {
-			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "40"
+			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "20"
 		}
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].IDFacultad = facultad
 

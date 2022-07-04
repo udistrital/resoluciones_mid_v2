@@ -559,7 +559,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								semanasIniciales := vinculacionOriginal.NumeroSemanas
 								semanasModificar := vinculacionModificacion.NumeroSemanas
 								horasIniciales := vinculacionOriginal.NumeroHorasSemanales
-								fechaFinNuevoContrato := CalcularFechaFin(acta.FechaInicio, semanasModificar)
+								fechaFinNuevoContrato := CalcularFechaFin(vinculacionModificacion.FechaInicio, semanasModificar)
 								horasTotales := horasIniciales + vinculacionModificacion.NumeroHorasSemanales
 								// Sólo si es reducción cambia la fecha fin del acta anterior y el valor del nuevo contrato
 								var tipoRes models.Parametro
@@ -575,7 +575,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									aini.Vigencia = actaInicioAnterior.Vigencia
 									aini.Descripcion = actaInicioAnterior.Descripcion
 									aini.FechaInicio = actaInicioAnterior.FechaInicio
-									aini.FechaFin = acta.FechaInicio
+									aini.FechaFin = vinculacionModificacion.FechaInicio
 									aini.Usuario = usuario["documento_compuesto"].(string)
 									fechaFinNuevoContrato = actaInicioAnterior.FechaFin
 									beego.Info("fin nuevo ", fechaFinNuevoContrato)
@@ -587,7 +587,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										panic(err.Error())
 									}
 									// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
-									semanasTranscurridasDecimal := (acta.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24 / 30 * 4 // cálculo con base en meses de 30 días y 4 semanas
+									semanasTranscurridasDecimal := (vinculacionModificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24 / 30 * 4 // cálculo con base en meses de 30 días y 4 semanas
 									semanasTranscurridas, decimal := math.Modf(semanasTranscurridasDecimal)
 									if decimal > 0 {
 										semanasTranscurridas = semanasTranscurridas + 1
@@ -614,7 +614,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
 									if v.ResolucionVinculacionDocenteId.NivelAcademico == "POSGRADO" {
 										diasOriginales, _ := math.Modf((actaInicioAnterior.FechaFin.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-										diasTranscurridos, _ := math.Modf((acta.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+										diasTranscurridos, _ := math.Modf((vinculacionModificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
 										valorDiario := vinculacionOriginal.ValorContrato / diasOriginales
 										valorPagado := valorDiario * diasTranscurridos
 										salario = salario - valorPagado
@@ -623,8 +623,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									beego.Info(contrato.ValorContrato)
 								}
 								if contrato.ValorContrato > 0 {
-									url = "contrato_general"
-									if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
+									if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
 										aux1 := contrato.Id
 										aux2 := contrato.VigenciaContrato
 										var ce models.ContratoEstado
@@ -635,17 +634,15 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										ce.Usuario = usuario["documento_compuesto"].(string)
 										ec.Id = 4
 										ce.Estado = &ec
-										url = "contrato_estado"
-										if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &ce); err == nil { // If 1.9 - contrato_estado (POST)
+										if err := SendRequestLegacy("UrlcrudAgora", "contrato_estado", "POST", &response, &ce); err == nil { // If 1.9 - contrato_estado (POST)
 											var ai models.ActaInicio
 											ai.NumeroContrato = aux1
 											ai.Vigencia = aux2
 											ai.Descripcion = acta.Descripcion
-											ai.FechaInicio = acta.FechaInicio
+											ai.FechaInicio = vinculacionModificacion.FechaInicio
 											ai.FechaFin = fechaFinNuevoContrato
 											ai.Usuario = usuario["documento_compuesto"].(string)
-											url = "acta_inicio"
-											if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)
+											if err := SendRequestLegacy("UrlcrudAgora", "acta_inicio", "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)
 												var cd models.ContratoDisponibilidad
 												cd.NumeroContrato = aux1
 												cd.Vigencia = aux2
@@ -657,11 +654,9 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												if err := GetRequestNew("UrlCrudResoluciones", url, &disp); err == nil { // If 1.11 - DisponibilidadVinculacion
 													dv = disp[0]
 													cd.NumeroCdp = int(dv.Disponibilidad)
-													url = "contrato_disponibilidad"
-													if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
+													if err := SendRequestLegacy("UrlcrudAgora", "contrato_disponibilidad", "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
 														vinculacionModificacion.NumeroContrato = &aux1
 														vinculacionModificacion.Vigencia = aux2
-														vinculacionModificacion.FechaInicio = acta.FechaInicio
 														url = VinculacionEndpoint + strconv.Itoa(vinculacionModificacion.Id)
 														if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &vinculacionModificacion); err != nil {
 															fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
