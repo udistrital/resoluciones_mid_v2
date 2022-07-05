@@ -361,7 +361,14 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaVinculacion.VigenciaRp = 0
 	}
 
+	// Se desactiva la vinculación original, asi no estará disponible para ser modificada
 	var vinc *models.VinculacionDocente
+	vinculacion.Activo = false
+	if err2 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &vinc, &vinculacion); err2 != nil {
+		panic("Desactivando vinculacion -> " + err2.Error())
+	}
+	vinc = nil
+
 	// Se registra la nueva vinculación
 	if err3 := SendRequestNew("UrlcrudResoluciones", "vinculacion_docente", "POST", &vinc, &nuevaVinculacion); err3 != nil {
 		panic("Registrando nueva vinculacion -> " + err3.Error())
