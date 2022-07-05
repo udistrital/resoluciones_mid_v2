@@ -337,6 +337,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		ProyectoCurricularId:           vinculacion.ProyectoCurricularId,
 		Categoria:                      vinculacion.Categoria,
 		DependenciaAcademica:           vinculacion.DependenciaAcademica,
+		PuntoSalarialId:                vinculacion.PuntoSalarialId,
+		SalarioMinimoId:                vinculacion.SalarioMinimoId,
 		FechaInicio:                    obj.CambiosVinculacion.FechaInicio,
 		Activo:                         true,
 	}
