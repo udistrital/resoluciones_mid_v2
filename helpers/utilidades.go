@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -342,6 +343,14 @@ func formatNumberString(x string, precision int, thousand string, decimal string
 	}
 
 	return result + extra
+}
+
+// Quita el formato de moneda a un string y lo convierte en valor flotante
+func DeformatNumber(formatted string) (number float64) {
+	formatted = strings.ReplaceAll(formatted, ",", "")
+	formatted = strings.Trim(formatted, "$")
+	number, _ = strconv.ParseFloat(formatted, 64)
+	return
 }
 
 // Obtiene los datos del usuario autenticado
