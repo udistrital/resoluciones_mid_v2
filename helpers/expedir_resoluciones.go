@@ -602,7 +602,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									horasTotales = horasIniciales - vinculacionModificacion.NumeroHorasSemanales
 									var vinc [1]models.VinculacionDocente
 									vinc[0] = models.VinculacionDocente{
-										ResolucionVinculacionDocenteId: v.ResolucionVinculacionDocenteId,
+										ResolucionVinculacionDocenteId: vinculacionModificacion.ResolucionVinculacionDocenteId,
 										PersonaId:                      v.PersonaId,
 										NumeroHorasSemanales:           horasTotales,
 										NumeroSemanas:                  semanasModificar,
