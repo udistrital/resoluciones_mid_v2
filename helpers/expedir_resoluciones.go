@@ -540,7 +540,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								"Ciudad":      96,
 							},
 						}
-						var valoresAntes map[string]float64
+						valoresAntes := make(map[string]float64)
 						if err := CalcularTrazabilidad(strconv.Itoa(v.Id), &valoresAntes); err != nil {
 							fmt.Println("Error en If 1.5 - CalcularTrazabilidad! ", err)
 							panic(err.Error())
