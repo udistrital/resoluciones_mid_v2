@@ -496,3 +496,65 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 
 	return cancelacionesRegistradas, outputError
 }
+
+// Unifica los valores de la vinculación atraves de las diferentes modificaciones que ha tenido
+func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64) error {
+	var modificaciones []models.ModificacionVinculacion
+	var modVin models.ModificacionVinculacion
+	var tipoResolucion models.Parametro
+
+	url := "modificacion_vinculacion?query=VinculacionDocenteRegistradaId.Id:" + vinculacionId
+	if err := GetRequestNew("UrlCrudResoluciones", url, &modificaciones); err != nil {
+		logs.Error(err.Error())
+		return err
+	}
+
+	// Caso de salida
+	if len(modificaciones) == 0 {
+		return nil
+	}
+
+	modVin = modificaciones[0]
+	vinculacionAnteriorId := strconv.Itoa(modVin.VinculacionDocenteCanceladaId.Id)
+
+	var desagregadoAntes []models.DisponibilidadVinculacion
+	url2 := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + vinculacionAnteriorId
+	if err2 := GetRequestNew("UrlCrudResoluciones", url2, &desagregadoAntes); err2 != nil {
+		logs.Error(err2.Error())
+		return err2
+	}
+
+	url3 := ParametroEndpoint + strconv.Itoa(modVin.ModificacionResolucionId.ResolucionAnteriorId.TipoResolucionId)
+	if err3 := GetRequestNew("UrlcrudParametros", url3, &tipoResolucion); err3 != nil {
+		logs.Error(err3.Error())
+		return err3
+	}
+
+	for _, disp := range desagregadoAntes {
+		if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
+			(*valoresAntes)[disp.Rubro] = disp.Valor + (*valoresAntes)[disp.Rubro]
+		} else {
+			(*valoresAntes)[disp.Rubro] = disp.Valor - (*valoresAntes)[disp.Rubro]
+		}
+	}
+
+	switch tipoResolucion.CodigoAbreviacion {
+	case "RCAN":
+		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas) - (*valoresAntes)["NumeroSemanas"]
+		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) - (*valoresAntes)["ValorContrato"]
+		break
+	case "RRED":
+		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales) - (*valoresAntes)["NumeroHorasSemanales"]
+		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) - (*valoresAntes)["ValorContrato"]
+	default:
+		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales) + (*valoresAntes)["NumeroHorasSemanales"]
+		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) + (*valoresAntes)["ValorContrato"]
+		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas)
+		break
+	}
+
+	// Llamada recursiva para consultar una modificación anterior hasta llegar a
+	// la vinculación inicial que no tiene modificaciones
+	return CalcularTrazabilidad(vinculacionAnteriorId, valoresAntes)
+
+}

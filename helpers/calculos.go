@@ -139,13 +139,11 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 		HorasSemanales: v.NumeroHorasSemanales,
 		NivelAcademico: nivelAcademico,
 	}
-	JsonDebug(datos)
 
 	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
 		logs.Error(err.Error())
 		panic("Consultando desagregado -> " + err.Error())
 	}
-	JsonDebug(desagregado)
 
 	return desagregado, outputError
 }
