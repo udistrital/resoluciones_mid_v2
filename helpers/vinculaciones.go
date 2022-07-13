@@ -115,21 +115,21 @@ func RetirarVinculaciones(vinculaciones []models.Vinculaciones) (outputError map
 			}
 
 			disponibilidades[0].VinculacionDocenteId.Activo = false
-			url2 := "vinculacion_docente/" + strconv.Itoa(vinculacion.Id)
+			url2 := VinculacionEndpoint + strconv.Itoa(vinculacion.Id)
 			if err3 := SendRequestNew("UrlcrudResoluciones", url2, "PUT", &vinculacion, disponibilidades[0].VinculacionDocenteId); err3 != nil {
 				panic("Desactivando vinculacion -> " + err3.Error())
 			}
 		} else {
 			modificacion[0].VinculacionDocenteCanceladaId.Activo = true
 			modificacion[0].VinculacionDocenteRegistradaId.Activo = false
-			url3 := "vinculacion_docente/" + strconv.Itoa(modificacion[0].VinculacionDocenteCanceladaId.Id)
+			url3 := VinculacionEndpoint + strconv.Itoa(modificacion[0].VinculacionDocenteCanceladaId.Id)
 			if err4 := SendRequestNew("UrlcrudResoluciones", url3, "PUT", &vinculacion, modificacion[0].VinculacionDocenteCanceladaId); err4 != nil {
 				panic("Restaurando vinculacion -> " + err4.Error())
 			}
 			if err5 := SendRequestNew("UrlcrudResoluciones", "modificacion_vinculacion/"+strconv.Itoa(modificacion[0].Id), "DELETE", &resp, nil); err5 != nil {
 				panic("Borrando modificación -> " + err5.Error())
 			}
-			url3 = "vinculacion_docente/" + strconv.Itoa(modificacion[0].VinculacionDocenteRegistradaId.Id)
+			url3 = VinculacionEndpoint + strconv.Itoa(modificacion[0].VinculacionDocenteRegistradaId.Id)
 			if err6 := SendRequestNew("UrlcrudResoluciones", url3, "PUT", &vinculacion, modificacion[0].VinculacionDocenteRegistradaId); err6 != nil {
 				panic("Desactivando vinculación -> " + err6.Error())
 			}
@@ -255,8 +255,9 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 					if nombre != "NumeroContrato" && nombre != "Vigencia" {
 						dispVinculacion := &models.DisponibilidadVinculacion{
 							Disponibilidad:       int(disponibilidad.Consecutivo),
-							Rubro:                nombre, // rubro.Padre,
-							VinculacionDocenteId: &vinculacionesRegistradas[j],
+							Rubro:                nombre,
+							NombreRubro:          "", // rubro.Padre,
+							VinculacionDocenteId: &models.VinculacionDocente{Id: vinculacionesRegistradas[j].Id},
 							Activo:               true,
 							Valor:                valor.(float64),
 						}
@@ -273,7 +274,8 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 				dispVinculacion := &models.DisponibilidadVinculacion{
 					Disponibilidad:       int(disponibilidad.Consecutivo),
 					Rubro:                "SueldoBasico", // nombre, // rubro.Padre,
-					VinculacionDocenteId: &vinculacionesRegistradas[j],
+					NombreRubro:          "",
+					VinculacionDocenteId: &models.VinculacionDocente{Id: vinculacionesRegistradas[j].Id},
 					Activo:               true,
 					Valor:                vinculacionesRegistradas[j].ValorContrato,
 				}
@@ -302,7 +304,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	var err map[string]interface{}
 
 	// Recuperación de la vinculación original
-	url := "vinculacion_docente/" + strconv.Itoa(obj.CambiosVinculacion.VinculacionOriginal.Id)
+	url := VinculacionEndpoint + strconv.Itoa(obj.CambiosVinculacion.VinculacionOriginal.Id)
 	if err := GetRequestNew("UrlcrudResoluciones", url, &vinculacion); err != nil {
 		panic("Cargando vinculacion original -> " + err.Error())
 	}
@@ -335,6 +337,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		ProyectoCurricularId:           vinculacion.ProyectoCurricularId,
 		Categoria:                      vinculacion.Categoria,
 		DependenciaAcademica:           vinculacion.DependenciaAcademica,
+		PuntoSalarialId:                vinculacion.PuntoSalarialId,
+		SalarioMinimoId:                vinculacion.SalarioMinimoId,
 		FechaInicio:                    obj.CambiosVinculacion.FechaInicio,
 		Activo:                         true,
 	}
@@ -357,7 +361,14 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaVinculacion.VigenciaRp = 0
 	}
 
+	// Se desactiva la vinculación original, asi no estará disponible para ser modificada
 	var vinc *models.VinculacionDocente
+	vinculacion.Activo = false
+	if err2 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &vinc, &vinculacion); err2 != nil {
+		panic("Desactivando vinculacion -> " + err2.Error())
+	}
+	vinc = nil
+
 	// Se registra la nueva vinculación
 	if err3 := SendRequestNew("UrlcrudResoluciones", "vinculacion_docente", "POST", &vinc, &nuevaVinculacion); err3 != nil {
 		panic("Registrando nueva vinculacion -> " + err3.Error())
@@ -397,6 +408,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 				nuevaDv := &models.DisponibilidadVinculacion{
 					Disponibilidad:       dv[i].Disponibilidad,
 					Rubro:                dv[i].Rubro,
+					NombreRubro:          dv[i].NombreRubro,
 					VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 					Activo:               true,
 					Valor:                desagregado[dv[i].Rubro].(float64),
@@ -414,7 +426,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 				if nombre != "NumeroContrato" && nombre != "Vigencia" {
 					nuevaDv := &models.DisponibilidadVinculacion{
 						Disponibilidad:       int(disponibilidad.Consecutivo),
-						Rubro:                nombre, // rubro.Padre,
+						Rubro:                nombre,
+						NombreRubro:          "", // rubro.Padre,
 						VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 						Activo:               true,
 						Valor:                valor.(float64),
@@ -444,6 +457,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaDv := &models.DisponibilidadVinculacion{
 			Disponibilidad:       numeroDisponibilidad,
 			Rubro:                "SueldoBasico",
+			NombreRubro:          "",
 			VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 			Activo:               true,
 			Valor:                nuevaVinculacion.ValorContrato,
@@ -481,4 +495,68 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 	}
 
 	return cancelacionesRegistradas, outputError
+}
+
+// Unifica los valores de la vinculación atraves de las diferentes modificaciones que ha tenido
+func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64) error {
+	var modificaciones []models.ModificacionVinculacion
+	var modVin models.ModificacionVinculacion
+	var tipoResolucion models.Parametro
+
+	url := "modificacion_vinculacion?query=VinculacionDocenteRegistradaId.Id:" + vinculacionId
+	if err := GetRequestNew("UrlCrudResoluciones", url, &modificaciones); err != nil {
+		logs.Error(err.Error())
+		return err
+	}
+
+	// Caso de salida
+	if len(modificaciones) == 0 {
+		return nil
+	}
+
+	modVin = modificaciones[0]
+	vinculacionAnteriorId := strconv.Itoa(modVin.VinculacionDocenteCanceladaId.Id)
+
+	var desagregadoAntes []models.DisponibilidadVinculacion
+	url2 := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + vinculacionAnteriorId
+	if err2 := GetRequestNew("UrlCrudResoluciones", url2, &desagregadoAntes); err2 != nil {
+		logs.Error(err2.Error())
+		return err2
+	}
+
+	url3 := ParametroEndpoint + strconv.Itoa(modVin.ModificacionResolucionId.ResolucionAnteriorId.TipoResolucionId)
+	if err3 := GetRequestNew("UrlcrudParametros", url3, &tipoResolucion); err3 != nil {
+		logs.Error(err3.Error())
+		return err3
+	}
+
+	for _, disp := range desagregadoAntes {
+		if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
+			(*valoresAntes)[disp.Rubro] = disp.Valor + (*valoresAntes)[disp.Rubro]
+		} else {
+			(*valoresAntes)[disp.Rubro] = (*valoresAntes)[disp.Rubro] - disp.Valor
+		}
+	}
+
+	switch tipoResolucion.CodigoAbreviacion {
+	case "RCAN":
+		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas) - (*valoresAntes)["NumeroSemanas"]
+		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) - (*valoresAntes)["ValorContrato"]
+		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales)
+		break
+	case "RRED":
+		(*valoresAntes)["NumeroHorasSemanales"] = (*valoresAntes)["NumeroHorasSemanales"] - float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales)
+		(*valoresAntes)["ValorContrato"] = (*valoresAntes)["ValorContrato"] - float64(modVin.VinculacionDocenteCanceladaId.ValorContrato)
+		break
+	default:
+		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales) + (*valoresAntes)["NumeroHorasSemanales"]
+		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) + (*valoresAntes)["ValorContrato"]
+		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas)
+		break
+	}
+
+	// Llamada recursiva para consultar una modificación anterior hasta llegar a
+	// la vinculación inicial que no tiene modificaciones
+	return CalcularTrazabilidad(vinculacionAnteriorId, valoresAntes)
+
 }

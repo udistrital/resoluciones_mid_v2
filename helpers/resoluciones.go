@@ -26,7 +26,7 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 		logs.Error(err)
 		panic(err.Error())
 	}
-	url2 := "parametro/" + strconv.Itoa(nuevaRes.Resolucion.TipoResolucionId)
+	url2 := ParametroEndpoint + strconv.Itoa(nuevaRes.Resolucion.TipoResolucionId)
 	if err := GetRequestNew("UrlcrudParametros", url2, &tipoRes); err != nil {
 		logs.Error(err)
 		panic(err.Error())
@@ -34,14 +34,24 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 
 	if tipoRes.CodigoAbreviacion != "RVIN" {
 		var anteriorResvin models.ResolucionVinculacionDocente
-		url := "resolucion_vinculacion_docente/" + strconv.Itoa(nuevaRes.ResolucionAnteriorId)
+		var anteriorRes models.Resolucion
+		url := ResVinEndpoint + strconv.Itoa(nuevaRes.ResolucionAnteriorId)
 		if er := GetRequestNew("UrlcrudResoluciones", url, &anteriorResvin); er != nil {
 			logs.Error(er)
 			panic(er.Error())
 		}
+		url = ResolucionEndpoint + strconv.Itoa(nuevaRes.ResolucionAnteriorId)
+		if err := GetRequestNew("UrlcrudResoluciones", url, &anteriorRes); err != nil {
+			logs.Error(err)
+			panic(err.Error())
+		}
 		nuevaRes.Vinculacion.Dedicacion = anteriorResvin.Dedicacion
 		nuevaRes.Vinculacion.NivelAcademico = anteriorResvin.NivelAcademico
 		nuevaRes.Vinculacion.FacultadId = anteriorResvin.FacultadId
+		nuevaRes.Resolucion.DependenciaId = anteriorRes.DependenciaId
+		nuevaRes.Resolucion.DependenciaFirmaId = anteriorRes.DependenciaFirmaId
+		nuevaRes.Resolucion.Periodo = anteriorRes.Periodo
+		nuevaRes.Resolucion.NumeroSemanas = anteriorRes.NumeroSemanas
 	}
 
 	if existe, id := validarExistenciaPlantilla(nuevaRes, plantillas); existe {
@@ -120,9 +130,13 @@ func InsertarResolucionCompleta(v models.ContenidoResolucion) (resolucionId int,
 
 	var resp models.Resolucion
 	v.Resolucion.Activo = true
-	v.Resolucion.DependenciaId = v.Vinculacion.FacultadId
-	v.Resolucion.DependenciaFirmaId = v.Resolucion.DependenciaId
 	v.Resolucion.Vigencia, _, _ = time.Now().Date()
+	if v.Resolucion.VigenciaCarga == 0 {
+		v.Resolucion.VigenciaCarga = v.Resolucion.Vigencia
+	}
+	if v.Resolucion.PeriodoCarga == 0 {
+		v.Resolucion.PeriodoCarga = v.Resolucion.Periodo
+	}
 
 	if err := SendRequestNew("UrlCrudResoluciones", "resolucion", "POST", &resp, &v.Resolucion); err != nil {
 		logs.Error(err)
@@ -219,7 +233,7 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 		}
 
 		if len(rest) > 0 {
-			if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
+			if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
 				panic(err.Error())
 			}
 		} else {
@@ -230,7 +244,7 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 			panic(err.Error())
 		}
 
-		if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(res[i].TipoResolucionId), &tipo); err != nil {
+		if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(res[i].TipoResolucionId), &tipo); err != nil {
 			panic(err.Error())
 		}
 
@@ -290,14 +304,14 @@ func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro s
 		if err = GetRequestNew("UrlcrudResoluciones", url3, &rest); err != nil {
 			panic(err.Error())
 		}
-		url2 := "resolucion_vinculacion_docente/" + strconv.Itoa(res[i].Id)
+		url2 := ResVinEndpoint + strconv.Itoa(res[i].Id)
 		if err = GetRequestNew("UrlCrudResoluciones", url2, &resv); err != nil {
 			panic(err.Error())
 		}
 		if strings.Contains(strings.ToLower(resv.NivelAcademico), strings.ToLower(nivelFiltro)) {
 			if strings.Contains(strings.ToLower(resv.Dedicacion), strings.ToLower(dedFiltro)) {
 				if len(rest) > 0 {
-					if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
+					if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
 						panic(err.Error())
 					}
 				} else {
@@ -308,7 +322,7 @@ func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro s
 						panic(err.Error())
 					}
 					if strings.Contains(strings.ToLower(dep.Nombre), strings.ToLower(facFiltro)) {
-						if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(res[i].TipoResolucionId), &tipo); err != nil {
+						if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(res[i].TipoResolucionId), &tipo); err != nil {
 							panic(err.Error())
 						}
 						if strings.Contains(strings.ToLower(tipo.Nombre), strings.ToLower(tipoResFiltro)) {
@@ -383,7 +397,7 @@ func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro s
 				}
 				for i := range rest {
 
-					url3 := "resolucion_vinculacion_docente/" + strconv.Itoa(rest[i].ResolucionId.Id)
+					url3 := ResVinEndpoint + strconv.Itoa(rest[i].ResolucionId.Id)
 					if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
 						panic(err.Error())
 					}
@@ -393,7 +407,7 @@ func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro s
 								panic(err.Error())
 							}
 							if strings.Contains(strings.ToLower(dep.Nombre), strings.ToLower(facFiltro)) {
-								if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
+								if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
 									panic(err.Error())
 								}
 
@@ -458,7 +472,7 @@ func ListarResolucionesExpedidas(limit, offset int) (listaRes []models.Resolucio
 			panic(err.Error())
 		}
 		for i := range rest {
-			url3 := "resolucion_vinculacion_docente/" + strconv.Itoa(rest[i].ResolucionId.Id)
+			url3 := ResVinEndpoint + strconv.Itoa(rest[i].ResolucionId.Id)
 			if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
 				panic(err.Error())
 			}
@@ -467,7 +481,7 @@ func ListarResolucionesExpedidas(limit, offset int) (listaRes []models.Resolucio
 				panic(err.Error())
 			}
 
-			if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
+			if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
 				panic(err.Error())
 			}
 
@@ -505,10 +519,10 @@ func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoReso
 
 	var err error
 
-	if err = GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(ResolucionId), &resolucion.Resolucion); err != nil {
+	if err = GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(ResolucionId), &resolucion.Resolucion); err != nil {
 		panic(err.Error())
 	}
-	if err = GetRequestNew("UrlCrudResoluciones", "resolucion_vinculacion_docente/"+strconv.Itoa(ResolucionId), &resolucion.Vinculacion); err != nil {
+	if err = GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(ResolucionId), &resolucion.Vinculacion); err != nil {
 		panic(err.Error())
 	}
 	if resolucion.Articulos, err = CargarArticulos(ResolucionId); err != nil {
@@ -551,12 +565,12 @@ func ActualizarResolucionCompleta(r models.ContenidoResolucion) (outputError map
 	var respuesta map[string]interface{}
 	var respuesta2 map[string]interface{}
 
-	url := "resolucion/" + strconv.Itoa(r.Resolucion.Id)
+	url := ResolucionEndpoint + strconv.Itoa(r.Resolucion.Id)
 	if err = SendRequestNew("UrlCrudResoluciones", url, "PUT", &respuesta, &r.Resolucion); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
-	url = "resolucion_vinculacion_docente/" + strconv.Itoa(r.Vinculacion.Id)
+	url = ResVinEndpoint + strconv.Itoa(r.Vinculacion.Id)
 	if err = SendRequestNew("UrlCrudResoluciones", url, "PUT", &respuesta2, &r.Vinculacion); err != nil {
 		logs.Error(err)
 		panic(err.Error())
@@ -719,7 +733,7 @@ func ConsultaDocente(DocenteId int) (listaRes []models.Resoluciones, outputError
 			}
 
 			if len(rest) > 0 {
-				if err = GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(rest[0].ResolucionId.TipoResolucionId), &tipo); err != nil {
+				if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[0].ResolucionId.TipoResolucionId), &tipo); err != nil {
 					panic(err.Error())
 				}
 

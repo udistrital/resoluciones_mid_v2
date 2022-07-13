@@ -71,10 +71,10 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 	lineHeight := 5.0
 
 	pdf := gofpdf.New("L", "mm", "A4", fontPath)
-	pdf.AddUTF8Font("Calibri", "", "calibri.ttf")
+	pdf.AddUTF8Font(Calibri, "", "calibri.ttf")
 	pdf.SetMargins(20, 20, 20)
 	pdf.AddPage()
-	pdf.SetFont("Calibri", "", fontSize)
+	pdf.SetFont(Calibri, "", fontSize)
 
 	pdf, err = ConstruirTablaVinculaciones(pdf, vinculaciones, lineHeight, fontSize, "RVIN", v[0].ResolucionVinculacionDocenteId.NivelAcademico)
 	if err != nil {
@@ -108,7 +108,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	fechaParsed := fmt.Sprintf("(%s %02d de %d)", TranslateMonth(fecha.Month().String()), fecha.Day(), fecha.Year())
 
 	var tipoResolucion models.Parametro
-	if err := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(datos.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
+	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(datos.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
 		panic(map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"})
 	}
 
@@ -158,11 +158,11 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	}
 
 	pdf := gofpdf.New("P", "mm", "A4", fontPath)
-	pdf.AddUTF8Font("Calibri", "", "calibri.ttf")
-	pdf.AddUTF8Font("Calibri-Bold", "B", "calibrib.ttf")
-	pdf.AddUTF8Font("MinionPro-BoldCn", "B", "MinionPro-BoldCn.ttf")
-	pdf.AddUTF8Font("MinionPro-MediumCn", "", "MinionPro-MediumCn.ttf")
-	pdf.AddUTF8Font("MinionProBoldItalic", "BI", "MinionProBoldItalic.ttf")
+	pdf.AddUTF8Font(Calibri, "", "calibri.ttf")
+	pdf.AddUTF8Font(CalibriBold, "B", "calibrib.ttf")
+	pdf.AddUTF8Font(MinionProBoldCn, "B", "MinionPro-BoldCn.ttf")
+	pdf.AddUTF8Font(MinionProMediumCn, "", "MinionPro-MediumCn.ttf")
+	pdf.AddUTF8Font(MinionProBoldItalic, "BI", "MinionProBoldItalic.ttf")
 
 	pdf.SetTopMargin(85)
 
@@ -173,20 +173,20 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 		pdf.ImageOptions(filepath.Join(imgPath, "escudo.png"), 82, 8, 45, 45, false, gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: true}, 0, "")
 		pdf.SetY(55)
-		pdf.SetFont("MinionPro-BoldCn", "B", fontSize)
+		pdf.SetFont(MinionProBoldCn, "B", fontSize)
 		pdf.WriteAligned(0, lineHeight+1, "RESOLUCIÓN Nº "+datos.Resolucion.NumeroResolucion, "C")
 		pdf.Ln(lineHeight)
 		pdf.WriteAligned(0, lineHeight+1, fechaParsed, "C")
 		pdf.Ln(lineHeight * 2)
 
-		pdf.SetFont("MinionProBoldItalic", "BI", fontSize)
+		pdf.SetFont(MinionProBoldItalic, "BI", fontSize)
 		pdf.WriteAligned(0, lineHeight+1, datos.Resolucion.Titulo, "C")
 		pdf.Ln(lineHeight * 2)
 	}, true)
 
 	pdf.SetFooterFunc(func() {
 		pdf.SetY(-15)
-		pdf.SetFont("Calibri", "", 8)
+		pdf.SetFont(Calibri, "", 8)
 		pdf.WriteAligned(0, lineHeight-1, fmt.Sprintf("Página %d de {nb}", pdf.PageNo()), "R")
 	})
 
@@ -194,8 +194,8 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		y := pdf.GetY()
 		_, h := pdf.GetPageSize()
 		_, _, _, b := pdf.GetMargins()
-		p := pdf.PageNo()
-		fmt.Println(p, y, h-b-lineHeight, h, b, (lineHeight * 2))
+		// p := pdf.PageNo()
+		// fmt.Println(p, y, h-b-lineHeight, h, b, (lineHeight * 2))
 		return y >= h-b-(lineHeight*2)
 	})
 
@@ -209,19 +209,19 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 	pdf.Ln(lineHeight)
 
-	pdf.SetFont("Calibri", "", fontSize)
+	pdf.SetFont(Calibri, "", fontSize)
 	pdf.WriteAligned(0, lineHeight, datos.Resolucion.PreambuloResolucion, "L")
 	pdf.Ln(lineHeight * 2)
 
-	pdf.SetFont("Calibri-Bold", "B", fontSize)
+	pdf.SetFont(CalibriBold, "B", fontSize)
 	pdf.WriteAligned(0, lineHeight, "CONSIDERANDO", "C")
 	pdf.Ln(lineHeight * 2)
 
-	pdf.SetFont("Calibri", "", fontSize)
+	pdf.SetFont(Calibri, "", fontSize)
 	pdf.Write(lineHeight, datos.Resolucion.ConsideracionResolucion)
 	pdf.Ln(lineHeight * 2)
 
-	pdf.SetFont("Calibri-Bold", "B", fontSize)
+	pdf.SetFont(CalibriBold, "B", fontSize)
 	pdf.WriteAligned(0, lineHeight, "RESUELVE", "C")
 	pdf.Ln(lineHeight * 2)
 
@@ -230,10 +230,10 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		pdf.SetLeftMargin(20)
 		pdf.SetRightMargin(20)
 
-		pdf.SetFont("Calibri-Bold", "B", fontSize)
+		pdf.SetFont(CalibriBold, "B", fontSize)
 		pdf.Write(lineHeight, fmt.Sprintf("ARTÍCULO %dº. ", articulo.Articulo.Numero))
 
-		pdf.SetFont("Calibri", "", fontSize)
+		pdf.SetFont(Calibri, "", fontSize)
 		pdf.Write(lineHeight, articulo.Articulo.Texto)
 		pdf.Ln(lineHeight)
 
@@ -261,21 +261,21 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 		for _, paragrafo := range articulo.Paragrafos {
 
-			pdf.SetFont("Calibri-Bold", "B", fontSize)
+			pdf.SetFont(CalibriBold, "B", fontSize)
 			pdf.Write(lineHeight, "PARÁGRAFO. ")
 
-			pdf.SetFont("Calibri", "", fontSize)
+			pdf.SetFont(Calibri, "", fontSize)
 			pdf.Write(lineHeight, paragrafo.Texto)
 			pdf.Ln(lineHeight)
 		}
 	}
 
 	pdf.Ln(lineHeight)
-	pdf.SetFont("Calibri-Bold", "B", fontSize)
+	pdf.SetFont(CalibriBold, "B", fontSize)
 	pdf.WriteAligned(0, lineHeight, "COMUNÍQUESE Y CÚMPLASE", "C")
 	pdf.Ln(lineHeight * 2)
 
-	pdf.SetFont("Calibri", "", fontSize)
+	pdf.SetFont(Calibri, "", fontSize)
 	pdf.Write(lineHeight, fmt.Sprintf("Dado en Bogotá D.C., a los %d dias del mes de %s de %d", fecha.Day(), TranslateMonth(fecha.Month().String()), fecha.Year()))
 	_, h := pdf.GetPageSize()
 	_, _, _, b := pdf.GetMargins()
@@ -284,9 +284,10 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	}
 	pdf.Ln(lineHeight * 10)
 
-	pdf.SetFont("MinionPro-MediumCn", "", fontSize)
+	pdf.SetFont(MinionProBoldCn, "B", fontSize)
 	pdf.WriteAligned(0, lineHeight, strings.ToUpper(ordenadorGasto.NombreOrdenador), "C")
 	pdf.Ln(lineHeight)
+	pdf.SetFont(MinionProMediumCn, "", fontSize)
 	pdf.WriteAligned(0, lineHeight, strings.ToUpper(ordenadorGasto.Cargo), "C")
 	pdf.Ln(lineHeight * 2)
 
@@ -334,9 +335,9 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 				panic(outputError)
 			}
 			pdf.Ln(lineHeight * 2)
-			pdf.SetFont("Calibri", "", fontSize)
+			pdf.SetFont(Calibri, "", fontSize)
 			pdf.Write(lineHeight, proyectoCurricular.Nombre)
-			pdf.SetFont("Calibri", "", fontSize-3)
+			pdf.SetFont(Calibri, "", fontSize-3)
 			pdf.Ln(lineHeight * 2)
 
 			pdf.CellFormat(w+4, lineHeight*2, "Nombre", "1", 0, "C", false, 0, "")
@@ -416,46 +417,60 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 		} else {
 			pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales*vinc.NumeroSemanas), "1", 0, "C", false, 0, "")
 		}
+
+		valoresAntes := make(map[string]float64)
+		if err := CalcularTrazabilidad(strconv.Itoa(vinc.Id), &valoresAntes); err != nil {
+			logs.Error("Error en trazabilidad -> " + err.Error())
+			panic("Error en trazabilidad -> " + err.Error())
+		}
+
 		switch tipoRes {
 		case "RVIN":
-			pdf.CellFormat(w, cellHeight, fmt.Sprintf("%.1f meses", float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			break
 		case "RCAN":
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w, lineHeight, "x meses", "1", "C", false)
+			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w, lineHeight, "Pasa a", "TLR", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w, lineHeight, "x meses", "BLR", "C", false)
+			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas)/4), "BLR", "C", false)
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w, y)
 			}
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w+1, lineHeight, vinc.ValorContratoFormato, "1", "C", false)
+			pdf.MultiCell(w+1, lineHeight, FormatMoney(valoresAntes["SueldoBasico"], 2), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w+1, lineHeight, "Pasa a", "TLR", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w+1, lineHeight, "$nuevo valor", "BLR", "C", false)
+			valorContrato := DeformatNumber(vinc.ValorContratoFormato)
+			pdf.MultiCell(w+1, lineHeight, FormatMoney(valoresAntes["SueldoBasico"]-valorContrato, 2), "BLR", "C", false)
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w+1, y)
 			}
-			pdf.CellFormat(w+1, cellHeight, "contrato-nuevo", "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			break
 		default:
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w, lineHeight, "x meses", "1", "C", false)
+			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w, lineHeight, "horas +/-", "1", "C", false)
+			pdf.MultiCell(w, lineHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w, lineHeight, "horas tt", "1", "C", false)
+			semanas := 0
+			if tipoRes == "RADD" {
+				semanas = int(valoresAntes["NumeroHorasSemanales"]) + vinc.NumeroHorasSemanales
+			} else {
+				semanas = int(valoresAntes["NumeroHorasSemanales"]) - vinc.NumeroHorasSemanales
+			}
+			pdf.MultiCell(w, lineHeight, strconv.Itoa(semanas), "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w, y)
 			}
 			x, y = pdf.GetXY()
 			pdf.MultiCell(w+1, lineHeight, vinc.ValorContratoFormato, "1", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w+1, lineHeight, "meses new", "1", "C", false)
+			pdf.MultiCell(w+1, lineHeight, fmt.Sprintf(CampoMeses, float32(semanas)/4), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w+1, lineHeight, "", "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
@@ -475,6 +490,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 	return pdf, outputError
 }
 
+// Construye las tablas de vinculaciones con los rubros presupuestales
 func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.Vinculaciones, lineHeight, fontSize float64, tipoRes, nivel string) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -499,9 +515,9 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 				panic(outputError)
 			}
 			pdf.Ln(lineHeight * 2)
-			pdf.SetFont("Calibri", "", fontSize)
+			pdf.SetFont(Calibri, "", fontSize)
 			pdf.Write(lineHeight, proyectoCurricular.Nombre)
-			pdf.SetFont("Calibri", "", fontSize-3)
+			pdf.SetFont(Calibri, "", fontSize-3.5)
 			pdf.Ln(lineHeight * 2)
 
 		}
@@ -511,7 +527,11 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 		pdf.CellFormat(w-2, lineHeight*2, "Cédula", "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w-1, lineHeight*2, "Expedida", "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w+1, lineHeight*2, "Categoría", "1", 0, "C", false, 0, "")
-		pdf.CellFormat(w+1, lineHeight*2, "Dedicación", "1", 0, "C", false, 0, "")
+		if tipoRes == "RVIN" {
+			pdf.CellFormat(w+1, lineHeight*2, "Dedicación", "1", 0, "C", false, 0, "")
+		} else {
+			pdf.CellFormat(w-2, lineHeight*2, "Dedicación", "1", 0, "C", false, 0, "")
+		}
 
 		horas := ""
 		if nivel == "PREGRADO" {
@@ -536,19 +556,15 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 		}
 
 		if tipoRes == "RADD" || tipoRes == "RRED" {
-			x, y := pdf.GetXY()
 			valor := ""
 			if tipoRes == "RADD" {
-				pdf.CellFormat(w-5, lineHeight*2, "CDP", "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight*2, "CDP", "1", 0, "C", false, 0, "")
 				valor = "Valor total a adicionar"
 			} else {
-				pdf.MultiCell(w-5, lineHeight, "CRP", "1", "C", false)
-				if pdf.GetY()-y > lineHeight {
-					pdf.SetXY(x+w-4, y)
-				}
+				pdf.CellFormat(w-2, lineHeight*2, "CRP", "1", 0, "C", false, 0, "")
 				valor = "Valor total a reducir"
 			}
-			x, y = pdf.GetXY()
+			x, y := pdf.GetXY()
 			pdf.MultiCell((w*2)-2, lineHeight*2, valor, "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+(w*2)-2, y)
@@ -566,7 +582,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 		}
 
 		if tipoRes == "RCAN" {
-			pdf.CellFormat(w-5, lineHeight*2, "CRP", "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, lineHeight*2, "CRP", "1", 0, "C", false, 0, "")
 			x, y := pdf.GetXY()
 			pdf.MultiCell(w-3, lineHeight, horas, "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
@@ -624,7 +640,11 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 		pdf.CellFormat(w-2, cellHeight, fmt.Sprintf("%.f", vinc.PersonaId), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w-1, cellHeight, vinc.ExpedicionDocumento, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w+1, cellHeight, vinc.Categoria, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(w+1, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
+		if tipoRes == "RVIN" {
+			pdf.CellFormat(w+1, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
+		} else {
+			pdf.CellFormat(w-2, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
+		}
 
 		valorHoras := ""
 		if nivel == "PREGRADO" {
@@ -646,7 +666,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			}
 
 			pdf.CellFormat(w-3, cellHeight, valorHoras, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w, cellHeight, fmt.Sprintf("%.1f meses", float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 
 			cellHeight = lineHeight * 4
 			pdf.CellFormat(7, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
@@ -676,42 +696,31 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 		if tipoRes == "RADD" || tipoRes == "RRED" {
 			cellHeight = lineHeight * 2
 			if tipoRes == "RADD" {
-				pdf.CellFormat(w-5, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
 			} else {
-				pdf.CellFormat(w-5, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
 			}
 			pdf.CellFormat((w*2)-2, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, cellHeight*2, valorHoras, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w-2, cellHeight*2, fmt.Sprintf("%.1f meses", float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, cellHeight*2, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
 		}
 
 		if tipoRes == "RCAN" {
 			cellHeight = lineHeight * 2
-			pdf.CellFormat(w-5, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, cellHeight, valorHoras, "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w, cellHeight*2, fmt.Sprintf("%.1f meses", float32(vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w, cellHeight*2, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
 		}
 
 		if tipoRes != "RVIN" {
-			var modVin []models.ModificacionVinculacion
-			url := "modificacion_vinculacion?query=VinculacionDocenteRegistradaId.Id:" + strconv.Itoa(vinc.Id)
-			if err := GetRequestNew("UrlCrudResoluciones", url, &modVin); err != nil {
-				logs.Error(err.Error())
-				panic(err.Error())
-			}
 
-			var desagregadoAntes []models.DisponibilidadVinculacion
-			url2 := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(modVin[0].VinculacionDocenteCanceladaId.Id)
-			if err := GetRequestNew("UrlCrudResoluciones", url2, &desagregadoAntes); err != nil {
-				logs.Error(err.Error())
-				panic(err.Error())
-			}
-			valoresAntes := map[string]float64{}
-			for _, disp := range desagregadoAntes {
-				valoresAntes[disp.Rubro] = disp.Valor
+			valoresAntes := make(map[string]float64)
+			if err := CalcularTrazabilidad(strconv.Itoa(vinc.Id), &valoresAntes); err != nil {
+				logs.Error("Error en trazabilidad -> " + err.Error())
+				panic("Error en trazabilidad -> " + err.Error())
 			}
 
 			var desagregadoDespues []models.DisponibilidadVinculacion
@@ -743,11 +752,11 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			}
 
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w+1, lineHeight, "Intereses cesantias", "1", "C", false)
+			pdf.MultiCell(w-2, lineHeight, "Intereses cesantias", "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
-				pdf.SetXY(x+w+1, y)
+				pdf.SetXY(x+w-2, y)
 			}
-			pdf.CellFormat(w-5, cellHeight, "Cesantias", "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, cellHeight, "Cesantias", "1", 0, "C", false, 0, "")
 
 			x, y = pdf.GetXY()
 			pdf.MultiCell(w-3, lineHeight, "Prima servicios", "1", "C", false)
@@ -763,21 +772,21 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["PrimaNavidad"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-1, lineHeight, FormatMoney(valoresAntes["Vacaciones"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["PrimaVacaciones"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w-5, lineHeight, FormatMoney(valoresAntes["Cesantias"], 2), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["Cesantias"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w+1, lineHeight, FormatMoney(modVin[0].VinculacionDocenteCanceladaId.ValorContrato, 2), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"], 2), "1", 0, "C", false, 0, "")
 
 			valorHorasAnterior := ""
 			if nivel == "PREGRADO" {
-				valorHorasAnterior = strconv.Itoa(modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales)
+				valorHorasAnterior = strconv.Itoa(int(valoresAntes["NumeroHorasSemanales"]))
 			} else {
-				valorHorasAnterior = strconv.Itoa(modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales * modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)
+				valorHorasAnterior = strconv.Itoa(int(valoresAntes["NumeroHorasSemanales"] * valoresAntes["NumeroSemanas"]))
 			}
 
 			if tipoRes == "RADD" || tipoRes == "RRED" {
 				pdf.CellFormat(w-3, lineHeight, valorHorasAnterior, "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w-2, lineHeight, fmt.Sprintf("%.1f meses", float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight, fmt.Sprintf(CampoMeses, valoresAntes["NumeroSemanas"]/4), "1", 0, "C", false, 0, "")
 			}
 
 			filaValores := "Valores a "
@@ -790,7 +799,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 				break
 			case "RCAN":
 				filaValores += "reversar"
-				pdf.CellFormat(w, lineHeight, fmt.Sprintf("%.1f meses", float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w, lineHeight, fmt.Sprintf(CampoMeses, valoresAntes["NumeroSemanas"]/4), "1", 0, "C", false, 0, "")
 				break
 			}
 			pdf.Ln(-1)
@@ -800,53 +809,54 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresDespues["PrimaNavidad"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-1, lineHeight, FormatMoney(valoresDespues["Vacaciones"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresDespues["PrimaVacaciones"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w-5, lineHeight, FormatMoney(valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresDespues["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, lineHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			switch tipoRes {
 			case "RADD":
 				if nivel == "PREGRADO" {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales+vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, valoresAntes["NumeroHorasSemanales"]+float64(vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
 				} else {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales+vinc.NumeroHorasSemanales)*float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas+vinc.NumeroSemanas)), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroHorasSemanales"]+float64(vinc.NumeroHorasSemanales))*(valoresAntes["NumeroSemanas"]+float64(vinc.NumeroSemanas))), "1", 0, "C", false, 0, "")
 				}
-				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas+vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "1", 0, "C", false, 0, "")
 			case "RRED":
 				if nivel == "PREGRADO" {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(vinc.NumeroHorasSemanales-modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, valoresAntes["NumeroHorasSemanales"]-float64(vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
 				} else {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(vinc.NumeroHorasSemanales-modVin[0].VinculacionDocenteCanceladaId.NumeroHorasSemanales)*float32(vinc.NumeroSemanas-modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)), "1", 0, "C", false, 0, "")
+					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroHorasSemanales"]-float64(vinc.NumeroHorasSemanales))*(valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))), "1", 0, "C", false, 0, "")
 				}
-				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(vinc.NumeroSemanas-modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "1", 0, "C", false, 0, "")
 				break
 			case "RCAN":
-				pdf.CellFormat(w, lineHeight*2, fmt.Sprintf("Pasa a %.1f", float32(modVin[0].VinculacionDocenteCanceladaId.NumeroSemanas-vinc.NumeroSemanas)*7/30), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "1", 0, "C", false, 0, "")
 				break
 			}
 			x, y = pdf.GetXY()
 			pdf.SetXY(x, y-lineHeight)
 			pdf.Ln(-1)
 
+			valorContrato := DeformatNumber(vinc.ValorContratoFormato)
 			pdf.CellFormat(w+4, lineHeight, "Pasa a", "1", 0, "C", false, 0, "")
 			if tipoRes == "RADD" {
 				pdf.CellFormat(w+2, lineHeight, FormatMoney(valoresAntes["SueldoBasico"]+valoresDespues["SueldoBasico"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["PrimaNavidad"]+valoresDespues["PrimaNavidad"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-1, lineHeight, FormatMoney(valoresAntes["Vacaciones"]+valoresDespues["Vacaciones"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["PrimaVacaciones"]+valoresDespues["PrimaVacaciones"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"]+valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w-5, lineHeight, FormatMoney(valoresAntes["Cesantias"]+valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"]+valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["Cesantias"]+valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"]+valoresDespues["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w+1, lineHeight, FormatMoney(modVin[0].VinculacionDocenteCanceladaId.ValorContrato+modVin[0].VinculacionDocenteRegistradaId.ValorContrato, 2), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"]+valorContrato, 2), "1", 0, "C", false, 0, "")
 			} else {
 				pdf.CellFormat(w+2, lineHeight, FormatMoney(valoresAntes["SueldoBasico"]-valoresDespues["SueldoBasico"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["PrimaNavidad"]-valoresDespues["PrimaNavidad"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-1, lineHeight, FormatMoney(valoresAntes["Vacaciones"]-valoresDespues["Vacaciones"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["PrimaVacaciones"]-valoresDespues["PrimaVacaciones"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"]-valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w-5, lineHeight, FormatMoney(valoresAntes["Cesantias"]-valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"]-valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["Cesantias"]-valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"]-valoresDespues["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w+1, lineHeight, FormatMoney(modVin[0].VinculacionDocenteCanceladaId.ValorContrato-modVin[0].VinculacionDocenteRegistradaId.ValorContrato, 2), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"]-valorContrato, 2), "1", 0, "C", false, 0, "")
 			}
 			pdf.Ln(-1)
 
@@ -870,7 +880,7 @@ func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp b
 
 	headers := []string{"Funcion", "Nombre", "Cargo", "Firma"}
 
-	pdf.SetFont("Calibri", "", 6)
+	pdf.SetFont(Calibri, "", 6)
 	for i, str := range headers {
 		w := 42.0
 		if i == 0 {
@@ -883,7 +893,7 @@ func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp b
 	}
 	pdf.Ln(-1)
 
-	pdf.SetFont("Calibri", "", 6)
+	pdf.SetFont(Calibri, "", 6)
 	for _, fila := range data {
 		for i, str := range headers {
 			w := 42.0

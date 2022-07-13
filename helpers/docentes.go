@@ -3,6 +3,7 @@ package helpers
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
@@ -99,15 +100,15 @@ func ListarDocentesCargaHoraria(vigencia, periodo, dedicacion, facultad, nivelAc
 		if err2 != nil {
 			panic(err2)
 		}
-		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].CategoriaNombre = "ASOCIADO" // strings.Trim(categoria.CategoriaDocente.Categoria, " ")
+		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].CategoriaNombre = strings.Trim(categoria.CategoriaDocente.Categoria, " ")
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].IDCategoria = categoria.CategoriaDocente.IDCategoria
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].NombreTipoVinculacion = dedicacion
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].IDTipoVinculacion = fmt.Sprintf("%d", HomologarDedicacionNombre(dedicacion, "new"))
 		if dedicacion == "TCO" {
-			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "20"
+			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "40"
 		}
 		if dedicacion == "MTO" {
-			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "40"
+			docentesCargaHoraria.CargasLectivas.CargaLectiva[i].HorasLectivas = "20"
 		}
 		docentesCargaHoraria.CargasLectivas.CargaLectiva[i].IDFacultad = facultad
 
