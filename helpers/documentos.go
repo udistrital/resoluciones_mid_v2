@@ -194,8 +194,8 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		y := pdf.GetY()
 		_, h := pdf.GetPageSize()
 		_, _, _, b := pdf.GetMargins()
-		p := pdf.PageNo()
-		fmt.Println(p, y, h-b-lineHeight, h, b, (lineHeight * 2))
+		// p := pdf.PageNo()
+		// fmt.Println(p, y, h-b-lineHeight, h, b, (lineHeight * 2))
 		return y >= h-b-(lineHeight*2)
 	})
 
