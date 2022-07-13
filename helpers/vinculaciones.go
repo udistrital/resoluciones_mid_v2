@@ -534,7 +534,7 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 		if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
 			(*valoresAntes)[disp.Rubro] = disp.Valor + (*valoresAntes)[disp.Rubro]
 		} else {
-			(*valoresAntes)[disp.Rubro] = disp.Valor - (*valoresAntes)[disp.Rubro]
+			(*valoresAntes)[disp.Rubro] = (*valoresAntes)[disp.Rubro] - disp.Valor
 		}
 	}
 
@@ -542,10 +542,12 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 	case "RCAN":
 		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas) - (*valoresAntes)["NumeroSemanas"]
 		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) - (*valoresAntes)["ValorContrato"]
+		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales)
 		break
 	case "RRED":
-		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales) - (*valoresAntes)["NumeroHorasSemanales"]
-		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) - (*valoresAntes)["ValorContrato"]
+		(*valoresAntes)["NumeroHorasSemanales"] = (*valoresAntes)["NumeroHorasSemanales"] - float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales)
+		(*valoresAntes)["ValorContrato"] = (*valoresAntes)["ValorContrato"] - float64(modVin.VinculacionDocenteCanceladaId.ValorContrato)
+		break
 	default:
 		(*valoresAntes)["NumeroHorasSemanales"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroHorasSemanales) + (*valoresAntes)["NumeroHorasSemanales"]
 		(*valoresAntes)["ValorContrato"] = float64(modVin.VinculacionDocenteCanceladaId.ValorContrato) + (*valoresAntes)["ValorContrato"]
