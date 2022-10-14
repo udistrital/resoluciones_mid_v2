@@ -646,7 +646,12 @@ func CambiarEstadoResolucion(resolucionId int, estado, usuario string) (err erro
 		nuevoEstado.Activo = true
 		nuevoEstado.EstadoResolucionId = objEstado[0].Id
 		nuevoEstado.ResolucionId = &models.Resolucion{Id: resolucionId}
-		nuevoEstado.Usuario = nombreUsuario["sub"].(string)
+
+		var ok bool
+		if nuevoEstado.Usuario, ok = nombreUsuario["sub"].(string); !ok {
+			nuevoEstado.Usuario = ""
+		}
+
 		err = SendRequestNew("UrlcrudResoluciones", "resolucion_estado", "POST", &respNuevoEstado, &nuevoEstado)
 		if err != nil {
 			return err

@@ -216,6 +216,15 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
         beego.ControllerComments{
+            Method: "ConsultarSemaforoDocente",
+            Router: "/consultar_semaforo_docente/:vigencia/:periodo/:docente",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
             Method: "Desvincular",
             Router: "/desvincular",
             AllowHTTPMethods: []string{"post"},
