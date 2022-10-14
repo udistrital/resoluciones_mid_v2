@@ -883,6 +883,46 @@
                 }
             }
         },
+        "/gestion_vinculaciones/consultar_semaforo_docente/{vigencia}/{periodo}/{docente}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el estado del semaforo del docente en condor",
+                "operationId": "GestionVinculacionesController.ConsultarSemaforoDocente",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "año a consultar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "periodo",
+                        "description": "periodo a listar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "docente",
+                        "description": "documento del docente a consultar",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{string} \"categoria del docente\""
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/desvincular": {
             "post": {
                 "tags": [

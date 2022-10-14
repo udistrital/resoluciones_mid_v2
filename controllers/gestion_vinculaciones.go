@@ -23,6 +23,7 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("InformeVinculaciones", c.InformeVinculaciones)
 	c.Mapping("DesvincularDocentes", c.DesvincularDocentes)
 	c.Mapping("CalcularValorContratosSeleccionados", c.CalcularValorContratosSeleccionados)
+	c.Mapping("ConsultarSemaforoDocente", c.ConsultarSemaforoDocente)
 }
 
 // Post ...
@@ -124,6 +125,8 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId); err2 == nil {
 		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
+	} else {
+		panic(err2)
 	}
 	c.ServeJSON()
 }
@@ -160,6 +163,8 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 	if respuesta, err := helpers.ListarDocentesCargaHoraria(vigencia, periodo, dedicacion, facultad, nivelAcademico); err == nil {
 		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta.CargasLectivas.CargaLectiva}
+	} else {
+		panic(err)
 	}
 	c.ServeJSON()
 }
@@ -245,6 +250,40 @@ func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 		}
 	} else {
 		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// ConsultarSemaforoDocente ...
+// @Title ConsultarSemaforoDocente
+// @Description Consulta el estado del semaforo del docente en condor
+// @Param vigencia query string false "año a consultar"
+// @Param periodo query string false "periodo a listar"
+// @Param docente query string false "documento del docente a consultar"
+// @Success 200 {string} "categoria del docente"
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /consultar_semaforo_docente/:vigencia/:periodo/:docente [get]
+func (c *GestionVinculacionesController) ConsultarSemaforoDocente() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	vigencia := c.Ctx.Input.Param(":vigencia")
+	periodo := c.Ctx.Input.Param(":periodo")
+	docente := c.Ctx.Input.Param(":docente")
+
+	vig, err1 := strconv.Atoi(vigencia)
+	per, err2 := strconv.Atoi(periodo)
+	doc, err3 := strconv.Atoi(docente)
+
+	if (err1 != nil) || (err2 != nil) || (err3 != nil) || (vig == 0) || (per == 0) || (doc == 0) || (len(vigencia) != 4) || (len(periodo) != 1) {
+		panic(map[string]interface{}{"funcion": "ConsultarSemaforoDocente", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if respuesta, err := helpers.BuscarCategoriaDocente(vigencia, periodo, docente); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta.CategoriaDocente.Categoria}
+	} else {
+		panic(err)
 	}
 	c.ServeJSON()
 }
