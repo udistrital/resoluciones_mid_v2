@@ -46,10 +46,10 @@ func SupervisorActual(resolucionId int) (supervisorActual models.SupervisorContr
 func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.Time) {
 	var mesEntero int
 	var decimal float32
-	// dias := numeroSemanas * 7
-	// meses := float32(dias) / 30
+	dias := numeroSemanas * 7
+	meses := float32(dias) / 30
 	// Meses de 4 semanas
-	meses := float32(numeroSemanas) / 4
+	// meses := float32(numeroSemanas) / 4
 	mesEntero = int(meses)
 	decimal = meses - float32(mesEntero)
 	numeroDias := decimal * 30
