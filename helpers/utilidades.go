@@ -112,6 +112,7 @@ func ExtractData(respuesta map[string]interface{}, v interface{}) error {
 
 func JsonDebug(i interface{}) {
 	formatdata.JsonPrint(i)
+	fmt.Println()
 }
 
 func iguales(a interface{}, b interface{}) bool {

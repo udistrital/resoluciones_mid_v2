@@ -312,43 +312,87 @@
                 "tags": [
                     "gestion_resoluciones"
                 ],
-                "description": "get all ContenidoResolucion",
+                "description": "Carga las resoluciones de acuerdo a los parametros recibidos",
                 "operationId": "GestionResolucionesController.GetAll",
                 "parameters": [
                     {
                         "in": "query",
-                        "name": "query",
-                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "fields",
-                        "description": "Fields returned. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "sortby",
-                        "description": "Sorted-by fields. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "order",
-                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
                         "name": "limit",
                         "description": "Limit the size of result set. Must be an integer",
-                        "type": "string"
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
                         "name": "offset",
                         "description": "Start position of result set. Must be an integer",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "NumeroResolucion",
+                        "description": "Numero de resolución a buscar",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Vigencia",
+                        "description": "Año de la resolución a buscar",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Periodo",
+                        "description": "Periodo academico a buscar",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Semanas",
+                        "description": "Numero de semanas por las que se ha hecho la resolución",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Facultad",
+                        "description": "Facultad que emite la resolución",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "NivelAcademico",
+                        "description": "Nivel academico de la resolución. PREGRADO o POSGRADO",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Dedicacion",
+                        "description": "Dedicación del docente",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Estado",
+                        "description": "Estado de la resolución",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "TipoResolucion",
+                        "description": "Tipo de resolución a bucar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "ExcluirTipo",
+                        "description": "Tipo de resolución a excluir de la consulta",
                         "type": "string"
                     }
                 ],
@@ -489,220 +533,6 @@
                 "responses": {
                     "200": {
                         "description": "{string} string Base64 encoded file"
-                    },
-                    "400": {
-                        "description": "bad request"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/gestion_resoluciones/resoluciones_aprobadas": {
-            "get": {
-                "tags": [
-                    "gestion_resoluciones"
-                ],
-                "description": "get Resoluciones aprobadas",
-                "operationId": "GestionResolucionesController.GetResolucionesAprobadas",
-                "parameters": [
-                    {
-                        "in": "query",
-                        "name": "query",
-                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "fields",
-                        "description": "Fields returned. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "sortby",
-                        "description": "Sorted-by fields. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "order",
-                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "limit",
-                        "description": "Limit the size of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "offset",
-                        "description": "Start position of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "facultad",
-                        "description": "Nombre de la facultad",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "tipoRes",
-                        "description": "Tipo de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "nivelA",
-                        "description": "Nivel académico",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "dedicacion",
-                        "description": "Dedicación de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "estadoRes",
-                        "description": "Estado de la resolución",
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Resoluciones"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "bad request"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/gestion_resoluciones/resoluciones_expedidas": {
-            "get": {
-                "tags": [
-                    "gestion_resoluciones"
-                ],
-                "description": "get Resoluciones expedidas",
-                "operationId": "GestionResolucionesController.GetResolucionesExpedidas",
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Resoluciones"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "bad request"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/gestion_resoluciones/resoluciones_inscritas": {
-            "get": {
-                "tags": [
-                    "gestion_resoluciones"
-                ],
-                "description": "get Resoluciones inscritas",
-                "operationId": "GestionResolucionesController.GetResolucionesInscritas",
-                "parameters": [
-                    {
-                        "in": "query",
-                        "name": "query",
-                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "fields",
-                        "description": "Fields returned. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "sortby",
-                        "description": "Sorted-by fields. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "order",
-                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "limit",
-                        "description": "Limit the size of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "offset",
-                        "description": "Start position of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "facultad",
-                        "description": "Nombre de la facultad",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "tipoRes",
-                        "description": "Tipo de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "nivelA",
-                        "description": "Nivel académico",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "dedicacion",
-                        "description": "Dedicación de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "estadoRes",
-                        "description": "Estado de la resolución",
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Resoluciones"
-                            }
-                        }
                     },
                     "400": {
                         "description": "bad request"

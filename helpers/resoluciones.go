@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -191,7 +193,8 @@ func InsertarArticulos(articulos []models.Articulo, resolucionId int) (err error
 	return err
 }
 
-func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
+// Genera un listado de resoluciones teniendo en cuenta la query
+func ListarResoluciones(query string) (listaRes []models.Resoluciones, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "ListarResoluciones", "err": err, "status": "500"}
@@ -207,21 +210,12 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 	var tipo models.Parametro
 	var err error
 
-	url0 := "resolucion_vinculacion_docente?limit=0&fields=Id"
-	if err = GetRequestNew("UrlcrudResoluciones", url0, &res); err != nil {
-		logs.Error(err)
-		panic(err.Error())
-	}
-	total = len(res)
-
-	url := "resolucion?query=Activo:true&order=desc&sortby=Id&limit=" + strconv.Itoa(limit) + "&offset=" + strconv.Itoa(10*(offset-1))
-	if err = GetRequestNew("UrlcrudResoluciones", url, &res); err != nil {
+	if err = GetRequestNew("UrlcrudResoluciones", "resolucion"+query, &res); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
 
-	url2 := "resolucion_vinculacion_docente?query=Activo:true&order=desc&sortby=Id&limit=" + strconv.Itoa(limit) + "&offset=" + strconv.Itoa(10*(offset-1))
-	if err = GetRequestNew("UrlcrudResoluciones", url2, &resv); err != nil {
+	if err = GetRequestNew("UrlcrudResoluciones", "resolucion_vinculacion_docente"+query, &resv); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
@@ -267,248 +261,195 @@ func ListarResoluciones(limit, offset int) (listaRes []models.Resoluciones, tota
 	if listaRes == nil {
 		listaRes = []models.Resoluciones{}
 	}
-	return listaRes, total, outputError
+	return listaRes, outputError
 }
 
-func ListarResolucionesInscritas(query string, facFiltro string, tipoResFiltro string, nivelFiltro string, dedFiltro string, estadoFiltro string, limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
+// Procesa los filtros de busqueda por medio de los parametros de consulta y genera la query correspondiente
+func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "ListarResolucionesInscritas", "err": err, "status": "500"}
+			outputError = map[string]interface{}{"funcion": "ListarResolucionesFiltradas", "err": err, "status": "500"}
 			panic(outputError)
 		}
 	}()
-
+	var rest []models.ResolucionEstado
+	var resv []models.ResolucionVinculacionDocente
 	var res []models.Resolucion
-	var resv models.ResolucionVinculacionDocente
-	var rest []models.ResolucionEstado
-	var dep models.Dependencia
-	var estado models.Parametro
-	var tipo models.Parametro
+	var parametros []models.Parametro
 	var err error
+	var err2 map[string]interface{}
 
-	url0 := "resolucion_vinculacion_docente?limit=0&fields=Id"
-	if err = GetRequestNew("UrlcrudResoluciones", url0, &res); err != nil {
-		logs.Error(err)
-		panic(err.Error())
-	}
-	total = len(res)
+	limit, _ := strconv.Atoi(f.Limit)
+	offset, _ := strconv.Atoi(f.Offset)
+	queryBase := "order=desc&sortby=Id&query=Activo:true,"
+	queryRes := ""
+	queryResVin := ""
+	listado := ""
 
-	url := "resolucion?query=" + query + "&order=desc&sortby=Id&limit=" + strconv.Itoa(limit) + "&offset=" + strconv.Itoa(10*(offset-1))
-	if err = GetRequestNew("UrlcrudResoluciones", url, &res); err != nil {
-		logs.Error(err)
-		panic(err.Error())
-	}
-
-	for i := range res {
-		url3 := "resolucion_estado?order=desc&sortby=Id&query=Activo:true,ResolucionId.Id:" + strconv.Itoa(res[i].Id)
-		if err = GetRequestNew("UrlcrudResoluciones", url3, &rest); err != nil {
+	// Preparar filtro por tipo de resolucion
+	if len(f.TipoResolucion) > 0 {
+		params := url.Values{}
+		params.Add("query", "Nombre:"+f.TipoResolucion)
+		url := "parametro?" + params.Encode()
+		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
+			logs.Error(err)
 			panic(err.Error())
 		}
-		url2 := ResVinEndpoint + strconv.Itoa(res[i].Id)
-		if err = GetRequestNew("UrlCrudResoluciones", url2, &resv); err != nil {
+		if len(parametros) > 0 {
+			f.TipoResolucion = strconv.Itoa(parametros[0].Id)
+		}
+	}
+
+	// Preparar filtro por tipos de resolución excluyendo cancelación
+	if len(f.ExcluirTipo) > 0 {
+		url := "parametro?query=TipoParametroId.CodigoAbreviacion:TR"
+		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
+			logs.Error(err)
 			panic(err.Error())
 		}
-		if strings.Contains(strings.ToLower(resv.NivelAcademico), strings.ToLower(nivelFiltro)) {
-			if strings.Contains(strings.ToLower(resv.Dedicacion), strings.ToLower(dedFiltro)) {
-				if len(rest) > 0 {
-					if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[0].EstadoResolucionId), &estado); err != nil {
-						panic(err.Error())
-					}
-				} else {
-					continue
+		tiposRes := ""
+		for i, param := range parametros {
+			if param.CodigoAbreviacion != f.ExcluirTipo && param.ParametroPadreId == nil {
+				if i > 0 {
+					tiposRes += "|"
 				}
-				if strings.Contains(strings.ToLower(estado.Nombre), strings.ToLower(estadoFiltro)) {
-					if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
-						panic(err.Error())
-					}
-					if strings.Contains(strings.ToLower(dep.Nombre), strings.ToLower(facFiltro)) {
-						if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(res[i].TipoResolucionId), &tipo); err != nil {
-							panic(err.Error())
-						}
-						if strings.Contains(strings.ToLower(tipo.Nombre), strings.ToLower(tipoResFiltro)) {
-							resolucion := &models.Resoluciones{
-								Id:               res[i].Id,
-								NumeroResolucion: res[i].NumeroResolucion,
-								Vigencia:         res[i].Vigencia,
-								Periodo:          res[i].Periodo,
-								Semanas:          res[i].NumeroSemanas,
-								NivelAcademico:   resv.NivelAcademico,
-								Dedicacion:       resv.Dedicacion,
-								Facultad:         dep.Nombre,
-								Estado:           estado.Nombre,
-								TipoResolucion:   tipo.Nombre,
-							}
-
-							listaRes = append(listaRes, *resolucion)
-						}
-					}
-				}
+				tiposRes += strconv.Itoa(param.Id)
 			}
 		}
+		f.TipoResolucion = tiposRes
 	}
 
-	if listaRes == nil {
-		listaRes = []models.Resoluciones{}
-	}
-	return listaRes, total, outputError
-}
-
-func ListarResolucionesAprobadas(query string, facFiltro string, tipoResFiltro string, nivelFiltro string, dedFiltro string, estadoFiltro string, limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "ListarResolucionesAprobadas", "err": err, "status": "500"}
-			panic(outputError)
-		}
-	}()
-
-	var estado, aux []models.Parametro
-	var rest []models.ResolucionEstado
-	var resv models.ResolucionVinculacionDocente
-	var dep models.Dependencia
-	var tipo models.Parametro
-	var err error
-	var n int
-
-	url := "parametro?query=CodigoAbreviacion:RAPR"
-	if err = GetRequestNew("UrlcrudParametros", url, &aux); err != nil {
-		panic(err.Error())
-	}
-	estado = append(estado, aux[0])
-	url = "parametro?query=CodigoAbreviacion:REXP"
-	if err = GetRequestNew("UrlcrudParametros", url, &aux); err != nil {
-		panic(err.Error())
-	}
-	estado = append(estado, aux[0])
-
-	for n < 2 {
-		if len(estado) > 0 {
-
-			if strings.Contains(strings.ToLower(estado[n].Nombre), strings.ToLower(estadoFiltro)) {
-
-				url = "resolucion_estado?fields=Id&limit=0&query=" + query + ",EstadoResolucionId:" + strconv.Itoa(estado[n].Id)
-				if err = GetRequestNew("UrlCrudResoluciones", url, &rest); err != nil {
-					panic(err.Error())
-				}
-				total = len(rest)
-
-				url = "resolucion_estado?order=desc&sortby=Id&query=" + query + ",EstadoResolucionId:" + strconv.Itoa(estado[n].Id) + "&limit=" + strconv.Itoa(limit/2) + "&offset=" + strconv.Itoa(10*(offset-1))
-				if err = GetRequestNew("UrlCrudResoluciones", url, &rest); err != nil {
-					panic(err.Error())
-				}
-				for i := range rest {
-
-					url3 := ResVinEndpoint + strconv.Itoa(rest[i].ResolucionId.Id)
-					if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
-						panic(err.Error())
-					}
-					if strings.Contains(strings.ToLower(resv.NivelAcademico), strings.ToLower(nivelFiltro)) {
-						if strings.Contains(strings.ToLower(resv.Dedicacion), strings.ToLower(dedFiltro)) {
-							if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
-								panic(err.Error())
-							}
-							if strings.Contains(strings.ToLower(dep.Nombre), strings.ToLower(facFiltro)) {
-								if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
-									panic(err.Error())
-								}
-
-								if strings.Contains(strings.ToLower(tipo.Nombre), strings.ToLower(tipoResFiltro)) {
-
-									resolucion := &models.Resoluciones{
-										Id:               rest[i].ResolucionId.Id,
-										NumeroResolucion: rest[i].ResolucionId.NumeroResolucion,
-										Vigencia:         rest[i].ResolucionId.Vigencia,
-										NivelAcademico:   resv.NivelAcademico,
-										Dedicacion:       resv.Dedicacion,
-										Facultad:         dep.Nombre,
-										Estado:           estado[n].Nombre,
-										TipoResolucion:   tipo.Nombre,
-									}
-
-									listaRes = append(listaRes, *resolucion)
-								}
-							}
-						}
-					}
-				}
-
-			}
-		}
-		n++
-	}
-	if listaRes == nil {
-		listaRes = []models.Resoluciones{}
-	}
-	return listaRes, total, outputError
-}
-
-func ListarResolucionesExpedidas(limit, offset int) (listaRes []models.Resoluciones, total int, outputError map[string]interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "ListarResolucionesExpedidas", "err": err, "status": "500"}
-			panic(outputError)
-		}
-	}()
-	var estado []models.Parametro
-	var resv models.ResolucionVinculacionDocente
-	var rest []models.ResolucionEstado
-	var dep models.Dependencia
-	var tipo models.Parametro
-	var err error
-
-	url := "parametro?query=CodigoAbreviacion:REXP"
-	if err = GetRequestNew("UrlcrudParametros", url, &estado); err != nil {
-		panic(err.Error())
-	}
-
-	if len(estado) > 0 {
-		url1 := "resolucion_estado?fields=Id&limit=0&query=Activo:true,EstadoResolucionId:" + strconv.Itoa(estado[0].Id)
-		if err = GetRequestNew("UrlCrudResoluciones", url1, &rest); err != nil {
+	// preparar filtro por estado o estados
+	if len(f.Estado) > 0 {
+		param := url.Values{}
+		param.Add("query", "Nombre.in:"+f.Estado)
+		url := "parametro?limit=0&" + param.Encode()
+		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
 			panic(err.Error())
 		}
-		total = len(rest)
+		estados := ""
+		for i, param := range parametros {
+			if i > 0 {
+				estados += "|"
+			}
+			estados += strconv.Itoa(param.Id)
+		}
 
-		url2 := "resolucion_estado?order=desc&sortby=Id&query=Activo:true,EstadoResolucionId:" + strconv.Itoa(estado[0].Id) + "&limit=" + strconv.Itoa(limit) + "&offset=" + strconv.Itoa(10*(offset-1))
-		if err = GetRequestNew("UrlCrudResoluciones", url2, &rest); err != nil {
+		queryRes = queryBase + "EstadoResolucionId.in:" + estados + ","
+
+		//Preparar filtro de resolucion por: numero, vigencia, periodo, semanas, facultad, tipoResolucion
+		queryRes += "ResolucionId.Activo:true,"
+		if len(f.NumeroResolucion) > 0 {
+			queryRes += "ResolucionId.NumeroResolucion:" + f.NumeroResolucion + ","
+		}
+		if len(f.Vigencia) > 0 {
+			queryRes += "ResolucionId.Vigencia:" + f.Vigencia + ","
+		}
+		if len(f.Periodo) > 0 {
+			queryRes += "ResolucionId.Periodo:" + f.Periodo + ","
+		}
+		if len(f.Semanas) > 0 {
+			queryRes += "ResolucionId.NumeroSemanas:" + f.Semanas + ","
+		}
+		if len(f.FacultadId) > 0 {
+			queryRes += "ResolucionId.DependenciaId:" + f.FacultadId + ","
+		}
+		if len(f.TipoResolucion) > 0 {
+			queryRes += "ResolucionId.TipoResolucionId.in:" + f.TipoResolucion + ","
+		}
+		queryRes = strings.TrimSuffix(queryRes, ",")
+
+		// carga de datos filtrados
+		url1 := "resolucion_estado?" + queryRes + "&limit=0&fields=ResolucionId"
+		if err = GetRequestNew("UrlcrudResoluciones", url1, &rest); err != nil {
+			logs.Error(err)
 			panic(err.Error())
 		}
 		for i := range rest {
-			url3 := ResVinEndpoint + strconv.Itoa(rest[i].ResolucionId.Id)
-			if err = GetRequestNew("UrlCrudResoluciones", url3, &resv); err != nil {
-				panic(err.Error())
+			if i > 0 {
+				listado += "|"
+			} else {
+				listado = ""
 			}
+			listado += strconv.Itoa(rest[i].ResolucionId.Id)
+		}
+	} else {
+		// Preparar filtro de resolucion por: numero, vigencia, periodo, semanas, facultad, tipoResolucion
+		queryRes = queryBase
+		if len(f.NumeroResolucion) > 0 {
+			queryRes += "NumeroResolucion:" + f.NumeroResolucion + ","
+		}
+		if len(f.Vigencia) > 0 {
+			queryRes += "Vigencia:" + f.Vigencia + ","
+		}
+		if len(f.Periodo) > 0 {
+			queryRes += "Periodo:" + f.Periodo + ","
+		}
+		if len(f.Semanas) > 0 {
+			queryRes += "NumeroSemanas:" + f.Semanas + ","
+		}
+		if len(f.FacultadId) > 0 {
+			queryRes += "DependenciaId:" + f.FacultadId + ","
+		}
+		if len(f.TipoResolucion) > 0 {
+			queryRes += "TipoResolucionId.in:" + f.TipoResolucion + ","
+		}
+		queryRes = strings.TrimSuffix(queryRes, ",")
 
-			if err = GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
-				panic(err.Error())
+		// carga de datos filtrados
+		url1 := "resolucion?" + queryRes + "&limit=0&fields=Id"
+		if err = GetRequestNew("UrlcrudResoluciones", url1, &res); err != nil {
+			logs.Error(err)
+			panic(err.Error())
+		}
+		for i := range res {
+			if i > 0 {
+				listado += "|"
+			} else {
+				listado = ""
 			}
-
-			if err = GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(rest[i].ResolucionId.TipoResolucionId), &tipo); err != nil {
-				panic(err.Error())
-			}
-
-			resolucion := &models.Resoluciones{
-				Id:               rest[i].ResolucionId.Id,
-				NumeroResolucion: rest[i].ResolucionId.NumeroResolucion,
-				Vigencia:         rest[i].ResolucionId.Vigencia,
-				Periodo:          rest[i].ResolucionId.Periodo,
-				Semanas:          rest[i].ResolucionId.NumeroSemanas,
-				NivelAcademico:   resv.NivelAcademico,
-				Dedicacion:       resv.Dedicacion,
-				Facultad:         dep.Nombre,
-				Estado:           estado[0].Nombre,
-				TipoResolucion:   tipo.Nombre,
-			}
-
-			listaRes = append(listaRes, *resolucion)
+			listado += strconv.Itoa(res[i].Id)
 		}
 	}
 
-	if listaRes == nil {
-		listaRes = []models.Resoluciones{}
+	// filtrar dedicacion y nivel por resolucionVinculacionDocente
+	queryResVin = queryBase
+	if len(f.Dedicacion) > 0 {
+		queryResVin += "Dedicacion:" + f.Dedicacion + ","
+	}
+	if len(f.NivelAcademico) > 0 {
+		queryResVin += "NivelAcademico:" + f.NivelAcademico + ","
+	}
+	if len(listado) > 0 {
+		queryResVin += "Id.in:" + listado + ","
+	}
+	queryResVin = strings.TrimSuffix(queryResVin, ",")
+	url := "resolucion_vinculacion_docente?" + queryResVin + "&limit=0&fields=Id"
+	if err = GetRequestNew("UrlCrudResoluciones", url, &resv); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+	total = len(resv)
+
+	// actualizar listado
+	for i := range resv {
+		if i > 0 {
+			listado += "|"
+		} else {
+			listado = ""
+		}
+		listado += strconv.Itoa(resv[i].Id)
+	}
+
+	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%sId.in:%s", f.Limit, limit*(offset-1), queryBase, listado)
+	if listaRes, err2 = ListarResoluciones(queryFinal); err2 != nil {
+		panic(err2)
 	}
 
 	return listaRes, total, outputError
 }
 
+// Recupera toda la información de una resolución a partir de su Id
 func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoResolucion, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -532,6 +473,7 @@ func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoReso
 	return resolucion, outputError
 }
 
+// Recupera toda la información de los articulos y paragrafos de una resolución a partir de su Id
 func CargarArticulos(ResolucionId int) (articulos []models.Articulo, err error) {
 	url := "componente_resolucion?limit=0&sortby=Numero&order=asc&query=TipoComponente:Articulo,Activo:true,ResolucionId.Id:" + strconv.Itoa(ResolucionId)
 	var arts []models.ComponenteResolucion
@@ -728,7 +670,7 @@ func ConsultaDocente(DocenteId int) (listaRes []models.Resoluciones, outputError
 	}
 	if len(estado) > 0 {
 		for i := range vinculaciones {
-			url2 := "resolucion_estado?query=Activo:true,EstadoResolucionId:" + strconv.Itoa(estado[0].Id) + ",ResolucionId.Id:" + strconv.Itoa(vinculaciones[i].ResolucionVinculacionDocenteId.Id)
+			url2 := "resolucion_estado?fields=fill&query=Activo:true,EstadoResolucionId:" + strconv.Itoa(estado[0].Id) + ",ResolucionId.Id:" + strconv.Itoa(vinculaciones[i].ResolucionVinculacionDocenteId.Id)
 			if err = GetRequestNew("UrlCrudResoluciones", url2, &rest); err != nil {
 				panic(err.Error())
 			}
