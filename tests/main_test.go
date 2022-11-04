@@ -17,6 +17,8 @@ var parameters struct {
 	UrlcrudOikos        string
 	UrlcrudParametros   string
 	UrlmidTerceros      string
+	UrlGestorDocumental string
+	UrlmidTitan         string
 	UrlcrudWSO2         string
 }
 
@@ -29,6 +31,8 @@ func TestMain(m *testing.M) {
 	parameters.UrlcrudOikos = os.Getenv("RESOLUCIONES_MID_V2_OIKOS_URL")
 	parameters.UrlcrudParametros = os.Getenv("RESOLUCIONES_MID_V2_PARAMETROS_URL")
 	parameters.UrlmidTerceros = os.Getenv("RESOLUCIONES_MID_V2_TERCEROS_MID_URL")
+	parameters.UrlGestorDocumental = os.Getenv("RESOLUCIONES_MID_V2_GESTOR_DOCUMENTAL")
+	parameters.UrlmidTitan = os.Getenv("RESOLUCIONES_MID_V2_TITAN_MID_URL")
 	parameters.UrlcrudWSO2 = os.Getenv("RESOLUCIONES_MID_V2_WSO2_URL")
 	flag.Parse()
 	os.Exit(m.Run())
@@ -38,15 +42,11 @@ func TestEndPointResolucionesCrud(t *testing.T) {
 	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudResoluciones, "/v1/", "", 1)
 	BaseTestEndpoint(t, endpoint)
 }
-func TestEndPointTerceros(t *testing.T) {
-	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlmidTerceros, "/v1/", "", 1)
-	BaseTestEndpoint(t, endpoint)
-}
 func TestEndPointAgora(t *testing.T) {
 	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudAgora, "/v1/", "", 1)
 	BaseTestEndpoint(t, endpoint)
 }
-func TestEndPointKronos(t *testing.T) {
+func TestEndPointCore(t *testing.T) {
 	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudCore, "/v1/", "", 1)
 	BaseTestEndpoint(t, endpoint)
 }
@@ -56,6 +56,22 @@ func TestEndPointRuler(t *testing.T) {
 }
 func TestEndPointOikos(t *testing.T) {
 	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudOikos, "/v1/", "", 1)
+	BaseTestEndpoint(t, endpoint)
+}
+func TestEndPointParametros(t *testing.T) {
+	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlcrudParametros, "/v1/", "", 1)
+	BaseTestEndpoint(t, endpoint)
+}
+func TestEndPointTerceros(t *testing.T) {
+	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlmidTerceros, "/v1/", "", 1)
+	BaseTestEndpoint(t, endpoint)
+}
+func TestEndPointGestorDocumental(t *testing.T) {
+	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlGestorDocumental, "/v1/", "", 1)
+	BaseTestEndpoint(t, endpoint)
+}
+func TestEndPointTitan(t *testing.T) {
+	endpoint := parameters.ProtocolAdmin + "://" + strings.Replace(parameters.UrlmidTitan, "/v1/", "", 1)
 	BaseTestEndpoint(t, endpoint)
 }
 func TestEndPointWSO2(t *testing.T) {
