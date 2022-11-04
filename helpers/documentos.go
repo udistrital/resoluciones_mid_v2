@@ -426,11 +426,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 
 		switch tipoRes {
 		case "RVIN":
-			if nivel == "PREGRADO" {
-				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", 0, "C", false, 0, "")
-			} else {
-				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales*vinc.NumeroSemanas), "1", 0, "C", false, 0, "")
-			}
+			pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-1, cellHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			break
@@ -458,17 +454,10 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			break
 		default:
 			// Horas semanales|semestrales
-			horasAntes := 0
-			horasDespues := 0
+			horasAntes := int(valoresAntes["NumeroHorasSemanales"])
+			horasDespues := vinc.NumeroHorasSemanales
 			horasTotales := 0
 			x, y = pdf.GetXY()
-			if nivel == "PREGRADO" {
-				horasAntes = int(valoresAntes["NumeroHorasSemanales"])
-				horasDespues = vinc.NumeroHorasSemanales
-			} else {
-				horasAntes = int(valoresAntes["NumeroHorasSemanales"]) * vinc.NumeroSemanas
-				horasDespues = vinc.NumeroHorasSemanales * vinc.NumeroSemanas
-			}
 			pdf.MultiCell(w-2, lineHeight, strconv.Itoa(horasAntes), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w-2, lineHeight, strconv.Itoa(horasDespues), "1", "C", false)
@@ -692,12 +681,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-2, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
 		}
 
-		valorHoras := ""
-		if nivel == "PREGRADO" {
-			valorHoras = strconv.Itoa(vinc.NumeroHorasSemanales)
-		} else {
-			valorHoras = strconv.Itoa(vinc.NumeroHorasSemanales * vinc.NumeroSemanas)
-		}
+		valorHoras := strconv.Itoa(vinc.NumeroHorasSemanales)
 
 		if tipoRes == "RVIN" {
 			var desagregado []models.DisponibilidadVinculacion
@@ -823,16 +807,8 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"], 2), "1", 0, "C", false, 0, "")
 
-			valorHorasAnterior := ""
-			if nivel == "PREGRADO" {
-				valorHorasAnterior = strconv.Itoa(int(valoresAntes["NumeroHorasSemanales"]))
-			} else {
-				valorHorasAnterior = strconv.Itoa(int(valoresAntes["NumeroHorasSemanales"] * valoresAntes["NumeroSemanas"]))
-			}
-
 			if tipoRes == "RADD" || tipoRes == "RRED" {
-				pdf.CellFormat(w-3, lineHeight, valorHorasAnterior, "1", 0, "C", false, 0, "")
-				// pdf.CellFormat(w-2, lineHeight, fmt.Sprintf(CampoMeses, valoresAntes["NumeroSemanas"]/4), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-3, lineHeight, strconv.Itoa(int(valoresAntes["NumeroHorasSemanales"])), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-2, lineHeight*3, fmt.Sprintf(CampoMeses, valoresAntes["NumeroSemanas"]/4), "1", 0, "C", false, 0, "")
 				x, y = pdf.GetXY()
 				pdf.SetXY(x, y-lineHeight*2)
@@ -864,19 +840,9 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w+1, lineHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			switch tipoRes {
 			case "RADD":
-				if nivel == "PREGRADO" {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, valoresAntes["NumeroHorasSemanales"]+float64(vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
-				} else {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroHorasSemanales"]+float64(vinc.NumeroHorasSemanales))*(valoresAntes["NumeroSemanas"]+float64(vinc.NumeroSemanas))), "1", 0, "C", false, 0, "")
-				}
-				//pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, valoresAntes["NumeroHorasSemanales"]+float64(vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
 			case "RRED":
-				if nivel == "PREGRADO" {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, valoresAntes["NumeroHorasSemanales"]-float64(vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
-				} else {
-					pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroHorasSemanales"]-float64(vinc.NumeroHorasSemanales))*(valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))), "1", 0, "C", false, 0, "")
-				}
-				//pdf.CellFormat(w-2, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "1", 0, "C", false, 0, "")
+				pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, valoresAntes["NumeroHorasSemanales"]-float64(vinc.NumeroHorasSemanales)), "1", 0, "C", false, 0, "")
 				break
 			case "RCAN":
 				pdf.CellFormat(w, lineHeight*2, fmt.Sprintf(PasaA, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "1", 0, "C", false, 0, "")
