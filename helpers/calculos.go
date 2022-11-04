@@ -139,6 +139,9 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 		HorasSemanales: v.NumeroHorasSemanales,
 		NivelAcademico: nivelAcademico,
 	}
+	if nivelAcademico == "POSGRADO" {
+		datos.NumeroSemanas = 1
+	}
 
 	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
 		logs.Error(err.Error())
