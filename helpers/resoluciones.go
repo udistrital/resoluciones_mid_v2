@@ -664,7 +664,7 @@ func ConsultaDocente(DocenteId int) (listaRes []models.Resoluciones, outputError
 		panic(err.Error())
 	}
 
-	url1 := "vinculacion_docente?limit=0&order=desc&sortby=Id&query=Activo:true,PersonaId:" + strconv.Itoa(DocenteId)
+	url1 := "vinculacion_docente?limit=0&order=desc&sortby=Id&query=PersonaId:" + strconv.Itoa(DocenteId)
 	if err = GetRequestNew("UrlcrudResoluciones", url1, &vinculaciones); err != nil {
 		panic(err.Error())
 	}
