@@ -210,7 +210,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.Ln(lineHeight)
 
 	pdf.SetFont(Calibri, "", fontSize)
-	pdf.WriteAligned(0, lineHeight, datos.Resolucion.PreambuloResolucion, "L")
+	pdf.MultiCell(0, lineHeight, datos.Resolucion.PreambuloResolucion, "", "J", false)
 	pdf.Ln(lineHeight * 2)
 
 	pdf.SetFont(CalibriBold, "B", fontSize)
@@ -218,7 +218,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.Ln(lineHeight * 2)
 
 	pdf.SetFont(Calibri, "", fontSize)
-	pdf.Write(lineHeight, datos.Resolucion.ConsideracionResolucion)
+	pdf.MultiCell(0, lineHeight, datos.Resolucion.ConsideracionResolucion, "", "J", false)
 	pdf.Ln(lineHeight * 2)
 
 	pdf.SetFont(CalibriBold, "B", fontSize)
@@ -230,11 +230,15 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		pdf.SetLeftMargin(20)
 		pdf.SetRightMargin(20)
 
+		x := pdf.GetX()
 		pdf.SetFont(CalibriBold, "B", fontSize)
-		pdf.Write(lineHeight, fmt.Sprintf("ARTÍCULO %dº. ", articulo.Articulo.Numero))
+		tArticulo := fmt.Sprintf("ARTÍCULO %dº.   ", articulo.Articulo.Numero)
+		tArticuloLen := pdf.GetStringWidth(tArticulo)
+		pdf.Write(lineHeight, tArticulo)
 
+		pdf.SetX(x)
 		pdf.SetFont(Calibri, "", fontSize)
-		pdf.Write(lineHeight, articulo.Articulo.Texto)
+		pdf.MultiCell(0, lineHeight, strings.Repeat(" ", int(tArticuloLen))+articulo.Articulo.Texto, "", "J", false)
 		pdf.Ln(lineHeight)
 
 		if articulo.Articulo.Numero == 1 {
@@ -261,11 +265,15 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 		for _, paragrafo := range articulo.Paragrafos {
 
+			x := pdf.GetX()
 			pdf.SetFont(CalibriBold, "B", fontSize)
-			pdf.Write(lineHeight, "PARÁGRAFO. ")
+			tParagrafo := "PARÁGRAFO.  "
+			tParagrafoLen := pdf.GetStringWidth(tParagrafo)
+			pdf.Write(lineHeight, tParagrafo)
 
+			pdf.SetX(x)
 			pdf.SetFont(Calibri, "", fontSize)
-			pdf.Write(lineHeight, paragrafo.Texto)
+			pdf.MultiCell(0, lineHeight, strings.Repeat(" ", int(tParagrafoLen))+paragrafo.Texto, "", "J", false)
 			pdf.Ln(lineHeight)
 		}
 	}
