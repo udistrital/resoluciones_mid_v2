@@ -51,7 +51,7 @@ func (c *ExpedirResolucionController) Expedir() {
 // @Title ValidarDatosExpedicion
 // @Description create ValidarDatosExpedicion
 // @Param	body		body 	[]models.ExpedicionResolucion	true		"body for Validar Datos Expedición content"
-// @Success 201 {string} Ok
+// @Success 201 {object} string OK
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /validar_datos_expedicion [post]

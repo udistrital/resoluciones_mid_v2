@@ -3,6 +3,7 @@ package helpers
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -311,15 +312,11 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 
 	// Si solo se modificaron las horas, las semanas son las que falten para terminar
 	if obj.CambiosVinculacion.NumeroSemanas == 0 {
-		var actaInicio []models.ActaInicio
-
-		url2 := "acta_inicio?query=NumeroContrato:" + *vinculacion.NumeroContrato + ",Vigencia:" + strconv.Itoa(vinculacion.Vigencia)
-		if err2 := GetRequestLegacy("UrlcrudAgora", url2, &actaInicio); err2 != nil {
-			panic("Cargando acta inicio -> " + err2.Error())
+		var err2 error
+		obj.CambiosVinculacion.NumeroSemanas, err2 = CalcularNumeroSemanas(obj.CambiosVinculacion.FechaInicio, *vinculacion.NumeroContrato, vinculacion.Vigencia)
+		if err2 != nil {
+			panic("Error en acta de inicio " + err2.Error())
 		}
-
-		diferencia := actaInicio[0].FechaFin.Sub(obj.CambiosVinculacion.FechaInicio)
-		obj.CambiosVinculacion.NumeroSemanas = int(diferencia.Hours() / (24 * 7))
 	} else if obj.CambiosVinculacion.NumeroHorasSemanales == 0 {
 		// Si solo se modificaron las semanas, las horas son las mismas de la vinc original
 		obj.CambiosVinculacion.NumeroHorasSemanales = obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
@@ -559,4 +556,17 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 	// la vinculación inicial que no tiene modificaciones
 	return CalcularTrazabilidad(vinculacionAnteriorId, valoresAntes)
 
+}
+
+// Calcula el numero de semanas entre la fecha recibida y la fecha fin de la vinculación dada
+func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigencia int) (numeroSemanas int, err error) {
+	var actaInicio []models.ActaInicio
+
+	url2 := "acta_inicio?query=NumeroContrato:" + NumeroContrato + ",Vigencia:" + strconv.Itoa(Vigencia)
+	if err = GetRequestLegacy("UrlcrudAgora", url2, &actaInicio); err != nil {
+		return numeroSemanas, err
+	}
+	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
+	numeroSemanas = int(diferencia.Hours() / (24 * 7))
+	return
 }

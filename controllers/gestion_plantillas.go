@@ -133,7 +133,7 @@ func (c *GestionPlantillasController) Put() {
 // @Title Delete
 // @Description delete the GestionPlantillas
 // @Param	id		path 	string	true		"The id you want to delete"
-// @Success 200 {int} int "Id de la resolucion anulada"
+// @Success 200 {object} int Id de la resolucion anulada
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /:id [delete]

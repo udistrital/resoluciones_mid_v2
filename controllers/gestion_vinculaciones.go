@@ -3,6 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
@@ -24,6 +26,7 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("DesvincularDocentes", c.DesvincularDocentes)
 	c.Mapping("CalcularValorContratosSeleccionados", c.CalcularValorContratosSeleccionados)
 	c.Mapping("ConsultarSemaforoDocente", c.ConsultarSemaforoDocente)
+	c.Mapping("ConsultarSemanasRestantes", c.ConsultarSemanasRestantes)
 }
 
 // Post ...
@@ -139,7 +142,7 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 // @Param dedicacion query string false "dedicacion del docente"
 // @Param facultad query string false "facultad"
 // @Param nivel_academico query string false "nivel_academico"
-// @Success 200 {object} []models.CargaLectiva
+// @Success 200 {object} []models.CargaLectiva Carga horaria de los docentes organizada
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /docentes_carga_horaria/:vigencia/:periodo/:dedicacion/:facultad/:nivel_academico [get]
@@ -173,7 +176,7 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 // @Title InformeVinculaciones
 // @Description Genera un informe de las vinculaciones
 // @Param	body		body 	[]models.Vinculaciones	true		"body for vinculaciones content"
-// @Success 200 {string} string Base64 encoded file
+// @Success 200 {object} string Base64 encoded file
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /informe_vinculaciones [post]
@@ -200,7 +203,7 @@ func (c *GestionVinculacionesController) InformeVinculaciones() {
 // @Title DesvincularDocentes
 // @Description Elimina las vinculaciones
 // @Param	body		body 	[]models.Vinculaciones	true		"body for vinculaciones content"
-// @Success 201 {string} OK
+// @Success 201 {object} string OK
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /desvincular_docentes [post]
@@ -226,7 +229,7 @@ func (c *GestionVinculacionesController) DesvincularDocentes() {
 // @Title CalcularValorContratosSeleccionados
 // @Description Calcula el valor total de los contratos seleccionados
 // @Param	body		body 	models.ObjetoPrevinculaciones	true		"body for vinculaciones content"
-// @Success 201 {string} Valor total de los contratos seleccionados
+// @Success 201 {object} string Valor total de los contratos seleccionados
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /calcular_valor_contratos_seleccionados [post]
@@ -260,7 +263,7 @@ func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 // @Param vigencia query string false "año a consultar"
 // @Param periodo query string false "periodo a listar"
 // @Param docente query string false "documento del docente a consultar"
-// @Success 200 {string} "categoria del docente"
+// @Success 200 {object} string categoria del docente
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /consultar_semaforo_docente/:vigencia/:periodo/:docente [get]
@@ -285,5 +288,40 @@ func (c *GestionVinculacionesController) ConsultarSemaforoDocente() {
 	} else {
 		panic(err)
 	}
+	c.ServeJSON()
+}
+
+// ConsultarSemanasRestantes ...
+// @Title ConsultarSemanasRestantes
+// @Description Consulta el numero de semanas restantes de un contrato específico
+// @Param fecha query string true "Documento del docente a consultar"
+// @Param vigencia query string true "Año de la vinculación"
+// @Param contrato query string true "Número de contrato de la vinculación"
+// @Success 200 {object} int Numero de semanas resultantes
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /consultar_semanas_restantes/:fecha/:vigencia/:contrato [get]
+func (c *GestionVinculacionesController) ConsultarSemanasRestantes() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	fecha := c.Ctx.Input.Param(":fecha")
+	vigencia := c.Ctx.Input.Param(":vigencia")
+	contrato := c.Ctx.Input.Param(":contrato")
+
+	fechaParsed, err := time.Parse("2006-01-02", fecha)
+	vigenciaParsed, err2 := strconv.Atoi(vigencia)
+	contratoValido := strings.Contains(contrato, "DVE")
+
+	if (err != nil) || (err2 != nil) || (vigenciaParsed == 0) || (len(vigencia) != 4) || !contratoValido {
+		panic(map[string]interface{}{"funcion": "ConsultarSemanasRestantes", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if respuesta, err := helpers.CalcularNumeroSemanas(fechaParsed, contrato, vigenciaParsed); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta}
+	} else {
+		panic(err.Error())
+	}
+
 	c.ServeJSON()
 }
