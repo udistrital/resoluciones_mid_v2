@@ -245,7 +245,7 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 // @Title GenerarResolucion
 // @Description Genera el documento PDF de la resolución
 // @Param	id		path 	string	true		"id de la resolución"
-// @Success 200 {string} string Base64 encoded file
+// @Success 200 {object} string Base64 encoded file
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /generar_resolucion/:id [get]
@@ -272,7 +272,7 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 // @Title ActualizarEstado
 // @Description Modifica el estado de una resolución
 // @Param	body		body 	models.NuevoEstadoResolucion	true		"body for NuevoEstadoResolucion content"
-// @Success 201 {string} string		Nuevo estado de la resolución
+// @Success 201 {object} string		Nuevo estado de la resolución
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /actualizar_estado [post]

@@ -140,7 +140,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} Ok"
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -296,7 +299,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{int} int \"Id de la resolucion anulada\""
+                        "description": "Id de la resolucion anulada",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -468,7 +475,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} string\t\tNuevo estado de la resolución"
+                        "description": "Nuevo estado de la resolución",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -532,7 +542,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} string Base64 encoded file"
+                        "description": "Base64 encoded file",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -702,7 +715,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} Valor total de los contratos seleccionados"
+                        "description": "Valor total de los contratos seleccionados",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -742,7 +758,57 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} \"categoria del docente\""
+                        "description": "categoria del docente",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/consultar_semanas_restantes/{fecha}/{vigencia}/{contrato}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el numero de semanas restantes de un contrato específico",
+                "operationId": "GestionVinculacionesController.ConsultarSemanasRestantes",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "fecha",
+                        "description": "Documento del docente a consultar",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "Año de la vinculación",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "contrato",
+                        "description": "Número de contrato de la vinculación",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Numero de semanas resultantes",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -813,7 +879,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -865,7 +934,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "Carga horaria de los docentes organizada",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -905,7 +974,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} string Base64 encoded file"
+                        "description": "Base64 encoded file",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
