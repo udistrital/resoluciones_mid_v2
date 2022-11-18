@@ -36,6 +36,10 @@ func (c *GestionResolucionesController) URLMapping() {
 func (c *GestionResolucionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var m models.ContenidoResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
@@ -171,6 +175,10 @@ func (c *GestionResolucionesController) Put() {
 		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var r models.ContenidoResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &r); err == nil {
@@ -278,6 +286,10 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 // @router /actualizar_estado [post]
 func (c *GestionResolucionesController) ActualizarEstado() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ActualizarEstado", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var m models.NuevoEstadoResolucion
 

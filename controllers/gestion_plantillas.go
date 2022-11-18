@@ -34,6 +34,10 @@ func (c *GestionPlantillasController) URLMapping() {
 func (c *GestionPlantillasController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var m models.ContenidoResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
@@ -112,6 +116,10 @@ func (c *GestionPlantillasController) Put() {
 
 	if err != nil {
 		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorBody, "status": "400"})
 	}
 
 	var m models.ContenidoResolucion

@@ -40,6 +40,10 @@ func (c *GestionVinculacionesController) URLMapping() {
 func (c *GestionVinculacionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var p models.ObjetoPrevinculaciones
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
@@ -66,6 +70,10 @@ func (c *GestionVinculacionesController) Post() {
 func (c *GestionVinculacionesController) ModificarVinculacion() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var p models.ObjetoModificaciones
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
@@ -91,6 +99,10 @@ func (c *GestionVinculacionesController) ModificarVinculacion() {
 // @router /desvincular [post]
 func (c *GestionVinculacionesController) Desvincular() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Desvincular", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var p models.ObjetoCancelaciones
 
@@ -183,6 +195,10 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 func (c *GestionVinculacionesController) InformeVinculaciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "InformeVinculaciones", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var v []models.Vinculaciones
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
@@ -210,6 +226,10 @@ func (c *GestionVinculacionesController) InformeVinculaciones() {
 func (c *GestionVinculacionesController) DesvincularDocentes() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var v []models.Vinculaciones
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
@@ -235,6 +255,10 @@ func (c *GestionVinculacionesController) DesvincularDocentes() {
 // @router /calcular_valor_contratos_seleccionados [post]
 func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var p models.ObjetoPrevinculaciones
 	var total int

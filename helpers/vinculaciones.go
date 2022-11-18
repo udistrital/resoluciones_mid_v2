@@ -321,7 +321,6 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		// Si solo se modificaron las semanas, las horas son las mismas de la vinc original
 		obj.CambiosVinculacion.NumeroHorasSemanales = obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
 	}
-	// Si se modifican ambos hay que unificar los tiempos a la hora de hacer los cálculos
 
 	// Creación de la nueva vinculación
 	nuevaVinculacion := models.VinculacionDocente{

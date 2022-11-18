@@ -30,6 +30,10 @@ func (c *ServicesController) URLMapping() {
 func (c *ServicesController) DesagregadoPlaneacion() {
 	defer helpers.ErrorController(c.Controller, "ServicesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "DesagregadoPlaneacion", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var d []models.ObjetoDesagregado
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &d); err == nil {
