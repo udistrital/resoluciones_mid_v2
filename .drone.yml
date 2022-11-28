@@ -51,7 +51,7 @@ steps:
     - push
 
 - name: go_build
-  image: golang:1.14
+  image: golang:1.15
   commands:
   # - go mod init
   - go get -t
@@ -67,7 +67,7 @@ steps:
     - push
 
 - name: go_run_test
-  image: golang:1.14
+  image: golang:1.15
   commands:
   - go get -t
   - go get github.com/smartystreets/goconvey/convey
@@ -135,7 +135,7 @@ steps:
     - push
 
 - name: update_aws_ecs
-  image: golang:1.9
+  image: golang:1.15
   environment:
     AWS_ACCESS_KEY_ID:
       from_secret: AWS_ACCESS_KEY_ID
@@ -172,37 +172,36 @@ steps:
     event:
     - push
 
-# - name: notify_telegram
-#   image: appleboy/drone-telegram
-#   settings:
-#     token:
-#       from_secret: telegram_token
-#     to:
-#       from_secret: telegram_to
-#     format: html
-#     message: >
-#       {{#success build.status}}
-#         ✅ <a href="{{build.link}}">SUCCESS</a> <b>Build #{{build.number}}</b>
-#         <b>type: </b><code>{{ build.event }}</code>
-#         <b>Repo: </b><code>{{repo.name}}</code>
-#         <b>Branch: </b><code>{{commit.branch}}</code>
-#         <b>Commit: </b><a href="{{commit.link}}">{{truncate commit.sha 7}}</a>
-#         <b>Autor: </b>{{commit.author}} <code>&#128526 </code>
-#       {{else}}
-#         ❌ <a href="{{build.link}}">FAILURE</a> <b>Build #{{build.number}}</b>
-#         <b>type: </b><code>{{ build.event }}</code>
-#         <b>Repo: </b><code>{{repo.name}}</code>
-#         <b>Branch: </b><code>{{commit.branch}}</code>
-#         <b>Commit: </b><a href="{{commit.link}}">{{truncate commit.sha 7}}</a>
-#         <b>Autor: </b>{{commit.author}} <code>&#128549 </code>
-#       {{/success}}
-#   when:
-#     branch:
-#     - develop
-#     - release/*
-#     - master
-#     event:
-#     - push
-#     status:
-#     - failure
-#     - success
+- name: notify_telegram
+  image: appleboy/drone-telegram
+  settings:
+    token:
+      from_secret: telegram_token
+    to:
+      from_secret: telegram_to
+    format: html
+    message: >
+      {{#success build.status}}
+        ✅ <a href="{{build.link}}">SUCCESS</a> <b>Build #{{build.number}}</b>
+        <b>type: </b><code>{{ build.event }}</code>
+        <b>Repo: </b><code>{{repo.name}}</code>
+        <b>Branch: </b><code>{{commit.branch}}</code>
+        <b>Commit: </b><a href="{{commit.link}}">{{truncate commit.sha 7}}</a>
+        <b>Autor: </b>{{commit.author}} <code>&#128526 </code>
+      {{else}}
+        ❌ <a href="{{build.link}}">FAILURE</a> <b>Build #{{build.number}}</b>
+        <b>type: </b><code>{{ build.event }}</code>
+        <b>Repo: </b><code>{{repo.name}}</code>
+        <b>Branch: </b><code>{{commit.branch}}</code>
+        <b>Commit: </b><a href="{{commit.link}}">{{truncate commit.sha 7}}</a>
+        <b>Autor: </b>{{commit.author}} <code>&#128549 </code>
+      {{/success}}
+  when:
+    branch:
+    - release/*
+    - master
+    event:
+    - push
+    status:
+    - failure
+    - success
