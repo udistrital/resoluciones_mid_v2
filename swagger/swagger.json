@@ -1096,13 +1096,40 @@
         }
     },
     "definitions": {
-        "6014.\u003cnil\u003e.CancelacionContrato": {
-            "title": "CancelacionContrato",
-            "type": "object"
-        },
-        "6180.\u003cnil\u003e.ContratoVinculacion": {
-            "title": "ContratoVinculacion",
-            "type": "object"
+        "models.ActaInicio": {
+            "title": "ActaInicio",
+            "type": "object",
+            "properties": {
+                "Descripcion": {
+                    "type": "string"
+                },
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "Usuario": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
         },
         "models.Articulo": {
             "title": "Articulo",
@@ -1140,6 +1167,18 @@
                 },
                 "VinculacionOriginal": {
                     "$ref": "#/definitions/models.Vinculaciones"
+                }
+            }
+        },
+        "models.CancelacionContrato": {
+            "title": "CancelacionContrato",
+            "type": "object",
+            "properties": {
+                "ContratoCancelado": {
+                    "$ref": "#/definitions/models.ContratoCancelado"
+                },
+                "VinculacionDocente": {
+                    "$ref": "#/definitions/models.VinculacionDocente"
                 }
             }
         },
@@ -1194,6 +1233,19 @@
                     "type": "string"
                 },
                 "tipo_vinculacion_nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CargoSupervisorTemporal": {
+            "title": "CargoSupervisorTemporal",
+            "type": "object",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "cargo": {
                     "type": "string"
                 }
             }
@@ -1258,6 +1310,232 @@
                 }
             }
         },
+        "models.ContratoCancelado": {
+            "title": "ContratoCancelado",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaCancelacion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "MotivoCancelacion": {
+                    "type": "string"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "Usuario": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ContratoDisponibilidad": {
+            "title": "ContratoDisponibilidad",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroCdp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VigenciaCdp": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ContratoGeneral": {
+            "title": "ContratoGeneral",
+            "type": "object",
+            "properties": {
+                "ClaseContratista": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ClausulaRegistroPresupuestal": {
+                    "type": "boolean"
+                },
+                "Condiciones": {
+                    "type": "string"
+                },
+                "Contratista": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Convenio": {
+                    "type": "string"
+                },
+                "DependenciaSolicitante": {
+                    "type": "string"
+                },
+                "DescripcionFormaPago": {
+                    "type": "string"
+                },
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FormaPago": {
+                    "$ref": "#/definitions/models.Parametros"
+                },
+                "Id": {
+                    "type": "string"
+                },
+                "Justificacion": {
+                    "type": "string"
+                },
+                "LugarEjecucion": {
+                    "$ref": "#/definitions/models.LugarEjecucion"
+                },
+                "ModalidadSeleccion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroConstancia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ObjetoContrato": {
+                    "type": "string"
+                },
+                "Observaciones": {
+                    "type": "string"
+                },
+                "OrdenadorGasto": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "OrigenPresupueso": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "OrigenRecursos": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PlazoEjecucion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Procedimiento": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RegimenContratacion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "SedeSolicitante": {
+                    "type": "string"
+                },
+                "Supervisor": {
+                    "$ref": "#/definitions/models.SupervisorContrato"
+                },
+                "TemaGastoInversion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoCompromiso": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoContrato": {
+                    "$ref": "#/definitions/models.TipoContrato"
+                },
+                "TipoControl": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoGasto": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoMoneda": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipologiaContrato": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "UnidadEjecucion": {
+                    "$ref": "#/definitions/models.Parametros"
+                },
+                "UnidadEjecutora": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ValorContrato": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorContratoMe": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorTasaCambio": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "VigenciaContrato": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ContratoVinculacion": {
+            "title": "ContratoVinculacion",
+            "type": "object",
+            "properties": {
+                "ActaInicio": {
+                    "$ref": "#/definitions/models.ActaInicio"
+                },
+                "Cdp": {
+                    "$ref": "#/definitions/models.ContratoDisponibilidad"
+                },
+                "ContratoGeneral": {
+                    "$ref": "#/definitions/models.ContratoGeneral"
+                },
+                "VinculacionDocente": {
+                    "$ref": "#/definitions/models.VinculacionDocente"
+                }
+            }
+        },
         "models.DocumentoPresupuestal": {
             "title": "DocumentoPresupuestal",
             "type": "object",
@@ -1314,7 +1592,10 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/6014.\u003cnil\u003e.CancelacionContrato"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CancelacionContrato"
+                    }
                 }
             }
         },
@@ -1334,7 +1615,33 @@
                     "type": "string"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/6180.\u003cnil\u003e.ContratoVinculacion"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ContratoVinculacion"
+                    }
+                }
+            }
+        },
+        "models.LugarEjecucion": {
+            "title": "LugarEjecucion",
+            "type": "object",
+            "properties": {
+                "Ciudad": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Dependencia": {
+                    "type": "string"
+                },
+                "Direccion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Sede": {
+                    "type": "string"
                 }
             }
         },
@@ -1468,6 +1775,52 @@
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 },
                 "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.Parametros": {
+            "title": "Parametros",
+            "type": "object",
+            "properties": {
+                "CodigoContraloria": {
+                    "type": "string"
+                },
+                "Descripcion": {
+                    "type": "string"
+                },
+                "EstadoRegistro": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RelParametro": {
+                    "$ref": "#/definitions/models.RelacionParametro"
+                }
+            }
+        },
+        "models.RelacionParametro": {
+            "title": "RelacionParametro",
+            "type": "object",
+            "properties": {
+                "Descripcion": {
+                    "type": "string"
+                },
+                "EstadoRegistro": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
                     "type": "integer",
                     "format": "int64"
                 }
@@ -1639,6 +1992,70 @@
                 "UnidadEjecutora": {
                     "type": "integer",
                     "format": "int64"
+                }
+            }
+        },
+        "models.SupervisorContrato": {
+            "title": "SupervisorContrato",
+            "type": "object",
+            "properties": {
+                "Cargo": {
+                    "type": "string"
+                },
+                "CargoId": {
+                    "$ref": "#/definitions/models.CargoSupervisorTemporal"
+                },
+                "DependenciaSupervisor": {
+                    "type": "string"
+                },
+                "DigitoVerificacion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Documento": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "SedeSupervisor": {
+                    "type": "string"
+                },
+                "Tipo": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.TipoContrato": {
+            "title": "TipoContrato",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "boolean"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoContrato": {
+                    "type": "string"
                 }
             }
         },
