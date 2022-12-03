@@ -319,7 +319,28 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		}
 	} else if obj.CambiosVinculacion.NumeroHorasSemanales == 0 {
 		// Si solo se modificaron las semanas, las horas son las mismas de la vinc original
-		obj.CambiosVinculacion.NumeroHorasSemanales = obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		// Aplica solo para cancelaciones de pregrado
+		valores := make(map[string]float64)
+		if err := CalcularTrazabilidad(strconv.Itoa(vinculacion.Id), &valores); err != nil {
+			logs.Error("Error en trazabilidad -> " + err.Error())
+			panic("Error en trazabilidad -> " + err.Error())
+		}
+		var tipoResolucion models.Parametro
+		var resolucion models.Resolucion
+		obj.CambiosVinculacion.NumeroHorasSemanales = int(valores["NumeroHorasSemanales"])
+		err2 := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(vinculacion.ResolucionVinculacionDocenteId.Id), &resolucion)
+		if err2 != nil {
+			panic(err2.Error())
+		}
+		err3 := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(resolucion.TipoResolucionId), &tipoResolucion)
+		if err3 != nil {
+			panic(err3.Error())
+		}
+		if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
+			obj.CambiosVinculacion.NumeroHorasSemanales += obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		} else {
+			obj.CambiosVinculacion.NumeroHorasSemanales -= obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		}
 	}
 
 	// Creación de la nueva vinculación
@@ -348,7 +369,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 
 	nuevaVinculacion = vin[0]
 
-	// Si el documento es RP se almacenan los datso relevantes
+	// Si el documento es RP se almacenan los datos relevantes
 	if obj.CambiosVinculacion.DocPresupuestal != nil && obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
 		nuevaVinculacion.NumeroRp = obj.CambiosVinculacion.DocPresupuestal.Consecutivo
 		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.DocPresupuestal.Vigencia)
