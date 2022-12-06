@@ -590,3 +590,35 @@ func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigenci
 	numeroSemanas = int(diferencia.Hours() / (24 * 7))
 	return
 }
+
+// Registra numero y vigencia de RP en las vinculaciones con el id correspondiente
+func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/RegistrarVinculacionesRp", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	var v *models.VinculacionDocente
+	var v2 models.VinculacionDocente
+
+	for _, rp := range registros {
+		// Recuperación de la vinculación original
+		v = nil
+		url := VinculacionEndpoint + strconv.Itoa(rp.VinculacionId)
+		if err := GetRequestNew("UrlcrudResoluciones", url, &v); err != nil {
+			panic("Cargando vinculacion original -> " + err.Error())
+		}
+
+		v.NumeroRp = float64(rp.Consecutivo)
+		v.VigenciaRp = float64(rp.Vigencia)
+
+		// Actualización de la vinculación
+		if err := SendRequestNew("UrlcrudResoluciones", url, "PUT", &v2, &v); err != nil {
+			panic("Actualizando vinculacion original -> " + err.Error())
+		}
+	}
+
+	return nil
+}
