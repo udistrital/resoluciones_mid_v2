@@ -1022,6 +1022,43 @@
                 }
             }
         },
+        "/gestion_vinculaciones/rp_vinculaciones": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "registra los numeros de RP en las respectivas vinculaciones",
+                "operationId": "GestionVinculacionesController.RegistrarRps",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for vinculaciones content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RpSeleccionado"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/{resolucion_id}": {
             "get": {
                 "tags": [
@@ -1963,6 +2000,24 @@
                     "type": "string"
                 },
                 "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.RpSeleccionado": {
+            "title": "RpSeleccionado",
+            "type": "object",
+            "properties": {
+                "Consecutivo": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VinculacionId": {
                     "type": "integer",
                     "format": "int64"
                 }

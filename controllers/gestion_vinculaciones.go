@@ -349,3 +349,33 @@ func (c *GestionVinculacionesController) ConsultarSemanasRestantes() {
 
 	c.ServeJSON()
 }
+
+// RegistrarRps ...
+// @Title RegistrarRps
+// @Description registra los numeros de RP en las respectivas vinculaciones
+// @Param	body		body 	[]models.RpSeleccionado	true		"body for vinculaciones content"
+// @Success 201 {object} string OK
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /rp_vinculaciones [post]
+func (c *GestionVinculacionesController) RegistrarRps() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if b, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !b || e != nil {
+		panic(map[string]interface{}{"funcion": "RegistrarRp", "err": helpers.ErrorBody, "status": "400"})
+	}
+
+	var rps []models.RpSeleccionado
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &rps); err == nil {
+		if err2 := helpers.RegistrarVinculacionesRp(rps); err2 == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Registros actualizados con exito", "Data": "OK"}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "RegistrarRp", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
