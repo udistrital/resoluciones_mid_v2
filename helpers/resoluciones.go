@@ -319,6 +319,25 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		f.TipoResolucion = tiposRes
 	}
 
+	// Si no hay filtros por tipo de resolución filtrar los 4 tipos para excluir plantillas
+	if len(f.TipoResolucion) == 0 && len(f.ExcluirTipo) == 0 {
+		url := "parametro?query=TipoParametroId.CodigoAbreviacion:TR"
+		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
+			logs.Error(err)
+			panic(err.Error())
+		}
+		tiposRes := ""
+		for i, param := range parametros {
+			if param.ParametroPadreId == nil {
+				if i > 0 {
+					tiposRes += "|"
+				}
+				tiposRes += strconv.Itoa(param.Id)
+			}
+		}
+		f.TipoResolucion = tiposRes
+	}
+
 	// preparar filtro por estado o estados
 	if len(f.Estado) > 0 {
 		param := url.Values{}
@@ -664,7 +683,7 @@ func ConsultaDocente(DocenteId int) (listaRes []models.Resoluciones, outputError
 		panic(err.Error())
 	}
 
-	url1 := "vinculacion_docente?limit=0&order=desc&sortby=Id&query=Activo:true,PersonaId:" + strconv.Itoa(DocenteId)
+	url1 := "vinculacion_docente?limit=0&order=desc&sortby=Id&query=PersonaId:" + strconv.Itoa(DocenteId)
 	if err = GetRequestNew("UrlcrudResoluciones", url1, &vinculaciones); err != nil {
 		panic(err.Error())
 	}

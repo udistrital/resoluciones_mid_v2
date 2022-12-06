@@ -3,6 +3,7 @@ package helpers
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -311,20 +312,36 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 
 	// Si solo se modificaron las horas, las semanas son las que falten para terminar
 	if obj.CambiosVinculacion.NumeroSemanas == 0 {
-		var actaInicio []models.ActaInicio
-
-		url2 := "acta_inicio?query=NumeroContrato:" + *vinculacion.NumeroContrato + ",Vigencia:" + strconv.Itoa(vinculacion.Vigencia)
-		if err2 := GetRequestLegacy("UrlcrudAgora", url2, &actaInicio); err2 != nil {
-			panic("Cargando acta inicio -> " + err2.Error())
+		var err2 error
+		obj.CambiosVinculacion.NumeroSemanas, err2 = CalcularNumeroSemanas(obj.CambiosVinculacion.FechaInicio, *vinculacion.NumeroContrato, vinculacion.Vigencia)
+		if err2 != nil {
+			panic("Error en acta de inicio " + err2.Error())
 		}
-
-		diferencia := actaInicio[0].FechaFin.Sub(obj.CambiosVinculacion.FechaInicio)
-		obj.CambiosVinculacion.NumeroSemanas = int(diferencia.Hours() / (24 * 7))
 	} else if obj.CambiosVinculacion.NumeroHorasSemanales == 0 {
 		// Si solo se modificaron las semanas, las horas son las mismas de la vinc original
-		obj.CambiosVinculacion.NumeroHorasSemanales = obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		// Aplica solo para cancelaciones de pregrado
+		valores := make(map[string]float64)
+		if err := CalcularTrazabilidad(strconv.Itoa(vinculacion.Id), &valores); err != nil {
+			logs.Error("Error en trazabilidad -> " + err.Error())
+			panic("Error en trazabilidad -> " + err.Error())
+		}
+		var tipoResolucion models.Parametro
+		var resolucion models.Resolucion
+		obj.CambiosVinculacion.NumeroHorasSemanales = int(valores["NumeroHorasSemanales"])
+		err2 := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(vinculacion.ResolucionVinculacionDocenteId.Id), &resolucion)
+		if err2 != nil {
+			panic(err2.Error())
+		}
+		err3 := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(resolucion.TipoResolucionId), &tipoResolucion)
+		if err3 != nil {
+			panic(err3.Error())
+		}
+		if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
+			obj.CambiosVinculacion.NumeroHorasSemanales += obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		} else {
+			obj.CambiosVinculacion.NumeroHorasSemanales -= obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		}
 	}
-	// Si se modifican ambos hay que unificar los tiempos a la hora de hacer los cálculos
 
 	// Creación de la nueva vinculación
 	nuevaVinculacion := models.VinculacionDocente{
@@ -352,7 +369,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 
 	nuevaVinculacion = vin[0]
 
-	// Si el documento es RP se almacenan los datso relevantes
+	// Si el documento es RP se almacenan los datos relevantes
 	if obj.CambiosVinculacion.DocPresupuestal != nil && obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
 		nuevaVinculacion.NumeroRp = obj.CambiosVinculacion.DocPresupuestal.Consecutivo
 		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.DocPresupuestal.Vigencia)
@@ -559,4 +576,49 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 	// la vinculación inicial que no tiene modificaciones
 	return CalcularTrazabilidad(vinculacionAnteriorId, valoresAntes)
 
+}
+
+// Calcula el numero de semanas entre la fecha recibida y la fecha fin de la vinculación dada
+func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigencia int) (numeroSemanas int, err error) {
+	var actaInicio []models.ActaInicio
+
+	url2 := "acta_inicio?query=NumeroContrato:" + NumeroContrato + ",Vigencia:" + strconv.Itoa(Vigencia)
+	if err = GetRequestLegacy("UrlcrudAgora", url2, &actaInicio); err != nil {
+		return numeroSemanas, err
+	}
+	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
+	numeroSemanas = int(diferencia.Hours() / (24 * 7))
+	return
+}
+
+// Registra numero y vigencia de RP en las vinculaciones con el id correspondiente
+func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/RegistrarVinculacionesRp", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	var v *models.VinculacionDocente
+	var v2 models.VinculacionDocente
+
+	for _, rp := range registros {
+		// Recuperación de la vinculación original
+		v = nil
+		url := VinculacionEndpoint + strconv.Itoa(rp.VinculacionId)
+		if err := GetRequestNew("UrlcrudResoluciones", url, &v); err != nil {
+			panic("Cargando vinculacion original -> " + err.Error())
+		}
+
+		v.NumeroRp = float64(rp.Consecutivo)
+		v.VigenciaRp = float64(rp.Vigencia)
+
+		// Actualización de la vinculación
+		if err := SendRequestNew("UrlcrudResoluciones", url, "PUT", &v2, &v); err != nil {
+			panic("Actualizando vinculacion original -> " + err.Error())
+		}
+	}
+
+	return nil
 }

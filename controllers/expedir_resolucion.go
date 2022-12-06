@@ -32,6 +32,10 @@ func (c *ExpedirResolucionController) URLMapping() {
 func (c *ExpedirResolucionController) Expedir() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Expedir", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var m models.ExpedicionResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
@@ -51,12 +55,16 @@ func (c *ExpedirResolucionController) Expedir() {
 // @Title ValidarDatosExpedicion
 // @Description create ValidarDatosExpedicion
 // @Param	body		body 	[]models.ExpedicionResolucion	true		"body for Validar Datos Expedición content"
-// @Success 201 {string} Ok
+// @Success 201 {object} string OK
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /validar_datos_expedicion [post]
 func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ValidarDatosExpedicion", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var m models.ExpedicionResolucion
 
@@ -84,6 +92,10 @@ func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 func (c *ExpedirResolucionController) ExpedirModificacion() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ExpedirModificacion", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var m models.ExpedicionResolucion
 	// If 13 - Unmarshal
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
@@ -109,6 +121,10 @@ func (c *ExpedirResolucionController) ExpedirModificacion() {
 // @router /cancelar [post]
 func (c *ExpedirResolucionController) Cancelar() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Cancelar", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var m models.ExpedicionCancelacion
 

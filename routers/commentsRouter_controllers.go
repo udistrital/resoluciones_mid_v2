@@ -198,6 +198,15 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
         beego.ControllerComments{
+            Method: "ConsultarSemanasRestantes",
+            Router: "/consultar_semanas_restantes/:fecha/:vigencia/:contrato",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
             Method: "Desvincular",
             Router: "/desvincular",
             AllowHTTPMethods: []string{"post"},
@@ -236,6 +245,15 @@ func init() {
         beego.ControllerComments{
             Method: "ModificarVinculacion",
             Router: "/modificar_vinculacion",
+            AllowHTTPMethods: []string{"post"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:GestionVinculacionesController"],
+        beego.ControllerComments{
+            Method: "RegistrarRps",
+            Router: "/rp_vinculaciones",
             AllowHTTPMethods: []string{"post"},
             MethodParams: param.Make(),
             Filters: nil,

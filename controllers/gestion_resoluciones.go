@@ -36,6 +36,10 @@ func (c *GestionResolucionesController) URLMapping() {
 func (c *GestionResolucionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var m models.ContenidoResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
@@ -171,6 +175,10 @@ func (c *GestionResolucionesController) Put() {
 		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var r models.ContenidoResolucion
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &r); err == nil {
@@ -245,7 +253,7 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 // @Title GenerarResolucion
 // @Description Genera el documento PDF de la resolución
 // @Param	id		path 	string	true		"id de la resolución"
-// @Success 200 {string} string Base64 encoded file
+// @Success 200 {object} string Base64 encoded file
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /generar_resolucion/:id [get]
@@ -272,12 +280,16 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 // @Title ActualizarEstado
 // @Description Modifica el estado de una resolución
 // @Param	body		body 	models.NuevoEstadoResolucion	true		"body for NuevoEstadoResolucion content"
-// @Success 201 {string} string		Nuevo estado de la resolución
+// @Success 201 {object} string		Nuevo estado de la resolución
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /actualizar_estado [post]
 func (c *GestionResolucionesController) ActualizarEstado() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ActualizarEstado", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var m models.NuevoEstadoResolucion
 

@@ -3,7 +3,7 @@ package models
 import "time"
 
 type ExpedicionResolucion struct {
-	Vinculaciones   *[]ContratoVinculacion
+	Vinculaciones   []*ContratoVinculacion
 	IdResolucion    int
 	FechaExpedicion time.Time
 	Usuario         string

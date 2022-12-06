@@ -210,7 +210,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.Ln(lineHeight)
 
 	pdf.SetFont(Calibri, "", fontSize)
-	pdf.WriteAligned(0, lineHeight, datos.Resolucion.PreambuloResolucion, "L")
+	pdf.MultiCell(0, lineHeight, datos.Resolucion.PreambuloResolucion, "", "J", false)
 	pdf.Ln(lineHeight * 2)
 
 	pdf.SetFont(CalibriBold, "B", fontSize)
@@ -218,7 +218,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.Ln(lineHeight * 2)
 
 	pdf.SetFont(Calibri, "", fontSize)
-	pdf.Write(lineHeight, datos.Resolucion.ConsideracionResolucion)
+	pdf.MultiCell(0, lineHeight, datos.Resolucion.ConsideracionResolucion, "", "J", false)
 	pdf.Ln(lineHeight * 2)
 
 	pdf.SetFont(CalibriBold, "B", fontSize)
@@ -230,11 +230,15 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		pdf.SetLeftMargin(20)
 		pdf.SetRightMargin(20)
 
+		x := pdf.GetX()
 		pdf.SetFont(CalibriBold, "B", fontSize)
-		pdf.Write(lineHeight, fmt.Sprintf("ARTÍCULO %dº. ", articulo.Articulo.Numero))
+		tArticulo := fmt.Sprintf("ARTÍCULO %dº.   ", articulo.Articulo.Numero)
+		tArticuloLen := pdf.GetStringWidth(tArticulo)
+		pdf.Write(lineHeight, tArticulo)
 
+		pdf.SetX(x)
 		pdf.SetFont(Calibri, "", fontSize)
-		pdf.Write(lineHeight, articulo.Articulo.Texto)
+		pdf.MultiCell(0, lineHeight, strings.Repeat(" ", int(tArticuloLen))+articulo.Articulo.Texto, "", "J", false)
 		pdf.Ln(lineHeight)
 
 		if articulo.Articulo.Numero == 1 {
@@ -261,11 +265,15 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 		for _, paragrafo := range articulo.Paragrafos {
 
+			x := pdf.GetX()
 			pdf.SetFont(CalibriBold, "B", fontSize)
-			pdf.Write(lineHeight, "PARÁGRAFO. ")
+			tParagrafo := "PARÁGRAFO.  "
+			tParagrafoLen := pdf.GetStringWidth(tParagrafo)
+			pdf.Write(lineHeight, tParagrafo)
 
+			pdf.SetX(x)
 			pdf.SetFont(Calibri, "", fontSize)
-			pdf.Write(lineHeight, paragrafo.Texto)
+			pdf.MultiCell(0, lineHeight, strings.Repeat(" ", int(tParagrafoLen))+paragrafo.Texto, "", "J", false)
 			pdf.Ln(lineHeight)
 		}
 	}
@@ -408,9 +416,10 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 		if pdf.GetY()-y > lineHeight {
 			pdf.SetXY(x+w+4, y)
 		}
+		docHeight := 2 * (cellHeight / lineHeight)
 		x, y = pdf.GetXY()
-		pdf.MultiCell(w+2, lineHeight, vinc.TipoDocumento, "1", "C", false)
-		if pdf.GetY()-y > lineHeight {
+		pdf.MultiCell(w+2, docHeight, vinc.TipoDocumento, "1", "C", false)
+		if pdf.GetY()-y > docHeight {
 			pdf.SetXY(x+w+2, y)
 		}
 		pdf.CellFormat(w, cellHeight, fmt.Sprintf("%.f", vinc.PersonaId), "1", 0, "C", false, 0, "")
@@ -423,6 +432,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			logs.Error("Error en trazabilidad -> " + err.Error())
 			panic("Error en trazabilidad -> " + err.Error())
 		}
+		cellHeight2 := cellHeight - minHeight + lineHeight
 
 		switch tipoRes {
 		case "RVIN":
@@ -431,17 +441,32 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			break
 		case "RCAN":
-			x, y = pdf.GetXY()
-			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", "C", false)
-			pdf.SetX(x)
-			pdf.MultiCell(w, lineHeight, "Pasa a", "TLR", "C", false)
-			pdf.SetX(x)
-			pdf.MultiCell(w, lineHeight, fmt.Sprintf(CampoMeses, valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas)/4), "BLR", "C", false)
-			if pdf.GetY()-y > lineHeight {
-				pdf.SetXY(x+w, y)
+			if nivel == "PREGRADO" {
+				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.NumeroHorasSemanales), "1", 0, "C", false, 0, "")
+				x, y = pdf.GetXY()
+				pdf.MultiCell(w-1, lineHeight, fmt.Sprintf(CampoMeses, float32(vinc.NumeroSemanas)/4), "1", "C", false)
+				pdf.SetX(x)
+				pdf.MultiCell(w-1, lineHeight, "Pasa a", "TLR", "C", false)
+				pdf.SetX(x)
+				pdf.MultiCell(w-1, lineHeight, fmt.Sprintf(CampoMeses, (valoresAntes["NumeroSemanas"]-float64(vinc.NumeroSemanas))/4), "BLR", "C", false)
+				if pdf.GetY()-y > lineHeight {
+					pdf.SetXY(x+w-1, y)
+				}
+			} else {
+				x, y = pdf.GetXY()
+				pdf.MultiCell(w-2, cellHeight2, strconv.Itoa(vinc.NumeroHorasSemanales), "1", "C", false)
+				pdf.SetX(x)
+				pdf.MultiCell(w-2, lineHeight, "Pasa a", "TLR", "C", false)
+				pdf.SetX(x)
+				pdf.MultiCell(w-2, lineHeight, fmt.Sprintf("%.f", valoresAntes["NumeroHorasSemanales"]-float64(vinc.NumeroHorasSemanales)), "BLR", "C", false)
+				if pdf.GetY()-y > lineHeight {
+					pdf.SetXY(x+w-2, y)
+				}
+				pdf.CellFormat(w-1, cellHeight, fmt.Sprintf(CampoMeses, float64(vinc.NumeroSemanas)/4), "1", 0, "C", false, 0, "")
 			}
+
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w+1, lineHeight, FormatMoney(valoresAntes["SueldoBasico"], 2), "1", "C", false)
+			pdf.MultiCell(w+1, cellHeight2, FormatMoney(valoresAntes["SueldoBasico"], 2), "1", "C", false)
 			pdf.SetX(x)
 			pdf.MultiCell(w+1, lineHeight, "Pasa a", "TLR", "C", false)
 			pdf.SetX(x)
@@ -450,7 +475,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w+1, y)
 			}
-			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w+2, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
 			break
 		default:
 			// Horas semanales|semestrales
