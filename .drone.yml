@@ -79,10 +79,10 @@ steps:
   - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1
   - go get github.com/axw/gocov/...
   - go get github.com/AlekSi/gocov-xml
-  - go get github.com/jstemmer/go-junit-report
+  - go install github.com/jstemmer/go-junit-report/v2@latest
   - golangci-lint run | tee report.xml
   # - gocov test ./... | gocov-xml > coverage.xml
-  - go test -v ./... | go-junit-report > test.xml
+  - go test -v 2>&1 ./... | go-junit-report -set-exit-code > test.xml
   when:
     branch:
     - feature/*
