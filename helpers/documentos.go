@@ -68,7 +68,7 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
 	fontSize := 12.0
-	lineHeight := 5.0
+	lineHeight := 4.0
 
 	pdf := gofpdf.New("L", "mm", "A4", fontPath)
 	pdf.AddUTF8Font(Calibri, "", "calibri.ttf")
