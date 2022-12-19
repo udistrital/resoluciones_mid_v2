@@ -379,7 +379,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		queryRes = strings.TrimSuffix(queryRes, ",")
 
 		// carga de datos filtrados
-		url1 := "resolucion_estado?" + queryRes + "&order=desc&sortby=Id&limit=0&fields=ResolucionId"
+		url1 := "resolucion_estado?" + queryRes + "&limit=0&fields=ResolucionId"
 		if err = GetRequestNew("UrlcrudResoluciones", url1, &rest); err != nil {
 			logs.Error(err)
 			panic(err.Error())
@@ -392,6 +392,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 			}
 			listado += strconv.Itoa(rest[i].ResolucionId.Id)
 		}
+		fmt.Println("Listado de resoluciones:", listado)
 	} else {
 		// Preparar filtro de resolucion por: numero, vigencia, periodo, semanas, facultad, tipoResolucion
 		queryRes = queryBase
@@ -444,6 +445,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	}
 	queryResVin = strings.TrimSuffix(queryResVin, ",")
 	url := "resolucion_vinculacion_docente?" + queryResVin + "&limit=0&fields=Id"
+	fmt.Println("Url RV", url)
 	if err = GetRequestNew("UrlCrudResoluciones", url, &resv); err != nil {
 		logs.Error(err)
 		panic(err.Error())
@@ -461,6 +463,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	}
 
 	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%sId.in:%s", f.Limit, limit*(offset-1), queryBase, listado)
+	fmt.Println("Query final:", queryFinal)
 	if listaRes, err2 = ListarResoluciones(queryFinal); err2 != nil {
 		panic(err2)
 	}
