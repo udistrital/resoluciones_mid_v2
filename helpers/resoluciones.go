@@ -276,6 +276,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	var resv []models.ResolucionVinculacionDocente
 	var res []models.Resolucion
 	var parametros []models.Parametro
+	var listado []string
 	var err error
 	var err2 map[string]interface{}
 
@@ -284,7 +285,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	queryBase := "order=desc&sortby=Id&query=Activo:true,"
 	queryRes := ""
 	queryResVin := ""
-	listado := ""
+	offset2 := (limit * (offset - 1)) + 100
 
 	// Preparar filtro por tipo de resolucion
 	if len(f.TipoResolucion) > 0 {
@@ -384,13 +385,9 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 			logs.Error(err)
 			panic(err.Error())
 		}
+		listado = make([]string, 0, len(rest))
 		for i := range rest {
-			if i > 0 {
-				listado += "|"
-			} else {
-				listado = ""
-			}
-			listado += strconv.Itoa(rest[i].ResolucionId.Id)
+			listado = append(listado, strconv.Itoa(rest[i].ResolucionId.Id))
 		}
 	} else {
 		// Preparar filtro de resolucion por: numero, vigencia, periodo, semanas, facultad, tipoResolucion
@@ -421,13 +418,9 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 			logs.Error(err)
 			panic(err.Error())
 		}
+		listado = make([]string, 0, len(res))
 		for i := range res {
-			if i > 0 {
-				listado += "|"
-			} else {
-				listado = ""
-			}
-			listado += strconv.Itoa(res[i].Id)
+			listado = append(listado, strconv.Itoa(res[i].Id))
 		}
 	}
 
@@ -440,7 +433,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		queryResVin += "NivelAcademico:" + f.NivelAcademico + ","
 	}
 	if len(listado) > 0 {
-		queryResVin += "Id.in:" + listado + ","
+		queryResVin += "Id.in:" + strings.Join(listado, "|") + ","
 	}
 	queryResVin = strings.TrimSuffix(queryResVin, ",")
 	url := "resolucion_vinculacion_docente?" + queryResVin + "&limit=0&fields=Id"
@@ -451,16 +444,16 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	total = len(resv)
 
 	// actualizar listado
+	listado = make([]string, 0, len(resv))
 	for i := range resv {
-		if i > 0 {
-			listado += "|"
-		} else {
-			listado = ""
-		}
-		listado += strconv.Itoa(resv[i].Id)
+		listado = append(listado, strconv.Itoa(resv[i].Id))
 	}
 
-	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%sId.in:%s", f.Limit, limit*(offset-1), queryBase, listado)
+	if len(listado) < offset2 {
+		offset2 = len(listado)
+	}
+
+	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%sId.in:%s", f.Limit, limit*(offset-1), queryBase, strings.Join(listado[:offset2], "|"))
 	if listaRes, err2 = ListarResoluciones(queryFinal); err2 != nil {
 		panic(err2)
 	}
