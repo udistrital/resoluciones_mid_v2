@@ -140,7 +140,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} Ok"
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -296,7 +299,11 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{int} int \"Id de la resolucion anulada\""
+                        "description": "Id de la resolucion anulada",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -312,43 +319,87 @@
                 "tags": [
                     "gestion_resoluciones"
                 ],
-                "description": "get all ContenidoResolucion",
+                "description": "Carga las resoluciones de acuerdo a los parametros recibidos",
                 "operationId": "GestionResolucionesController.GetAll",
                 "parameters": [
                     {
                         "in": "query",
-                        "name": "query",
-                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "fields",
-                        "description": "Fields returned. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "sortby",
-                        "description": "Sorted-by fields. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "order",
-                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
                         "name": "limit",
                         "description": "Limit the size of result set. Must be an integer",
-                        "type": "string"
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
                     },
                     {
                         "in": "query",
                         "name": "offset",
                         "description": "Start position of result set. Must be an integer",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "NumeroResolucion",
+                        "description": "Numero de resolución a buscar",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Vigencia",
+                        "description": "Año de la resolución a buscar",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Periodo",
+                        "description": "Periodo academico a buscar",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Semanas",
+                        "description": "Numero de semanas por las que se ha hecho la resolución",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Facultad",
+                        "description": "Facultad que emite la resolución",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "NivelAcademico",
+                        "description": "Nivel academico de la resolución. PREGRADO o POSGRADO",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Dedicacion",
+                        "description": "Dedicación del docente",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Estado",
+                        "description": "Estado de la resolución",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "TipoResolucion",
+                        "description": "Tipo de resolución a bucar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "ExcluirTipo",
+                        "description": "Tipo de resolución a excluir de la consulta",
                         "type": "string"
                     }
                 ],
@@ -424,7 +475,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} string\t\tNuevo estado de la resolución"
+                        "description": "Nuevo estado de la resolución",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -488,220 +542,9 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} string Base64 encoded file"
-                    },
-                    "400": {
-                        "description": "bad request"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/gestion_resoluciones/resoluciones_aprobadas": {
-            "get": {
-                "tags": [
-                    "gestion_resoluciones"
-                ],
-                "description": "get Resoluciones aprobadas",
-                "operationId": "GestionResolucionesController.GetResolucionesAprobadas",
-                "parameters": [
-                    {
-                        "in": "query",
-                        "name": "query",
-                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "fields",
-                        "description": "Fields returned. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "sortby",
-                        "description": "Sorted-by fields. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "order",
-                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "limit",
-                        "description": "Limit the size of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "offset",
-                        "description": "Start position of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "facultad",
-                        "description": "Nombre de la facultad",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "tipoRes",
-                        "description": "Tipo de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "nivelA",
-                        "description": "Nivel académico",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "dedicacion",
-                        "description": "Dedicación de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "estadoRes",
-                        "description": "Estado de la resolución",
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
+                        "description": "Base64 encoded file",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Resoluciones"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "bad request"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/gestion_resoluciones/resoluciones_expedidas": {
-            "get": {
-                "tags": [
-                    "gestion_resoluciones"
-                ],
-                "description": "get Resoluciones expedidas",
-                "operationId": "GestionResolucionesController.GetResolucionesExpedidas",
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Resoluciones"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "bad request"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/gestion_resoluciones/resoluciones_inscritas": {
-            "get": {
-                "tags": [
-                    "gestion_resoluciones"
-                ],
-                "description": "get Resoluciones inscritas",
-                "operationId": "GestionResolucionesController.GetResolucionesInscritas",
-                "parameters": [
-                    {
-                        "in": "query",
-                        "name": "query",
-                        "description": "Filter. e.g. col1:v1,col2:v2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "fields",
-                        "description": "Fields returned. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "sortby",
-                        "description": "Sorted-by fields. e.g. col1,col2 ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "order",
-                        "description": "Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ...",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "limit",
-                        "description": "Limit the size of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "offset",
-                        "description": "Start position of result set. Must be an integer",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "facultad",
-                        "description": "Nombre de la facultad",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "tipoRes",
-                        "description": "Tipo de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "nivelA",
-                        "description": "Nivel académico",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "dedicacion",
-                        "description": "Dedicación de la resolución",
-                        "type": "string"
-                    },
-                    {
-                        "in": "query",
-                        "name": "estadoRes",
-                        "description": "Estado de la resolución",
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Resoluciones"
-                            }
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -872,7 +715,100 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} Valor total de los contratos seleccionados"
+                        "description": "Valor total de los contratos seleccionados",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/consultar_semaforo_docente/{vigencia}/{periodo}/{docente}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el estado del semaforo del docente en condor",
+                "operationId": "GestionVinculacionesController.ConsultarSemaforoDocente",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "año a consultar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "periodo",
+                        "description": "periodo a listar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "docente",
+                        "description": "documento del docente a consultar",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "categoria del docente",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/consultar_semanas_restantes/{fecha}/{vigencia}/{contrato}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el numero de semanas restantes de un contrato específico",
+                "operationId": "GestionVinculacionesController.ConsultarSemanasRestantes",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "fecha",
+                        "description": "Documento del docente a consultar",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "Año de la vinculación",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "contrato",
+                        "description": "Número de contrato de la vinculación",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Numero de semanas resultantes",
+                        "schema": {
+                            "format": "int64",
+                            "type": "integer"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -943,7 +879,10 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "{string} OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -995,7 +934,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "Carga horaria de los docentes organizada",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -1035,7 +974,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "{string} string Base64 encoded file"
+                        "description": "Base64 encoded file",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
                         "description": "bad request"
@@ -1069,6 +1011,43 @@
                         "description": "\"Vinculaciones modificadas con éxito\"",
                         "schema": {
                             "$ref": "#/definitions/models.VinculacionDocente"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/rp_vinculaciones": {
+            "post": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "registra los numeros de RP en las respectivas vinculaciones",
+                "operationId": "GestionVinculacionesController.RegistrarRps",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for vinculaciones content",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RpSeleccionado"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -1154,13 +1133,40 @@
         }
     },
     "definitions": {
-        "6014.\u003cnil\u003e.CancelacionContrato": {
-            "title": "CancelacionContrato",
-            "type": "object"
-        },
-        "6180.\u003cnil\u003e.ContratoVinculacion": {
-            "title": "ContratoVinculacion",
-            "type": "object"
+        "models.ActaInicio": {
+            "title": "ActaInicio",
+            "type": "object",
+            "properties": {
+                "Descripcion": {
+                    "type": "string"
+                },
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "Usuario": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
         },
         "models.Articulo": {
             "title": "Articulo",
@@ -1198,6 +1204,18 @@
                 },
                 "VinculacionOriginal": {
                     "$ref": "#/definitions/models.Vinculaciones"
+                }
+            }
+        },
+        "models.CancelacionContrato": {
+            "title": "CancelacionContrato",
+            "type": "object",
+            "properties": {
+                "ContratoCancelado": {
+                    "$ref": "#/definitions/models.ContratoCancelado"
+                },
+                "VinculacionDocente": {
+                    "$ref": "#/definitions/models.VinculacionDocente"
                 }
             }
         },
@@ -1252,6 +1270,19 @@
                     "type": "string"
                 },
                 "tipo_vinculacion_nombre": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CargoSupervisorTemporal": {
+            "title": "CargoSupervisorTemporal",
+            "type": "object",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "cargo": {
                     "type": "string"
                 }
             }
@@ -1316,6 +1347,232 @@
                 }
             }
         },
+        "models.ContratoCancelado": {
+            "title": "ContratoCancelado",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaCancelacion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "MotivoCancelacion": {
+                    "type": "string"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "Usuario": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ContratoDisponibilidad": {
+            "title": "ContratoDisponibilidad",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroCdp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroContrato": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VigenciaCdp": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ContratoGeneral": {
+            "title": "ContratoGeneral",
+            "type": "object",
+            "properties": {
+                "ClaseContratista": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ClausulaRegistroPresupuestal": {
+                    "type": "boolean"
+                },
+                "Condiciones": {
+                    "type": "string"
+                },
+                "Contratista": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Convenio": {
+                    "type": "string"
+                },
+                "DependenciaSolicitante": {
+                    "type": "string"
+                },
+                "DescripcionFormaPago": {
+                    "type": "string"
+                },
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FormaPago": {
+                    "$ref": "#/definitions/models.Parametros"
+                },
+                "Id": {
+                    "type": "string"
+                },
+                "Justificacion": {
+                    "type": "string"
+                },
+                "LugarEjecucion": {
+                    "$ref": "#/definitions/models.LugarEjecucion"
+                },
+                "ModalidadSeleccion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroConstancia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ObjetoContrato": {
+                    "type": "string"
+                },
+                "Observaciones": {
+                    "type": "string"
+                },
+                "OrdenadorGasto": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "OrigenPresupueso": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "OrigenRecursos": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "PlazoEjecucion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Procedimiento": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RegimenContratacion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "SedeSolicitante": {
+                    "type": "string"
+                },
+                "Supervisor": {
+                    "$ref": "#/definitions/models.SupervisorContrato"
+                },
+                "TemaGastoInversion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoCompromiso": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoContrato": {
+                    "$ref": "#/definitions/models.TipoContrato"
+                },
+                "TipoControl": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoGasto": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoMoneda": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipologiaContrato": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "UnidadEjecucion": {
+                    "$ref": "#/definitions/models.Parametros"
+                },
+                "UnidadEjecutora": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "ValorContrato": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorContratoMe": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorTasaCambio": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "VigenciaContrato": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ContratoVinculacion": {
+            "title": "ContratoVinculacion",
+            "type": "object",
+            "properties": {
+                "ActaInicio": {
+                    "$ref": "#/definitions/models.ActaInicio"
+                },
+                "Cdp": {
+                    "$ref": "#/definitions/models.ContratoDisponibilidad"
+                },
+                "ContratoGeneral": {
+                    "$ref": "#/definitions/models.ContratoGeneral"
+                },
+                "VinculacionDocente": {
+                    "$ref": "#/definitions/models.VinculacionDocente"
+                }
+            }
+        },
         "models.DocumentoPresupuestal": {
             "title": "DocumentoPresupuestal",
             "type": "object",
@@ -1372,7 +1629,10 @@
                     "format": "int64"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/6014.\u003cnil\u003e.CancelacionContrato"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CancelacionContrato"
+                    }
                 }
             }
         },
@@ -1392,7 +1652,33 @@
                     "type": "string"
                 },
                 "Vinculaciones": {
-                    "$ref": "#/definitions/6180.\u003cnil\u003e.ContratoVinculacion"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ContratoVinculacion"
+                    }
+                }
+            }
+        },
+        "models.LugarEjecucion": {
+            "title": "LugarEjecucion",
+            "type": "object",
+            "properties": {
+                "Ciudad": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Dependencia": {
+                    "type": "string"
+                },
+                "Direccion": {
+                    "type": "string"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Sede": {
+                    "type": "string"
                 }
             }
         },
@@ -1526,6 +1812,52 @@
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 },
                 "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.Parametros": {
+            "title": "Parametros",
+            "type": "object",
+            "properties": {
+                "CodigoContraloria": {
+                    "type": "string"
+                },
+                "Descripcion": {
+                    "type": "string"
+                },
+                "EstadoRegistro": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "RelParametro": {
+                    "$ref": "#/definitions/models.RelacionParametro"
+                }
+            }
+        },
+        "models.RelacionParametro": {
+            "title": "RelacionParametro",
+            "type": "object",
+            "properties": {
+                "Descripcion": {
+                    "type": "string"
+                },
+                "EstadoRegistro": {
+                    "type": "boolean"
+                },
+                "FechaRegistro": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
                     "type": "integer",
                     "format": "int64"
                 }
@@ -1673,6 +2005,24 @@
                 }
             }
         },
+        "models.RpSeleccionado": {
+            "title": "RpSeleccionado",
+            "type": "object",
+            "properties": {
+                "Consecutivo": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "VinculacionId": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
         "models.Rubro": {
             "title": "Rubro",
             "type": "object",
@@ -1697,6 +2047,70 @@
                 "UnidadEjecutora": {
                     "type": "integer",
                     "format": "int64"
+                }
+            }
+        },
+        "models.SupervisorContrato": {
+            "title": "SupervisorContrato",
+            "type": "object",
+            "properties": {
+                "Cargo": {
+                    "type": "string"
+                },
+                "CargoId": {
+                    "$ref": "#/definitions/models.CargoSupervisorTemporal"
+                },
+                "DependenciaSupervisor": {
+                    "type": "string"
+                },
+                "DigitoVerificacion": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Documento": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Estado": {
+                    "type": "boolean"
+                },
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "SedeSupervisor": {
+                    "type": "string"
+                },
+                "Tipo": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.TipoContrato": {
+            "title": "TipoContrato",
+            "type": "object",
+            "properties": {
+                "Estado": {
+                    "type": "boolean"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "TipoContrato": {
+                    "type": "string"
                 }
             }
         },

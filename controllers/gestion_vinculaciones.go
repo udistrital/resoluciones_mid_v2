@@ -3,6 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
@@ -23,6 +25,8 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("InformeVinculaciones", c.InformeVinculaciones)
 	c.Mapping("DesvincularDocentes", c.DesvincularDocentes)
 	c.Mapping("CalcularValorContratosSeleccionados", c.CalcularValorContratosSeleccionados)
+	c.Mapping("ConsultarSemaforoDocente", c.ConsultarSemaforoDocente)
+	c.Mapping("ConsultarSemanasRestantes", c.ConsultarSemanasRestantes)
 }
 
 // Post ...
@@ -35,6 +39,10 @@ func (c *GestionVinculacionesController) URLMapping() {
 // @router / [post]
 func (c *GestionVinculacionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var p models.ObjetoPrevinculaciones
 
@@ -62,6 +70,10 @@ func (c *GestionVinculacionesController) Post() {
 func (c *GestionVinculacionesController) ModificarVinculacion() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": helpers.ErrorBody, "status": "400"})
+	}
+
 	var p models.ObjetoModificaciones
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
@@ -87,6 +99,10 @@ func (c *GestionVinculacionesController) ModificarVinculacion() {
 // @router /desvincular [post]
 func (c *GestionVinculacionesController) Desvincular() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Desvincular", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var p models.ObjetoCancelaciones
 
@@ -124,6 +140,8 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId); err2 == nil {
 		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
+	} else {
+		panic(err2)
 	}
 	c.ServeJSON()
 }
@@ -136,7 +154,7 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 // @Param dedicacion query string false "dedicacion del docente"
 // @Param facultad query string false "facultad"
 // @Param nivel_academico query string false "nivel_academico"
-// @Success 200 {object} []models.CargaLectiva
+// @Success 200 {object} []models.CargaLectiva Carga horaria de los docentes organizada
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /docentes_carga_horaria/:vigencia/:periodo/:dedicacion/:facultad/:nivel_academico [get]
@@ -160,6 +178,8 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 	if respuesta, err := helpers.ListarDocentesCargaHoraria(vigencia, periodo, dedicacion, facultad, nivelAcademico); err == nil {
 		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta.CargasLectivas.CargaLectiva}
+	} else {
+		panic(err)
 	}
 	c.ServeJSON()
 }
@@ -168,12 +188,16 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 // @Title InformeVinculaciones
 // @Description Genera un informe de las vinculaciones
 // @Param	body		body 	[]models.Vinculaciones	true		"body for vinculaciones content"
-// @Success 200 {string} string Base64 encoded file
+// @Success 200 {object} string Base64 encoded file
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /informe_vinculaciones [post]
 func (c *GestionVinculacionesController) InformeVinculaciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "InformeVinculaciones", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var v []models.Vinculaciones
 
@@ -195,12 +219,16 @@ func (c *GestionVinculacionesController) InformeVinculaciones() {
 // @Title DesvincularDocentes
 // @Description Elimina las vinculaciones
 // @Param	body		body 	[]models.Vinculaciones	true		"body for vinculaciones content"
-// @Success 201 {string} OK
+// @Success 201 {object} string OK
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /desvincular_docentes [post]
 func (c *GestionVinculacionesController) DesvincularDocentes() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var v []models.Vinculaciones
 
@@ -221,12 +249,16 @@ func (c *GestionVinculacionesController) DesvincularDocentes() {
 // @Title CalcularValorContratosSeleccionados
 // @Description Calcula el valor total de los contratos seleccionados
 // @Param	body		body 	models.ObjetoPrevinculaciones	true		"body for vinculaciones content"
-// @Success 201 {string} Valor total de los contratos seleccionados
+// @Success 201 {object} string Valor total de los contratos seleccionados
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /calcular_valor_contratos_seleccionados [post]
 func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var p models.ObjetoPrevinculaciones
 	var total int
@@ -245,6 +277,105 @@ func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 		}
 	} else {
 		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// ConsultarSemaforoDocente ...
+// @Title ConsultarSemaforoDocente
+// @Description Consulta el estado del semaforo del docente en condor
+// @Param vigencia query string false "año a consultar"
+// @Param periodo query string false "periodo a listar"
+// @Param docente query string false "documento del docente a consultar"
+// @Success 200 {object} string categoria del docente
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /consultar_semaforo_docente/:vigencia/:periodo/:docente [get]
+func (c *GestionVinculacionesController) ConsultarSemaforoDocente() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	vigencia := c.Ctx.Input.Param(":vigencia")
+	periodo := c.Ctx.Input.Param(":periodo")
+	docente := c.Ctx.Input.Param(":docente")
+
+	vig, err1 := strconv.Atoi(vigencia)
+	per, err2 := strconv.Atoi(periodo)
+	doc, err3 := strconv.Atoi(docente)
+
+	if (err1 != nil) || (err2 != nil) || (err3 != nil) || (vig == 0) || (per == 0) || (doc == 0) || (len(vigencia) != 4) || (len(periodo) != 1) {
+		panic(map[string]interface{}{"funcion": "ConsultarSemaforoDocente", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if respuesta, err := helpers.BuscarCategoriaDocente(vigencia, periodo, docente); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta.CategoriaDocente.Categoria}
+	} else {
+		panic(err)
+	}
+	c.ServeJSON()
+}
+
+// ConsultarSemanasRestantes ...
+// @Title ConsultarSemanasRestantes
+// @Description Consulta el numero de semanas restantes de un contrato específico
+// @Param fecha query string true "Documento del docente a consultar"
+// @Param vigencia query string true "Año de la vinculación"
+// @Param contrato query string true "Número de contrato de la vinculación"
+// @Success 200 {object} int Numero de semanas resultantes
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /consultar_semanas_restantes/:fecha/:vigencia/:contrato [get]
+func (c *GestionVinculacionesController) ConsultarSemanasRestantes() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	fecha := c.Ctx.Input.Param(":fecha")
+	vigencia := c.Ctx.Input.Param(":vigencia")
+	contrato := c.Ctx.Input.Param(":contrato")
+
+	fechaParsed, err := time.Parse("2006-01-02", fecha)
+	vigenciaParsed, err2 := strconv.Atoi(vigencia)
+	contratoValido := strings.Contains(contrato, "DVE")
+
+	if (err != nil) || (err2 != nil) || (vigenciaParsed == 0) || (len(vigencia) != 4) || !contratoValido {
+		panic(map[string]interface{}{"funcion": "ConsultarSemanasRestantes", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if respuesta, err := helpers.CalcularNumeroSemanas(fechaParsed, contrato, vigenciaParsed); err == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta}
+	} else {
+		panic(err.Error())
+	}
+
+	c.ServeJSON()
+}
+
+// RegistrarRps ...
+// @Title RegistrarRps
+// @Description registra los numeros de RP en las respectivas vinculaciones
+// @Param	body		body 	[]models.RpSeleccionado	true		"body for vinculaciones content"
+// @Success 201 {object} string OK
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /rp_vinculaciones [post]
+func (c *GestionVinculacionesController) RegistrarRps() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if b, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !b || e != nil {
+		panic(map[string]interface{}{"funcion": "RegistrarRp", "err": helpers.ErrorBody, "status": "400"})
+	}
+
+	var rps []models.RpSeleccionado
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &rps); err == nil {
+		if err2 := helpers.RegistrarVinculacionesRp(rps); err2 == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Registros actualizados con exito", "Data": "OK"}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "RegistrarRp", "err": err.Error(), "status": "400"})
 	}
 	c.ServeJSON()
 }

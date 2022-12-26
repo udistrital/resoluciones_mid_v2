@@ -116,3 +116,17 @@ func TestCalcularValorContratosSeleccionadosPost(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestConsultarSemaforoDocenteGet(t *testing.T) {
+	if response, err := http.Get("http://localhost:8529/v1/gestion_vinculaciones/consultar_semaforo_docente/2021/1/79777053"); err == nil {
+		if response.StatusCode != 200 {
+			t.Error("Error TestConsultarSemaforoDocenteGet: Se esperaba 200 y se obtuvo", response.StatusCode)
+			t.Fail()
+		} else {
+			t.Log("TestConsultarSemaforoDocenteGet Finalizado Correctamente (OK)")
+		}
+	} else {
+		t.Error("Error TestConsultarSemaforoDocenteGet:", err.Error())
+		t.Fail()
+	}
+}

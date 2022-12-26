@@ -22,7 +22,6 @@ func (c *GestionResolucionesController) URLMapping() {
 	c.Mapping("Put", c.Put)
 	c.Mapping("Delete", c.Delete)
 	c.Mapping("ConsultaDocente", c.ConsultaDocente)
-	c.Mapping("GetResolucionesExpedidas", c.GetResolucionesExpedidas)
 	c.Mapping("GenerarResolucion", c.GenerarResolucion)
 }
 
@@ -36,6 +35,10 @@ func (c *GestionResolucionesController) URLMapping() {
 // @router / [post]
 func (c *GestionResolucionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var m models.ContenidoResolucion
 
@@ -81,13 +84,19 @@ func (c *GestionResolucionesController) GetOne() {
 
 // GetAll ...
 // @Title GetAll
-// @Description get all ContenidoResolucion
-// @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
-// @Param	fields	query	string	false	"Fields returned. e.g. col1,col2 ..."
-// @Param	sortby	query	string	false	"Sorted-by fields. e.g. col1,col2 ..."
-// @Param	order	query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
-// @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
-// @Param	offset	query	string	false	"Start position of result set. Must be an integer"
+// @Description Carga las resoluciones de acuerdo a los parametros recibidos
+// @Param	limit			query	int		true	"Limit the size of result set. Must be an integer"
+// @Param	offset			query	int		true	"Start position of result set. Must be an integer"
+// @Param	NumeroResolucion	query	int	false	"Numero de resolución a buscar"
+// @Param	Vigencia		query	int		false	"Año de la resolución a buscar"
+// @Param	Periodo			query	int		false	"Periodo academico a buscar"
+// @Param	Semanas			query	int		false	"Numero de semanas por las que se ha hecho la resolución"
+// @Param	Facultad		query	string	false	"Facultad que emite la resolución"
+// @Param	NivelAcademico	query	string	false	"Nivel academico de la resolución. PREGRADO o POSGRADO"
+// @Param	Dedicacion		query	string	false	"Dedicación del docente"
+// @Param	Estado			query	string	false	"Estado de la resolución"
+// @Param	TipoResolucion	query	string	false	"Tipo de resolución a bucar"
+// @Param	ExcluirTipo		query	string	false	"Tipo de resolución a excluir de la consulta"
 // @Success 200 {object} []models.Resoluciones
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -95,14 +104,50 @@ func (c *GestionResolucionesController) GetOne() {
 func (c *GestionResolucionesController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	limit, err1 := c.GetInt("limit")
-	offset, err2 := c.GetInt("offset")
+	var f models.Filtro
+	var limit, offset int
+	var err1, err2, err3, err4, err5, err6, err7 error
 
-	if err1 != nil || err2 != nil {
+	f.Limit = c.GetString("limit")
+	f.Offset = c.GetString("offset")
+	f.NumeroResolucion = c.GetString("NumeroResolucion")
+	f.Vigencia = c.GetString("Vigencia")
+	f.Periodo = c.GetString("Periodo")
+	f.Semanas = c.GetString("Semanas")
+	f.FacultadId = c.GetString("Facultad")
+	f.NivelAcademico = c.GetString("NivelAcademico")
+	f.Dedicacion = c.GetString("Dedicacion")
+	f.Estado = c.GetString("Estado")
+	f.TipoResolucion = c.GetString("TipoResolucion")
+	f.ExcluirTipo = c.GetString("ExcluirTipo")
+
+	if len(f.Limit) > 0 {
+		limit, err1 = strconv.Atoi(f.Limit)
+	}
+	if len(f.Offset) > 0 {
+		offset, err2 = strconv.Atoi(f.Offset)
+	}
+	if len(f.NumeroResolucion) > 0 {
+		_, err3 = strconv.Atoi(f.NumeroResolucion)
+	}
+	if len(f.Vigencia) > 0 {
+		_, err4 = strconv.Atoi(f.Vigencia)
+	}
+	if len(f.Periodo) > 0 {
+		_, err5 = strconv.Atoi(f.Periodo)
+	}
+	if len(f.Semanas) > 0 {
+		_, err6 = strconv.Atoi(f.Semanas)
+	}
+	if len(f.FacultadId) > 0 {
+		_, err7 = strconv.Atoi(f.FacultadId)
+	}
+
+	if err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil || err7 != nil || limit <= 0 || offset <= 0 {
 		panic(map[string]interface{}{"funcion": "GetAll", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
-	if l, t, err := helpers.ListarResoluciones(limit, offset); err == nil {
+	if l, t, err := helpers.ListarResolucionesFiltradas(f); err == nil {
 		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
 	} else {
@@ -128,6 +173,10 @@ func (c *GestionResolucionesController) Put() {
 
 	if err != nil {
 		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorBody, "status": "400"})
 	}
 
 	var r models.ContenidoResolucion
@@ -200,123 +249,11 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 	c.ServeJSON()
 }
 
-// GetResolucionesInscritas ...
-// @Title GetResolucionesInscritas
-// @Description get Resoluciones inscritas
-// @Param	query		query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
-// @Param	fields		query	string	false	"Fields returned. e.g. col1,col2 ..."
-// @Param	sortby		query	string	false	"Sorted-by fields. e.g. col1,col2 ..."
-// @Param	order		query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
-// @Param	limit		query	string	false	"Limit the size of result set. Must be an integer"
-// @Param	offset		query	string	false	"Start position of result set. Must be an integer"
-// @Param	facultad	query	string	false	"Nombre de la facultad"
-// @Param	tipoRes		query	string	false	"Tipo de la resolución"
-// @Param	nivelA		query	string	false	"Nivel académico"
-// @Param	dedicacion	query	string	false	"Dedicación de la resolución"
-// @Param	estadoRes	query	string	false	"Estado de la resolución"
-// @Success 200 {object} []models.Resoluciones
-// @Failure 400 bad request
-// @Failure 500 Internal server error
-// @router /resoluciones_inscritas [get]
-func (c *GestionResolucionesController) GetResolucionesInscritas() {
-	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
-
-	query := c.GetString("query")
-	facultad := c.GetString("facultad")
-	tipoRes := c.GetString("tipoRes")
-	nivelA := c.GetString("nivelA")
-	dedicacion := c.GetString("dedicacion")
-	estadoRes := c.GetString("estadoRes")
-
-	limit, err1 := c.GetInt("limit")
-	offset, err2 := c.GetInt("offset")
-
-	if err1 != nil || err2 != nil {
-		panic(map[string]interface{}{"funcion": "GetResolucionesInscritas", "err": helpers.ErrorParametros, "status": "400"})
-	}
-	if l, t, err := helpers.ListarResolucionesInscritas(query, facultad, tipoRes, nivelA, dedicacion, estadoRes, limit, offset); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
-	} else {
-		panic(err)
-	}
-	c.ServeJSON()
-}
-
-// GetResolucionesAprobadas ...
-// @Title GetResolucionesAprobadas
-// @Description get Resoluciones aprobadas
-// @Param	query		query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
-// @Param	fields		query	string	false	"Fields returned. e.g. col1,col2 ..."
-// @Param	sortby		query	string	false	"Sorted-by fields. e.g. col1,col2 ..."
-// @Param	order		query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
-// @Param	limit		query	string	false	"Limit the size of result set. Must be an integer"
-// @Param	offset		query	string	false	"Start position of result set. Must be an integer"
-// @Param	facultad	query	string	false	"Nombre de la facultad"
-// @Param	tipoRes		query	string	false	"Tipo de la resolución"
-// @Param	nivelA		query	string	false	"Nivel académico"
-// @Param	dedicacion	query	string	false	"Dedicación de la resolución"
-// @Param	estadoRes	query	string	false	"Estado de la resolución"
-// @Success 200 {object} []models.Resoluciones
-// @Failure 400 bad request
-// @Failure 500 Internal server error
-// @router /resoluciones_aprobadas [get]
-func (c *GestionResolucionesController) GetResolucionesAprobadas() {
-	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
-
-	query := c.GetString("query")
-	facultad := c.GetString("facultad")
-	tipoRes := c.GetString("tipoRes")
-	nivelA := c.GetString("nivelA")
-	dedicacion := c.GetString("dedicacion")
-	estadoRes := c.GetString("estadoRes")
-
-	limit, err1 := c.GetInt("limit")
-	offset, err2 := c.GetInt("offset")
-
-	if err1 != nil || err2 != nil {
-		panic(map[string]interface{}{"funcion": "GetResolucionesAprobadas", "err": helpers.ErrorParametros, "status": "400"})
-	}
-	if l, t, err := helpers.ListarResolucionesAprobadas(query, facultad, tipoRes, nivelA, dedicacion, estadoRes, limit, offset); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
-	} else {
-		panic(err)
-	}
-	c.ServeJSON()
-}
-
-// GetResolucionesExpedidas ...
-// @Title GetResolucionesExpedidas
-// @Description get Resoluciones expedidas
-// @Success 200 {object} []models.Resoluciones
-// @Failure 400 bad request
-// @Failure 500 Internal server error
-// @router /resoluciones_expedidas [get]
-func (c *GestionResolucionesController) GetResolucionesExpedidas() {
-	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
-
-	limit, err1 := c.GetInt("limit")
-	offset, err2 := c.GetInt("offset")
-
-	if err1 != nil || err2 != nil {
-		panic(map[string]interface{}{"funcion": "GetResolucionesExpedidas", "err": helpers.ErrorParametros, "status": "400"})
-	}
-
-	if l, t, err := helpers.ListarResolucionesExpedidas(limit, offset); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
-	} else {
-		panic(err)
-	}
-	c.ServeJSON()
-}
-
 // GenerarResolucion ...
 // @Title GenerarResolucion
 // @Description Genera el documento PDF de la resolución
 // @Param	id		path 	string	true		"id de la resolución"
-// @Success 200 {string} string Base64 encoded file
+// @Success 200 {object} string Base64 encoded file
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /generar_resolucion/:id [get]
@@ -343,12 +280,16 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 // @Title ActualizarEstado
 // @Description Modifica el estado de una resolución
 // @Param	body		body 	models.NuevoEstadoResolucion	true		"body for NuevoEstadoResolucion content"
-// @Success 201 {string} string		Nuevo estado de la resolución
+// @Success 201 {object} string		Nuevo estado de la resolución
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /actualizar_estado [post]
 func (c *GestionResolucionesController) ActualizarEstado() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ActualizarEstado", "err": helpers.ErrorBody, "status": "400"})
+	}
 
 	var m models.NuevoEstadoResolucion
 

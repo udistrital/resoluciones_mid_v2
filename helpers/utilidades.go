@@ -21,6 +21,7 @@ import (
 
 const (
 	ErrorParametros     string = "Error en los parametros de ingreso"
+	ErrorBody           string = "Cuerpo de la peticion invalido"
 	CargaResExito       string = "Resoluciones cargadas con exito"
 	CampoMeses          string = "%.1f meses"
 	PasaA               string = "Pasa a %.1f"
@@ -112,6 +113,7 @@ func ExtractData(respuesta map[string]interface{}, v interface{}) error {
 
 func JsonDebug(i interface{}) {
 	formatdata.JsonPrint(i)
+	fmt.Println()
 }
 
 func iguales(a interface{}, b interface{}) bool {
@@ -343,6 +345,22 @@ func formatNumberString(x string, precision int, thousand string, decimal string
 	}
 
 	return result + extra
+}
+
+// Valida que el body recibido en la petición tenga contenido válido
+func ValidarBody(body []byte) (valid bool, err error) {
+	var test interface{}
+	if err = json.Unmarshal(body, &test); err != nil {
+		return false, err
+	} else {
+		content := fmt.Sprintf("%v", test)
+		fmt.Println(content)
+		switch content {
+		case "map[]", "[map[]]": // body vacio
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // Quita el formato de moneda a un string y lo convierte en valor flotante

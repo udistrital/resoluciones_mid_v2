@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/plugins/cors"
-	"github.com/udistrital/auditoria"
 	_ "github.com/udistrital/resoluciones_mid_v2/routers"
 	apistatus "github.com/udistrital/utils_oas/apiStatusLib"
+	auditoria "github.com/udistrital/utils_oas/auditoria"
 	"github.com/udistrital/utils_oas/customerrorv2"
 )
 

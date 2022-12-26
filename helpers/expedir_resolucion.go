@@ -44,16 +44,19 @@ func SupervisorActual(resolucionId int) (supervisorActual models.SupervisorContr
 
 // Calcula la fecha de fin de un contrato a partir de la fecha de inicio y el numero de semanas
 func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.Time) {
-	var mesEntero int
-	var decimal float32
-	// dias := numeroSemanas * 7
-	// meses := float32(dias) / 30
-	// Meses de 4 semanas
-	meses := float32(numeroSemanas) / 4
+	var mesEntero, dias int
+	var decimal, meses float32
+	if numeroSemanas%4 == 0 {
+		// Meses de 4 semanas
+		meses = float32(numeroSemanas) / 4
+	} else {
+		dias = numeroSemanas * 7
+		meses = float32(dias) / 30
+	}
 	mesEntero = int(meses)
 	decimal = meses - float32(mesEntero)
 	numeroDias := decimal * 30
 	f := fechaInicio
-	after := f.AddDate(0, mesEntero, int(numeroDias))
+	after := f.AddDate(0, mesEntero, int(numeroDias-1))
 	return after
 }
