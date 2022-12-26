@@ -780,9 +780,9 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 
 	for _, vinculacion := range vin {
 		v := vinculacion.VinculacionDocente
-		var contratos []*models.ContratoCancelar
+		contratos := new([]models.ContratoCancelar)
 		if err := BuscarContratosCancelar(v.Id, contratos); err == nil { // If 1 - vinculacion_docente
-			for _, contrato := range contratos {
+			for _, contrato := range *contratos {
 				contratoCancelado := &models.ContratoCancelado{
 					NumeroContrato:    contrato.NumeroContrato,
 					Vigencia:          contrato.Vigencia,
@@ -875,7 +875,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 }
 
 // Función que recopila los contratos a cancelar de acuerdo con el histórico de modificaciones
-func BuscarContratosCancelar(vinculacionId int, contratos []*models.ContratoCancelar) error {
+func BuscarContratosCancelar(vinculacionId int, contratos *[]models.ContratoCancelar) error {
 	var modificaciones []models.ModificacionVinculacion
 	var modVin models.ModificacionVinculacion
 	var tipoResolucion models.Parametro
@@ -899,11 +899,11 @@ func BuscarContratosCancelar(vinculacionId int, contratos []*models.ContratoCanc
 		return err2
 	}
 
-	contrato := &models.ContratoCancelar{
+	contrato := models.ContratoCancelar{
 		NumeroContrato: *modVin.VinculacionDocenteCanceladaId.NumeroContrato,
 		Vigencia:       modVin.VinculacionDocenteCanceladaId.Vigencia,
 	}
-	contratos = append(contratos, contrato)
+	*contratos = append(*contratos, contrato)
 
 	// Segundo caso de salida
 	if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RRED" {
