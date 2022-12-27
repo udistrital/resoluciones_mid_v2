@@ -453,7 +453,14 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		offset2 = len(listado)
 	}
 
-	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%sId.in:%s", f.Limit, limit*(offset-1), queryBase, strings.Join(listado[:offset2], "|"))
+	var listadoCompleto string
+	if len(listado) > 0 {
+		listadoCompleto = fmt.Sprintf("Id.in:%s", strings.Join(listado[:offset2], "|"))
+	} else {
+		queryBase = strings.TrimSuffix(queryBase, ",")
+	}
+
+	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%s%s", f.Limit, limit*(offset-1), queryBase, listadoCompleto)
 	if listaRes, err2 = ListarResoluciones(queryFinal); err2 != nil {
 		panic(err2)
 	}
