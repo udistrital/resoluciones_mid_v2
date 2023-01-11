@@ -26,7 +26,7 @@ func InsertarPlantilla(plantilla models.ContenidoResolucion) (PlantillaId int, o
 		var p *[]models.Resolucion
 		url := "resolucion?query=Activo:true,TipoResolucionId:" + strconv.Itoa(id)
 		if err4 := GetRequestNew("UrlCrudResoluciones", url, &p); err4 == nil && p != nil && len(*p) > 0 {
-			panic("Ya existe una plantilla para los parámetros ingresados")
+			return 0, nil
 		} else if err4 != nil {
 			panic(err4.Error())
 		} else {

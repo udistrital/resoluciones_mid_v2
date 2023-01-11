@@ -26,12 +26,12 @@ func SupervisorActual(resolucionId int) (supervisorActual models.SupervisorContr
 				fmt.Println(s)
 				return s[0], nil
 			} else { //If Jefe_dependencia (GET)
-				fmt.Println("He fallado un poquito en If Supervisor 1 (GET) en el método SupervisorActual, solucioname!!! ", err)
+				fmt.Println("No se ha encontrado supervisor activo en la fecha actual!!!", err)
 				outputError = map[string]interface{}{"funcion": "/SupervisorActual3", "err": err.Error(), "status": "404"}
 				return supervisorActual, outputError
 			}
 		} else { //If Jefe_dependencia (GET)
-			fmt.Println("He fallado un poquito en If Jefe_dependencia 2 (GET) en el método SupervisorActual, solucioname!!! ", err)
+			fmt.Println("No se ha encontrado jefe de dependencia activo en la fecha actual!!! ", err)
 			outputError = map[string]interface{}{"funcion": "/SupervisorActua2", "err": err.Error(), "status": "404"}
 			return supervisorActual, outputError
 		}

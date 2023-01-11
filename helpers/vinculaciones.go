@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -587,7 +588,7 @@ func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigenci
 		return numeroSemanas, err
 	}
 	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
-	numeroSemanas = int(diferencia.Hours() / (24 * 7))
+	numeroSemanas = int(math.Round(diferencia.Hours() / (24 * 7)))
 	return
 }
 
