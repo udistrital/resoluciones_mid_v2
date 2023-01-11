@@ -100,11 +100,15 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		}
 	}()
 
+	var fecha time.Time
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
 	imgPath := filepath.Join(beego.AppConfig.String("StaticPath"), "img")
 	fontSize := 11.0
 	lineHeight := 4.0
-	fecha := datos.Resolucion.FechaExpedicion
+	fecha = datos.Resolucion.FechaExpedicion
+	if datos.Resolucion.FechaExpedicion.IsZero() {
+		fecha = time.Now()
+	}
 	fechaParsed := fmt.Sprintf("(%s %02d de %d)", TranslateMonth(fecha.Month().String()), fecha.Day(), fecha.Year())
 
 	var tipoResolucion models.Parametro
@@ -377,7 +381,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 				pdf.CellFormat(w+2, lineHeight*2, "Valor a reversar", "1", 0, "C", false, 0, "")
 			}
 			if tipoRes == "RVIN" || tipoRes == "RADD" {
-				pdf.CellFormat(7, lineHeight*2, "CPD", "1", 0, "C", false, 0, "")
+				pdf.CellFormat(7, lineHeight*2, "CDP", "1", 0, "C", false, 0, "")
 			} else {
 				pdf.CellFormat(7, lineHeight*2, "CRP", "1", 0, "C", false, 0, "")
 			}
@@ -611,7 +615,7 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w, y)
 			}
-			pdf.CellFormat(7, lineHeight*2, "CPD", "1", 0, "C", false, 0, "")
+			pdf.CellFormat(7, lineHeight*2, "CDP", "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w+1, lineHeight*2, "Valor total", "1", 0, "C", false, 0, "")
 		}
 
