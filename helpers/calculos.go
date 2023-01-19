@@ -151,6 +151,67 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 	return desagregado, outputError
 }
 
+// Envía a Titan la información para la preliquidación de nómina para los docentes recien contratados con RP actualizado
+func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "EjecutarPreliquidacionTitan", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+
+	var c models.ContratoPreliquidacion
+	var desagregado []models.DisponibilidadVinculacion
+	var docente []models.InformacionProveedor
+
+	preliquidacion := &models.ContratoPreliquidacion{
+		NumeroContrato: *v.NumeroContrato,
+		Vigencia:       v.Vigencia,
+		Documento:      fmt.Sprintf("%.f", v.PersonaId),
+		DependenciaId:  v.ResolucionVinculacionDocenteId.FacultadId,
+		Rp:             int(v.NumeroRp),
+		TipoNominaId:   410,
+		Activo:         true,
+	}
+
+	url := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(v.Id)
+	if err := GetRequestNew("UrlcrudResoluciones", url, &desagregado); err != nil {
+		panic("Cargando desagregado-preliq -> " + err.Error())
+	}
+
+	desagregadoMap := map[string]float64{}
+	if v.ResolucionVinculacionDocenteId.Dedicacion == "HCH" {
+		preliquidacion.ValorContrato = v.ValorContrato
+		preliquidacion.TipoNominaId = 409
+	} else {
+		for _, d := range desagregado {
+			if d.Rubro == "SueldoBasico" {
+				preliquidacion.ValorContrato = d.Valor
+			} else {
+				desagregadoMap[d.Rubro] = d.Valor
+			}
+		}
+		preliquidacion.Desagregado = &desagregadoMap
+	}
+
+	preliquidacion.Cdp = desagregado[0].Disponibilidad
+
+	url2 := "informacion_proveedor?query=NumDocumento:" + preliquidacion.Documento
+	if err2 := GetRequestLegacy("UrlcrudAgora", url2, &docente); err2 != nil {
+		panic("Info docente -> " + err2.Error())
+	} else if len(docente) == 0 {
+		panic("Info docente -> No se encontró información del docente en Agora!!")
+	}
+	preliquidacion.NombreCompleto = docente[0].NomProveedor
+	preliquidacion.PersonaId = docente[0].Id
+
+	if err2 := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &preliquidacion, &c); err2 != nil {
+		panic("Preliquidando -> " + err2.Error())
+	}
+
+	return
+}
+
 // Calcula el desagregado general unitario para los parámetros recibidos
 func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]interface{}, outputError map[string]interface{}) {
 	defer func() {

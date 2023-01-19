@@ -612,12 +612,19 @@ func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError ma
 			panic("Cargando vinculacion original -> " + err.Error())
 		}
 
-		v.NumeroRp = float64(rp.Consecutivo)
-		v.VigenciaRp = float64(rp.Vigencia)
+		if v.NumeroRp != float64(rp.Consecutivo) {
+			v.NumeroRp = float64(rp.Consecutivo)
+			v.VigenciaRp = float64(rp.Vigencia)
 
-		// Actualización de la vinculación
-		if err := SendRequestNew("UrlcrudResoluciones", url, "PUT", &v2, &v); err != nil {
-			panic("Actualizando vinculacion original -> " + err.Error())
+			// Actualización de la vinculación
+			if err := SendRequestNew("UrlcrudResoluciones", url, "PUT", &v2, &v); err != nil {
+				panic("Actualizando vinculacion original -> " + err.Error())
+			}
+
+			// Ejecutar preliquidacion
+			if err2 := EjecutarPreliquidacionTitan(*v); err2 != nil {
+				panic(err2)
+			}
 		}
 	}
 
