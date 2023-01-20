@@ -163,6 +163,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	var c models.ContratoPreliquidacion
 	var desagregado []models.DisponibilidadVinculacion
 	var docente []models.InformacionProveedor
+	var actaInicio []models.ActaInicio
 
 	preliquidacion := &models.ContratoPreliquidacion{
 		NumeroContrato: *v.NumeroContrato,
@@ -194,14 +195,23 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 		preliquidacion.Desagregado = &desagregadoMap
 	}
 
-	preliquidacion.Cdp = desagregado[0].Disponibilidad
-
 	url2 := "informacion_proveedor?query=NumDocumento:" + preliquidacion.Documento
 	if err2 := GetRequestLegacy("UrlcrudAgora", url2, &docente); err2 != nil {
 		panic("Info docente -> " + err2.Error())
 	} else if len(docente) == 0 {
 		panic("Info docente -> No se encontró información del docente en Agora!!")
 	}
+
+	url3 := "acta_inicio?query=NumeroContrato:" + *v.NumeroContrato + ",Vigencia:" + strconv.Itoa(v.Vigencia)
+	if err3 := GetRequestLegacy("UrlcrudAgora", url3, &actaInicio); err3 != nil {
+		panic("Acta inicio -> " + err3.Error())
+	} else if len(actaInicio) == 0 {
+		panic("Acta inicio -> No se pudo encontrar el acta de inicio")
+	}
+
+	preliquidacion.FechaInicio = actaInicio[0].FechaInicio
+	preliquidacion.FechaFin = actaInicio[0].FechaFin
+	preliquidacion.Cdp = desagregado[0].Disponibilidad
 	preliquidacion.NombreCompleto = docente[0].NomProveedor
 	preliquidacion.PersonaId = docente[0].Id
 
