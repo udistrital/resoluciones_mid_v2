@@ -766,59 +766,71 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 		}
 	}()
 
-	vin := m.Vinculaciones
+	cancelaciones := m.Vinculaciones
 
 	var response interface{}
 	var usuario map[string]interface{}
 	var err error
 
-	usuario, err = GetUsuario(vin[0].ContratoCancelado.Usuario)
+	usuario, err = GetUsuario(cancelaciones[0].ContratoCancelado.Usuario)
 	if err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
 
-	for _, vinculacion := range vin {
-		v := vinculacion.VinculacionDocente
+	for _, can := range cancelaciones {
+		var v models.VinculacionDocente
+		if err := GetRequestNew("UrlCrudResoluciones", VinculacionEndpoint+strconv.Itoa(can.VinculacionDocente.Id), &v); err != nil {
+			panic("Vinculacion (cancelacion) -> " + err.Error())
+		}
 		contratos := new([]models.ContratoCancelar)
 		if err := BuscarContratosCancelar(v.Id, contratos); err == nil { // If 1 - vinculacion_docente
 			for _, contrato := range *contratos {
-				contratoCancelado := &models.ContratoCancelado{
-					NumeroContrato:    contrato.NumeroContrato,
-					Vigencia:          contrato.Vigencia,
-					FechaCancelacion:  vinculacion.ContratoCancelado.FechaCancelacion,
-					MotivoCancelacion: vinculacion.ContratoCancelado.MotivoCancelacion,
-					Usuario:           usuario["documento_compuesto"].(string),
-					FechaRegistro:     time.Now(),
-					Estado:            vinculacion.ContratoCancelado.Estado,
+				url := "acta_inicio?query=NumeroContrato:" + contrato.NumeroContrato + ",Vigencia:" + strconv.Itoa(contrato.Vigencia)
+				var ai []models.ActaInicio
+				if err := GetRequestLegacy("UrlcrudAgora", url, &ai); err != nil {
+					panic("Acta de inicio -> " + err.Error())
 				}
-				url := "contrato_cancelado"
-				if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &contratoCancelado); err == nil { // If 2 -contrato_cancelado (post)
-					var ai []models.ActaInicio
-					url = "acta_inicio?query=NumeroContrato:" + contratoCancelado.NumeroContrato + ",Vigencia:" + strconv.Itoa(contratoCancelado.Vigencia)
-					if err := GetRequestLegacy("UrlcrudAgora", url, &ai); err == nil { // If 3 - acta_inicio (get)
-						ai[0].FechaFin = CalcularFechaFin(ai[0].FechaInicio, v.NumeroSemanas)
+				actaInicio := ai[0]
+				if actaInicio.FechaInicio.Before(v.FechaInicio) && actaInicio.FechaFin.After(v.FechaInicio) {
+					contratoCancelado := &models.ContratoCancelado{
+						NumeroContrato:    contrato.NumeroContrato,
+						Vigencia:          contrato.Vigencia,
+						FechaCancelacion:  v.FechaInicio,
+						MotivoCancelacion: can.ContratoCancelado.MotivoCancelacion,
+						Usuario:           usuario["documento_compuesto"].(string),
+						FechaRegistro:     time.Now(),
+						Estado:            can.ContratoCancelado.Estado,
+					}
+					url = "contrato_cancelado"
+					if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &contratoCancelado); err == nil { // If 2 -contrato_cancelado (post)
+						actaInicio.FechaFin = v.FechaInicio
 						url = "acta_inicio/" + strconv.Itoa(ai[0].Id)
-						if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &ai[0]); err == nil { // If 4 - acta_inicio
-							var ce models.ContratoEstado
-							var ec models.EstadoContrato
-							ce.NumeroContrato = contratoCancelado.NumeroContrato
-							ce.Vigencia = contratoCancelado.Vigencia
-							ce.FechaRegistro = time.Now()
-							ce.Usuario = usuario["documento_compuesto"].(string)
-							ec.Id = 7
-							ce.Estado = &ec
+						if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &actaInicio); err == nil { // If 4 - acta_inicio
+							ce := models.ContratoEstado{
+								NumeroContrato: contratoCancelado.NumeroContrato,
+								Vigencia:       contratoCancelado.Vigencia,
+								FechaRegistro:  time.Now(),
+								Usuario:        usuario["documento_compuesto"].(string),
+								Estado: &models.EstadoContrato{
+									Id: 7,
+								},
+							}
 							url = "contrato_estado"
 							if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &ce); err == nil { // If 5 - contrato_estado
 								var r models.Resolucion
 								url = ResolucionEndpoint + strconv.Itoa(m.IdResolucion)
 								if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {
-									if err := CambiarEstadoResolucion(r.Id, "REXP", vinculacion.ContratoCancelado.Usuario); err == nil {
+									if err := CambiarEstadoResolucion(r.Id, "REXP", can.ContratoCancelado.Usuario); err == nil {
 										r.FechaExpedicion = m.FechaExpedicion
 										if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err == nil {
 											if documento, err := AlmacenarResolucionGestorDocumental(r.Id); err == nil {
 												r.NuxeoUid = documento.Enlace
-												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // if 10
+												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err == nil { // if 10
+													if err := ReliquidarContratoCancelado(v, *contratoCancelado); err != nil {
+														panic(err)
+													}
+												} else {
 													fmt.Println("Error en if 10 - Resolucion (PUT)#2!", err)
 													logs.Error(r)
 													panic(err.Error())
@@ -853,15 +865,11 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 							logs.Error(response)
 							panic(err.Error())
 						}
-					} else { // If 3
-						fmt.Println("Error en if 3 - acta_inicio (get)!", err)
-						logs.Error(ai)
+					} else { // if 2
+						fmt.Println("Error en if 2 - contrato_cancelado (post)!", err)
+						logs.Error(response)
 						panic(err.Error())
 					}
-				} else { // if 2
-					fmt.Println("Error en if 2 - contrato_cancelado (post)!", err)
-					logs.Error(response)
-					panic(err.Error())
 				}
 			}
 		} else { // If 1

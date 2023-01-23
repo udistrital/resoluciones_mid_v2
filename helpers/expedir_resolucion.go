@@ -54,6 +54,6 @@ func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.T
 	decimal = meses - float32(mesEntero)
 	numeroDias := decimal * 30
 	f := fechaInicio
-	after := f.AddDate(0, mesEntero, int(numeroDias-1))
+	after := f.AddDate(0, mesEntero, int(numeroDias)-1)
 	return after
 }

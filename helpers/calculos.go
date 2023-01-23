@@ -118,110 +118,6 @@ func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasResta
 	return salarioTotal, outputError
 }
 
-// Envia a Titan la información necesaria para calcular el valor de un contrato desagregado por rubros
-func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcademico string) (d map[string]interface{}, outputError map[string]interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "CalcularDesagregadoTitan", "err": err, "status": "500"}
-			panic(outputError)
-		}
-	}()
-
-	// var desagregado models.DesagregadoContrato
-	var desagregado map[string]interface{}
-	datos := &models.DatosVinculacion{
-		NumeroContrato: "",
-		Vigencia:       v.Vigencia,
-		Documento:      strconv.Itoa(int(v.PersonaId)),
-		Dedicacion:     dedicacion,
-		Categoria:      v.Categoria,
-		NumeroSemanas:  v.NumeroSemanas,
-		HorasSemanales: v.NumeroHorasSemanales,
-		NivelAcademico: nivelAcademico,
-	}
-	if nivelAcademico == "POSGRADO" {
-		datos.NumeroSemanas = 1
-	}
-
-	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
-		logs.Error(err.Error())
-		panic("Consultando desagregado -> " + err.Error())
-	}
-
-	return desagregado, outputError
-}
-
-// Envía a Titan la información para la preliquidación de nómina para los docentes recien contratados con RP actualizado
-func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[string]interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "EjecutarPreliquidacionTitan", "err": err, "status": "500"}
-			panic(outputError)
-		}
-	}()
-
-	var c models.ContratoPreliquidacion
-	var desagregado []models.DisponibilidadVinculacion
-	var docente []models.InformacionProveedor
-	var actaInicio []models.ActaInicio
-
-	preliquidacion := &models.ContratoPreliquidacion{
-		NumeroContrato: *v.NumeroContrato,
-		Vigencia:       v.Vigencia,
-		Documento:      fmt.Sprintf("%.f", v.PersonaId),
-		DependenciaId:  v.ResolucionVinculacionDocenteId.FacultadId,
-		Rp:             int(v.NumeroRp),
-		TipoNominaId:   410,
-		Activo:         true,
-	}
-
-	url := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(v.Id)
-	if err := GetRequestNew("UrlcrudResoluciones", url, &desagregado); err != nil {
-		panic("Cargando desagregado-preliq -> " + err.Error())
-	}
-
-	desagregadoMap := map[string]float64{}
-	if v.ResolucionVinculacionDocenteId.Dedicacion == "HCH" {
-		preliquidacion.ValorContrato = v.ValorContrato
-		preliquidacion.TipoNominaId = 409
-	} else {
-		for _, d := range desagregado {
-			if d.Rubro == "SueldoBasico" {
-				preliquidacion.ValorContrato = d.Valor
-			} else {
-				desagregadoMap[d.Rubro] = d.Valor
-			}
-		}
-		preliquidacion.Desagregado = &desagregadoMap
-	}
-
-	url2 := "informacion_proveedor?query=NumDocumento:" + preliquidacion.Documento
-	if err2 := GetRequestLegacy("UrlcrudAgora", url2, &docente); err2 != nil {
-		panic("Info docente -> " + err2.Error())
-	} else if len(docente) == 0 {
-		panic("Info docente -> No se encontró información del docente en Agora!!")
-	}
-
-	url3 := "acta_inicio?query=NumeroContrato:" + *v.NumeroContrato + ",Vigencia:" + strconv.Itoa(v.Vigencia)
-	if err3 := GetRequestLegacy("UrlcrudAgora", url3, &actaInicio); err3 != nil {
-		panic("Acta inicio -> " + err3.Error())
-	} else if len(actaInicio) == 0 {
-		panic("Acta inicio -> No se pudo encontrar el acta de inicio")
-	}
-
-	preliquidacion.FechaInicio = actaInicio[0].FechaInicio
-	preliquidacion.FechaFin = actaInicio[0].FechaFin
-	preliquidacion.Cdp = desagregado[0].Disponibilidad
-	preliquidacion.NombreCompleto = docente[0].NomProveedor
-	preliquidacion.PersonaId = docente[0].Id
-
-	if err2 := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &preliquidacion, &c); err2 != nil {
-		panic("Preliquidando -> " + err2.Error())
-	}
-
-	return
-}
-
 // Calcula el desagregado general unitario para los parámetros recibidos
 func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]interface{}, outputError map[string]interface{}) {
 	defer func() {
@@ -355,6 +251,9 @@ func CargarParametroPeriodo(vigencia, codigo string) (id int, parametro float64,
 	}
 	if err := GetRequestNew("UrlcrudParametros", url, &s); err != nil {
 		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo", "err": err.Error(), "status": "500"}
+		return id, parametro, outputError
+	} else if len(s) == 0 {
+		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo", "err": "No se pudo cargar el parámetro " + codigo, "status": "500"}
 		return id, parametro, outputError
 	}
 	if err2 := json.Unmarshal([]byte(s[0].Valor), &valor); err2 != nil {
