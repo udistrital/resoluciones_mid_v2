@@ -113,7 +113,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 }
 
 // Al cancelar una vinculación se debe ajustar la liquidación del contrato en Titan
-func ReliquidarContratoCancelado(v models.VinculacionDocente, cc models.ContratoCancelado) (outputError map[string]interface{}) {
+func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelado models.VinculacionDocente) (outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "ReliquidarContratoCancelado", "err": err, "status": "500"}
@@ -121,32 +121,32 @@ func ReliquidarContratoCancelado(v models.VinculacionDocente, cc models.Contrato
 		}
 	}()
 	var c models.ContratoPreliquidacion
-	var desagregado []models.DisponibilidadVinculacion
+	var desagregado, err map[string]interface{}
 	valores := make(map[string]float64)
 
 	contratoReliquidar := &models.ContratoCancelacion{
-		NumeroContrato: cc.NumeroContrato,
-		Vigencia:       cc.Vigencia,
-		FechaAnulacion: v.FechaInicio,
-		Documento:      strconv.Itoa(int(v.PersonaId)),
+		NumeroContrato: *cancelado.NumeroContrato,
+		Vigencia:       cancelado.Vigencia,
+		FechaAnulacion: cancelacion.FechaInicio,
+		Documento:      strconv.Itoa(int(cancelacion.PersonaId)),
 	}
 
-	if err := CalcularTrazabilidad(strconv.Itoa(v.Id), &valores); err != nil {
-		logs.Error("Error en trazabilidad -> " + err.Error())
-		panic("Error en trazabilidad -> " + err.Error())
-	}
-
-	url := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(v.Id)
-	if err := GetRequestNew("UrlcrudResoluciones", url, &desagregado); err != nil {
-		panic("Cargando desagregado -> " + err.Error())
-	}
-
-	for _, concepto := range desagregado {
-		if concepto.Rubro != "SueldoBasico" {
-			valores[concepto.Rubro] = valores[concepto.Rubro] - concepto.Valor
+	// calcular el desagregado de la cancelación individual
+	if cancelado.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
+		cancelado.NumeroSemanas = cancelado.NumeroSemanas - cancelacion.NumeroSemanas
+		dedicacion := cancelado.ResolucionVinculacionDocenteId.Dedicacion
+		nivel := cancelado.ResolucionVinculacionDocenteId.NivelAcademico
+		if desagregado, err = CalcularDesagregadoTitan(cancelado, dedicacion, nivel); err != nil {
+			panic(err)
 		}
+
+		for concepto, valor := range desagregado {
+			if concepto != "NumeroContrato" && concepto != "Vigencia" && concepto != "SueldoBasico" {
+				valores[concepto] = valor.(float64)
+			}
+		}
+		contratoReliquidar.Desagregado = &valores
 	}
-	contratoReliquidar.Desagregado = &valores
 
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
