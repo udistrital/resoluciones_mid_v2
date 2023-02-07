@@ -592,7 +592,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										panic(err.Error())
 									}
 									// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
-									semanasTranscurridasDecimal := (vinculacionModificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24 / 30 * 4 // cálculo con base en meses de 30 días y 4 semanas
+									semanasTranscurridasDecimal := (vinculacionModificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / (24 * 7) // cálculo con base en semanas
 									semanasTranscurridas, decimal := math.Modf(semanasTranscurridasDecimal)
 									if decimal > 0 {
 										semanasTranscurridas = semanasTranscurridas + 1
@@ -667,6 +667,19 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 															fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
 															logs.Error(response)
 															panic(err.Error())
+														}
+														if tipoRes.CodigoAbreviacion == "RRED" {
+															reduccion := &models.Reduccion{
+																NumeroContratoReduccion: aux1,
+																Vigencia:                aux2,
+																Documento:               strconv.Itoa(int(vinculacionModificacion.PersonaId)),
+																ValorContratoReduccion:  contrato.ValorContrato,
+																FechaReduccion:          vinculacionModificacion.FechaInicio,
+															}
+															if err := ReducirContratosTitan(reduccion, vinculacionModificacion); err != nil {
+																fmt.Println("Error en reliquidacion de reducciones Titan")
+																panic(err)
+															}
 														}
 													} else {
 														fmt.Println("Error en If 1.12 - contrato_disponibilidad! ", err)
@@ -793,6 +806,8 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 				var ai []models.ActaInicio
 				if err := GetRequestLegacy("UrlcrudAgora", url, &ai); err != nil {
 					panic("Acta de inicio -> " + err.Error())
+				} else if len(ai) == 0 {
+					panic("Acta de inicio no encontrada")
 				}
 				actaInicio := ai[0]
 				if actaInicio.FechaInicio.Before(v.FechaInicio) && actaInicio.FechaFin.After(v.FechaInicio) {

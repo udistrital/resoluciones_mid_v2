@@ -127,6 +127,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	contratoReliquidar := &models.ContratoCancelacion{
 		NumeroContrato: *cancelado.NumeroContrato,
 		Vigencia:       cancelado.Vigencia,
+		ValorContrato:  cancelado.ValorContrato - cancelacion.ValorContrato,
 		FechaAnulacion: cancelacion.FechaInicio,
 		Documento:      strconv.Itoa(int(cancelacion.PersonaId)),
 	}
@@ -153,4 +154,96 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	}
 
 	return
+}
+
+// Envía a Titan la información de lso contratos afectados en una reducción
+func ReducirContratosTitan(reduccion *models.Reduccion, vinculacion *models.VinculacionDocente) (outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "ReducirContratosTitan", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+	var c models.ContratoPreliquidacion
+	var desagregado, err map[string]interface{}
+	horasReducir := vinculacion.NumeroHorasSemanales
+	dedicacion := vinculacion.ResolucionVinculacionDocenteId.Dedicacion
+	nivel := vinculacion.ResolucionVinculacionDocenteId.NivelAcademico
+
+	contratosAnteriores := new([]models.VinculacionDocente)
+
+	if err := BuscarContratosCancelar(vinculacion.Id, contratosAnteriores); err != nil {
+		panic("Buscando contratos a reducir -> " + err.Error())
+	}
+
+	for _, contrato := range *contratosAnteriores {
+		url := "acta_inicio?query=NumeroContrato:" + *contrato.NumeroContrato + ",Vigencia:" + strconv.Itoa(contrato.Vigencia)
+		var ai []models.ActaInicio
+		if err := GetRequestLegacy("UrlcrudAgora", url, &ai); err != nil {
+			panic("Acta de inicio -> " + err.Error())
+		} else if len(ai) == 0 {
+			panic("Acta de inicio no encontrada")
+		}
+		actaInicio := ai[0]
+		if actaInicio.FechaInicio.Before(vinculacion.FechaInicio) && actaInicio.FechaFin.After(vinculacion.FechaInicio) {
+			horasReducir -= contrato.NumeroHorasSemanales
+			if horasReducir <= 0 {
+				contrato.NumeroHorasSemanales += horasReducir
+				horasReducir = 0
+			}
+			valores := make(map[string]float64)
+			contratoReducir := &models.ContratoReducir{
+				NumeroContratoOriginal: *contrato.NumeroContrato,
+			}
+			if vinculacion.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
+				// calcular el desagregado del resto de cada contrato
+				contrato.NumeroSemanas = contrato.NumeroSemanas - vinculacion.NumeroSemanas
+				if desagregado, err = CalcularDesagregadoTitan(contrato, dedicacion, nivel); err != nil {
+					panic(err)
+				}
+				for concepto, valor := range desagregado {
+					if concepto != "NumeroContrato" && concepto != "Vigencia" && concepto != "SueldoBasico" {
+						valores[concepto] = valor.(float64)
+					}
+				}
+				contratoReducir.DesagregadoOriginal = &valores
+			}
+			reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
+			// Si se han reducido todas las horas los contratos restantes no se modifican
+			// if horasReducir <= 0 {
+			// 	break
+			// }
+		}
+	}
+
+	// calcular el desagregado del nuevo contrato
+	var desagregadoReduccion []models.DisponibilidadVinculacion
+	url := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
+	if err := GetRequestNew("UrlcrudResoluciones", url, &desagregadoReduccion); err != nil {
+		panic("Desagregado reduccion -> " + err.Error())
+	}
+
+	valoresDesagregado := make(map[string]float64)
+	if err2 := CalcularTrazabilidad(strconv.Itoa(vinculacion.Id), &valoresDesagregado); err2 != nil {
+		logs.Error("Error en trazabilidad -> " + err2.Error())
+		panic("Error en trazabilidad -> " + err2.Error())
+	}
+
+	// se resta del desagregado total: la reducción y el resto de cada contrato
+	for _, disp := range desagregadoReduccion {
+		valoresDesagregado[disp.Rubro] -= disp.Valor
+	}
+	for _, cont := range reduccion.ContratosOriginales {
+		for k, v := range *cont.DesagregadoOriginal {
+			valoresDesagregado[k] -= v
+		}
+	}
+
+	reduccion.DesagregadoReduccion = &valoresDesagregado
+
+	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_reduccion", "POST", &c, &reduccion); err2 != nil {
+		panic("Reliquidando -> " + err2.Error())
+	}
+
+	return nil
 }
