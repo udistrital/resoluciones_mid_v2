@@ -97,7 +97,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 					contrato.UnidadEjecutora = 1
 					contrato.ValorContrato = v.ValorContrato
 					contrato.OrdenadorGasto = ordenadorGasto.Id
-					sup, err := SupervisorActual(v.ResolucionVinculacionDocenteId.Id)
+					sup, err := SupervisorActual(r.DependenciaId)
 					if err != nil { // If 1.1.2 - supervisorActual
 						fmt.Println("Error en If 1.1.2 - supervisorActual!")
 						logs.Error(err)
@@ -384,8 +384,9 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 	var temp int
 	var cdve int
 	var proveedor []models.InformacionProveedor
-	var modVin []models.ModificacionVinculacion
 	var response interface{}
+	var tipoRes models.Parametro
+	var reduccion *models.Reduccion
 	var resolucion models.Resolucion
 	var ordenadoresGasto []models.OrdenadorGasto
 	var ordenadorGasto models.OrdenadorGasto
@@ -403,7 +404,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 
 	if err := GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(m.IdResolucion), &resolucion); err != nil {
 		logs.Error(err)
-		panic(err.Error())
+		panic("cargando resolucion -> " + err.Error())
+	}
+
+	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(resolucion.TipoResolucionId), &tipoRes); err != nil {
+		logs.Error(err)
+		panic("Cargando tipo_resolucion -> " + err.Error())
 	}
 
 	// Cambiar en el futuro por terceros_mid/tipo/ordenadoresGasto y filtrar por dependenciaId
@@ -427,9 +433,10 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 		numeroContratos := cdve
 		for _, vinculacion := range vinc {
 			numeroContratos = numeroContratos + 1
-			v := vinculacion.VinculacionDocente
-			url = VinculacionEndpoint + strconv.Itoa(v.Id)
-			if err := GetRequestNew("UrlCrudResoluciones", url, &v); err == nil { // If 1.1 - vinculacion_docente
+			var vi []models.VinculacionDocente
+			url = "vinculacion_docente?query=Id:" + strconv.Itoa(vinculacion.VinculacionDocente.Id)
+			if err := GetRequestNew("UrlCrudResoluciones", url, &vi); err == nil { // If 1.1 - vinculacion_docente
+				modificacion := vi[0]
 				contrato := vinculacion.ContratoGeneral
 				var sup models.SupervisorContrato
 				acta := vinculacion.ActaInicio
@@ -454,9 +461,9 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 				contrato.TipologiaContrato = 46
 				contrato.FechaRegistro = time.Now()
 				contrato.UnidadEjecutora = 1
-				contrato.ValorContrato = v.ValorContrato
+				contrato.ValorContrato = modificacion.ValorContrato
 				contrato.OrdenadorGasto = ordenadorGasto.Id
-				sup, err := SupervisorActual(v.ResolucionVinculacionDocenteId.Id)
+				sup, err := SupervisorActual(resolucion.DependenciaId)
 				if err != nil {
 					fmt.Println("Error en If 1.1.2 - supervisorActual!")
 					logs.Error(err)
@@ -540,192 +547,191 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								"Ciudad":      96,
 							},
 						}
-						valoresAntes := make(map[string]float64)
-						if err := CalcularTrazabilidad(strconv.Itoa(v.Id), &valoresAntes); err != nil {
-							fmt.Println("Error en If 1.5 - CalcularTrazabilidad! ", err)
-							panic(err.Error())
-						}
-						url = "modificacion_vinculacion?query=VinculacionDocenteRegistradaId.Id:" + strconv.Itoa(v.Id)
-						if err := GetRequestNew("UrlCrudResoluciones", url, &modVin); err == nil { // If 1.4 - modificacion_vinculacion
-							var respActaInicioAnterior []models.ActaInicio
-							var actaInicioAnterior models.ActaInicio
-							vinculacionModificacion := modVin[0].VinculacionDocenteRegistradaId
-							vinculacionOriginal := modVin[0].VinculacionDocenteCanceladaId
-							url = ResolucionEndpoint + strconv.Itoa(v.ResolucionVinculacionDocenteId.Id)
-							if err := GetRequestNew("UrlCrudResoluciones", url, &resolucion); err == nil { // If 1.5 - resolucion
-							} else {
-								fmt.Println("Error en If 1.5 - resolucion! ", err)
-								logs.Error(resolucion)
+
+						if tipoRes.CodigoAbreviacion == "RRED" {
+							horasFinales := 0
+							horasReducir := modificacion.NumeroHorasSemanales
+							dedicacion := modificacion.ResolucionVinculacionDocenteId.Dedicacion
+							nivel := modificacion.ResolucionVinculacionDocenteId.NivelAcademico
+							reduccion = &models.Reduccion{
+								Vigencia:       modificacion.Vigencia,
+								Documento:      fmt.Sprintf("%.f", modificacion.PersonaId),
+								FechaReduccion: modificacion.FechaInicio,
+							}
+
+							contratosAnteriores := new([]models.VinculacionDocente)
+							if err := BuscarContratosModificar(modificacion.Id, contratosAnteriores); err != nil {
+								fmt.Println("Error en if - Buscar contratos!", err)
 								panic(err.Error())
 							}
-							url = "acta_inicio?query=NumeroContrato:" + *vinculacionOriginal.NumeroContrato + ",Vigencia:" + strconv.Itoa(vinculacionOriginal.Vigencia)
-							if err := GetRequestLegacy("UrlcrudAgora", url, &respActaInicioAnterior); err == nil { // If 1.6 - acta_inicio
-								actaInicioAnterior = respActaInicioAnterior[0]
-								semanasIniciales := vinculacionOriginal.NumeroSemanas
-								semanasModificar := vinculacionModificacion.NumeroSemanas
-								horasIniciales := int(valoresAntes["NumeroHorasSemanales"])
-								fechaFinNuevoContrato := CalcularFechaFin(vinculacionModificacion.FechaInicio, semanasModificar)
-								horasTotales := horasIniciales + vinculacionModificacion.NumeroHorasSemanales
-								// Sólo si es reducción cambia la fecha fin del acta anterior y el valor del nuevo contrato
-								var tipoRes models.Parametro
-								url2 := ParametroEndpoint + strconv.Itoa(resolucion.TipoResolucionId)
-								if err := GetRequestNew("UrlcrudParametros", url2, &tipoRes); err != nil {
-									logs.Error(err)
+
+							for _, subcontrato := range *contratosAnteriores {
+								var respActaInicioAnterior []models.ActaInicio
+								var actaInicioAnterior models.ActaInicio
+								url = fmt.Sprintf("acta_inicio?query=NumeroContrato:%s,Vigencia:%d", *subcontrato.NumeroContrato, subcontrato.Vigencia)
+								if err := GetRequestLegacy("UrlcrudAgora", url, &respActaInicioAnterior); err != nil {
+									fmt.Println("Error en if - Acta inicio "+*subcontrato.NumeroContrato, err)
 									panic(err.Error())
+								} else if len(respActaInicioAnterior) == 0 {
+									panic("Acta de inicio no encontrada")
 								}
-								if tipoRes.CodigoAbreviacion == "RRED" {
-									var aini models.ActaInicio
-									aini.Id = actaInicioAnterior.Id
-									aini.NumeroContrato = actaInicioAnterior.NumeroContrato
-									aini.Vigencia = actaInicioAnterior.Vigencia
-									aini.Descripcion = actaInicioAnterior.Descripcion
-									aini.FechaInicio = actaInicioAnterior.FechaInicio
-									aini.FechaFin = vinculacionModificacion.FechaInicio
-									aini.Usuario = usuario["documento_compuesto"].(string)
-									fechaFinNuevoContrato = actaInicioAnterior.FechaFin
-									beego.Info("fin nuevo ", fechaFinNuevoContrato)
-									beego.Info("fin viejo", aini.FechaFin)
-									url = "acta_inicio/" + strconv.Itoa(aini.Id)
-									if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &aini); err != nil { // If 1.7 - acta_inicio (PUT)
-										fmt.Println("Error en If 1.7 - acta_inicio (PUT)! ", err)
-										logs.Error(response)
+								actaInicioAnterior = respActaInicioAnterior[0]
+								if actaInicioAnterior.FechaInicio.Before(modificacion.FechaInicio) && actaInicioAnterior.FechaFin.After(modificacion.FechaInicio) {
+									horasReducir -= subcontrato.NumeroHorasSemanales
+									if horasReducir < 0 {
+										horasFinales -= horasReducir
+										horasReducir = 0
+									}
+									valores := make(map[string]float64)
+									contratoReducir := &models.ContratoReducir{
+										NumeroContratoOriginal: *subcontrato.NumeroContrato,
+									}
+									if modificacion.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
+										// calcular el desagregado del resto de cada contrato
+										var desagregado, err map[string]interface{}
+										subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+										if desagregado, err = CalcularDesagregadoTitan(subcontrato, dedicacion, nivel); err != nil {
+											panic(err)
+										}
+										for concepto, valor := range desagregado {
+											if concepto != "NumeroContrato" && concepto != "Vigencia" && concepto != "SueldoBasico" {
+												valores[concepto] = valor.(float64)
+											}
+										}
+										contratoReducir.DesagregadoOriginal = &valores
+									}
+									reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
+									// actualizacion acta_inicio
+									fechaFinOriginal := actaInicioAnterior.FechaFin
+									actaInicioAnterior.FechaFin = modificacion.FechaInicio
+									actaInicioAnterior.Usuario = usuario["documento_compuesto"].(string)
+									url = "acta_inicio/" + strconv.Itoa(actaInicioAnterior.Id)
+									if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &actaInicioAnterior); err != nil {
+										fmt.Println("Error en acta_inicio PUT ", err)
 										panic(err.Error())
 									}
-									// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
-									semanasTranscurridasDecimal := (vinculacionModificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / (24 * 7) // cálculo con base en semanas
-									semanasTranscurridas, decimal := math.Modf(semanasTranscurridasDecimal)
-									if decimal > 0 {
-										semanasTranscurridas = semanasTranscurridas + 1
+									if horasReducir == 0 {
+										// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
+										semanasTranscurridas := math.Ceil(modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours() / (24 * 7)) // cálculo con base en semanas
+										semanasRestantes := subcontrato.NumeroSemanas - modificacion.NumeroSemanas - int(semanasTranscurridas)
+										var vinc [1]models.VinculacionDocente
+										vinc[0] = models.VinculacionDocente{
+											ResolucionVinculacionDocenteId: modificacion.ResolucionVinculacionDocenteId,
+											PersonaId:                      modificacion.PersonaId,
+											NumeroHorasSemanales:           horasFinales,
+											NumeroSemanas:                  modificacion.NumeroSemanas,
+											Vigencia:                       modificacion.Vigencia,
+											Categoria:                      modificacion.Categoria,
+										}
+										salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, subcontrato.NumeroHorasSemanales, nivel)
+										if err != nil {
+											fmt.Println("Error en cálculo del contrato reducción!", err)
+											panic(err)
+										}
+										// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
+										if nivel == "POSGRADO" {
+											diasOriginales, _ := math.Modf((fechaFinOriginal.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+											diasTranscurridos, _ := math.Modf((modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+											valorDiario := subcontrato.ValorContrato / diasOriginales
+											valorPagado := valorDiario * diasTranscurridos
+											salario = salario - valorPagado
+										}
+										subcontrato.ValorContrato = salario
+										beego.Info(subcontrato.ValorContrato)
+
+										break
 									}
-									var semanasTranscurridasInt = int(semanasTranscurridas)
-									semanasRestantes := semanasIniciales - semanasTranscurridasInt - semanasModificar
-									horasTotales = horasIniciales - vinculacionModificacion.NumeroHorasSemanales
-									var vinc [1]models.VinculacionDocente
-									vinc[0] = models.VinculacionDocente{
-										ResolucionVinculacionDocenteId: vinculacionModificacion.ResolucionVinculacionDocenteId,
-										PersonaId:                      v.PersonaId,
-										NumeroHorasSemanales:           horasTotales,
-										NumeroSemanas:                  semanasModificar,
-										DedicacionId:                   v.DedicacionId,
-										ProyectoCurricularId:           v.ProyectoCurricularId,
-										Categoria:                      v.Categoria,
-										Vigencia:                       v.Vigencia,
-									}
-									salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, horasIniciales, v.ResolucionVinculacionDocenteId.NivelAcademico, resolucion.Periodo)
-									if err != nil {
-										fmt.Println("Error en cálculo del contrato reducción!", err)
-										panic(err)
-									}
-									// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
-									if v.ResolucionVinculacionDocenteId.NivelAcademico == "POSGRADO" {
-										diasOriginales, _ := math.Modf((actaInicioAnterior.FechaFin.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-										diasTranscurridos, _ := math.Modf((vinculacionModificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-										valorDiario := vinculacionOriginal.ValorContrato / diasOriginales
-										valorPagado := valorDiario * diasTranscurridos
-										salario = salario - valorPagado
-									}
-									contrato.ValorContrato = salario
-									beego.Info(contrato.ValorContrato)
 								}
-								if contrato.ValorContrato > 0 {
-									if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
-										aux1 := contrato.Id
-										aux2 := contrato.VigenciaContrato
-										var ce models.ContratoEstado
-										var ec models.EstadoContrato
-										ce.NumeroContrato = aux1
-										ce.Vigencia = aux2
-										ce.FechaRegistro = time.Now()
-										ce.Usuario = usuario["documento_compuesto"].(string)
-										ec.Id = 4
-										ce.Estado = &ec
-										if err := SendRequestLegacy("UrlcrudAgora", "contrato_estado", "POST", &response, &ce); err == nil { // If 1.9 - contrato_estado (POST)
-											var ai models.ActaInicio
-											ai.NumeroContrato = aux1
-											ai.Vigencia = aux2
-											ai.Descripcion = acta.Descripcion
-											ai.FechaInicio = vinculacionModificacion.FechaInicio
-											ai.FechaFin = fechaFinNuevoContrato
-											ai.Usuario = usuario["documento_compuesto"].(string)
-											if err := SendRequestLegacy("UrlcrudAgora", "acta_inicio", "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)
-												var cd models.ContratoDisponibilidad
-												cd.NumeroContrato = aux1
-												cd.Vigencia = aux2
-												cd.Estado = true
-												cd.FechaRegistro = time.Now()
-												var dv models.DisponibilidadVinculacion
-												var disp []models.DisponibilidadVinculacion
-												url = "disponibilidad_vinculacion?query=VinculacionDocenteId.Id:" + strconv.Itoa(v.Id)
-												if err := GetRequestNew("UrlCrudResoluciones", url, &disp); err == nil { // If 1.11 - DisponibilidadVinculacion
-													dv = disp[0]
-													cd.NumeroCdp = int(dv.Disponibilidad)
-													if err := SendRequestLegacy("UrlcrudAgora", "contrato_disponibilidad", "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
-														vinculacionModificacion.NumeroContrato = &aux1
-														vinculacionModificacion.Vigencia = aux2
-														url = VinculacionEndpoint + strconv.Itoa(vinculacionModificacion.Id)
-														if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &vinculacionModificacion); err != nil {
-															fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
-															logs.Error(response)
-															panic(err.Error())
-														}
-														if tipoRes.CodigoAbreviacion == "RRED" {
-															reduccion := &models.Reduccion{
-																NumeroContratoReduccion: aux1,
-																Vigencia:                aux2,
-																Documento:               strconv.Itoa(int(vinculacionModificacion.PersonaId)),
-																ValorContratoReduccion:  contrato.ValorContrato,
-																FechaReduccion:          vinculacionModificacion.FechaInicio,
-															}
-															if err := ReducirContratosTitan(reduccion, vinculacionModificacion); err != nil {
-																fmt.Println("Error en reliquidacion de reducciones Titan")
-																panic(err)
-															}
-														}
-													} else {
-														fmt.Println("Error en If 1.12 - contrato_disponibilidad! ", err)
-														logs.Error(cd)
-														panic(err.Error())
-													}
-												} else {
-													fmt.Println("Error en If 1.11 - DisponibilidadVinculacion! ", err)
-													logs.Error(dv)
+							}
+						}
+						if contrato.ValorContrato > 0 {
+							if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
+								numContrato := contrato.Id
+								vigencia := contrato.VigenciaContrato
+								var ce models.ContratoEstado
+								var ec models.EstadoContrato
+								ce.NumeroContrato = numContrato
+								ce.Vigencia = vigencia
+								ce.FechaRegistro = time.Now()
+								ce.Usuario = usuario["documento_compuesto"].(string)
+								ec.Id = 4
+								ce.Estado = &ec
+								if err := SendRequestLegacy("UrlcrudAgora", "contrato_estado", "POST", &response, &ce); err == nil { // If 1.9 - contrato_estado (POST)
+									var ai models.ActaInicio
+									ai.NumeroContrato = numContrato
+									ai.Vigencia = vigencia
+									ai.Descripcion = acta.Descripcion
+									ai.FechaInicio = modificacion.FechaInicio
+									ai.FechaFin = CalcularFechaFin(modificacion.FechaInicio, modificacion.NumeroSemanas)
+									ai.Usuario = usuario["documento_compuesto"].(string)
+									if err := SendRequestLegacy("UrlcrudAgora", "acta_inicio", "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)
+										var cd models.ContratoDisponibilidad
+										cd.NumeroContrato = numContrato
+										cd.Vigencia = vigencia
+										cd.Estado = true
+										cd.FechaRegistro = time.Now()
+										var dv models.DisponibilidadVinculacion
+										var disp []models.DisponibilidadVinculacion
+										url = "disponibilidad_vinculacion?query=VinculacionDocenteId.Id:" + strconv.Itoa(modificacion.Id)
+										if err := GetRequestNew("UrlCrudResoluciones", url, &disp); err == nil { // If 1.11 - DisponibilidadVinculacion
+											dv = disp[0]
+											cd.NumeroCdp = int(dv.Disponibilidad)
+											if err := SendRequestLegacy("UrlcrudAgora", "contrato_disponibilidad", "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
+												modificacion.NumeroContrato = &numContrato
+												modificacion.Vigencia = vigencia
+												url = VinculacionEndpoint + strconv.Itoa(modificacion.Id)
+												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &modificacion); err != nil {
+													fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
+													logs.Error(response)
 													panic(err.Error())
 												}
-											} else { // If 1.10
-												fmt.Println("Error en If 1.10 - acta_inicio (POST)! ", err)
-												logs.Error(ai)
+												if tipoRes.CodigoAbreviacion == "RRED" {
+													reduccion.ContratoNuevo = &models.ContratoReducido{
+														NumeroContratoReduccion: numContrato,
+														ValorContratoReduccion:  contrato.ValorContrato,
+													}
+												}
+											} else {
+												fmt.Println("Error en If 1.12 - contrato_disponibilidad! ", err)
+												logs.Error(cd)
 												panic(err.Error())
 											}
-										} else { // If 1.9
-											fmt.Println("Error en If 1.9 - contrato_estado (POST)! ", err)
-											logs.Error(ce)
+										} else {
+											fmt.Println("Error en If 1.11 - DisponibilidadVinculacion! ", err)
+											logs.Error(dv)
 											panic(err.Error())
 										}
-									} else { // if 1.8
-										fmt.Println("Error en If 1.8 - contrato_general (POST)! ", err)
-										logs.Error(contratoGeneral)
+									} else { // If 1.10
+										fmt.Println("Error en If 1.10 - acta_inicio (POST)! ", err)
+										logs.Error(ai)
 										panic(err.Error())
 									}
+								} else { // If 1.9
+									fmt.Println("Error en If 1.9 - contrato_estado (POST)! ", err)
+									logs.Error(ce)
+									panic(err.Error())
 								}
-							} else {
-								fmt.Println("Error en If 1.6 - acta_inicio! ", err)
-								logs.Error(actaInicioAnterior)
+							} else { // if 1.8
+								fmt.Println("Error en If 1.8 - contrato_general (POST)! ", err)
+								logs.Error(contratoGeneral)
 								panic(err.Error())
 							}
-						} else { // If 1.4
-							fmt.Println("Error en If 1.4 - modificacion_vinculacion! ", err)
-							logs.Error(modVin)
-							panic(err.Error())
 						}
-					} // If 1.3
+					}
 				} else { // If 1.2
 					fmt.Println("Error en If 1.2 - informacion_proveedor! ", err)
-					logs.Error(v)
+					logs.Error(vi)
 					panic(err.Error())
+				}
+				if tipoRes.CodigoAbreviacion == "RRED" {
+					if err := ReducirContratosTitan(reduccion, &modificacion); err != nil {
+						fmt.Println("Error en reliquidacion de reducciones Titan")
+						panic(err)
+					}
 				}
 			} else { // If 1.1
 				fmt.Println("Error en If 1.1 - vinculacion_docente! ", err)
-				logs.Error(v)
+				logs.Error(vi)
 				panic(err.Error())
 			}
 		}
@@ -800,7 +806,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 		}
 		v = v2[0]
 		contratos := new([]models.VinculacionDocente)
-		if err := BuscarContratosCancelar(v.Id, contratos); err == nil { // If 1 - vinculacion_docente
+		if err := BuscarContratosModificar(v.Id, contratos); err == nil { // If 1 - vinculacion_docente
 			for _, contrato := range *contratos {
 				url := "acta_inicio?query=NumeroContrato:" + *contrato.NumeroContrato + ",Vigencia:" + strconv.Itoa(contrato.Vigencia)
 				var ai []models.ActaInicio
@@ -823,7 +829,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 					url = "contrato_cancelado"
 					if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &contratoCancelado); err == nil { // If 2 -contrato_cancelado (post)
 						actaInicio.FechaFin = v.FechaInicio
-						url = "acta_inicio/" + strconv.Itoa(ai[0].Id)
+						url = "acta_inicio/" + strconv.Itoa(actaInicio.Id)
 						if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &actaInicio); err == nil { // If 4 - acta_inicio
 							ce := models.ContratoEstado{
 								NumeroContrato: contratoCancelado.NumeroContrato,
@@ -901,7 +907,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 }
 
 // Función que recopila los contratos a cancelar de acuerdo con el histórico de modificaciones
-func BuscarContratosCancelar(vinculacionId int, contratos *[]models.VinculacionDocente) error {
+func BuscarContratosModificar(vinculacionId int, contratos *[]models.VinculacionDocente) error {
 	var modificaciones []models.ModificacionVinculacion
 	var modVin models.ModificacionVinculacion
 	var tipoResolucion models.Parametro
@@ -934,5 +940,5 @@ func BuscarContratosCancelar(vinculacionId int, contratos *[]models.VinculacionD
 
 	// Llamada recursiva para consultar una modificación anterior hasta llegar a
 	// la vinculación inicial que no tiene modificaciones
-	return BuscarContratosCancelar(modVin.VinculacionDocenteCanceladaId.Id, contratos)
+	return BuscarContratosModificar(modVin.VinculacionDocenteCanceladaId.Id, contratos)
 }

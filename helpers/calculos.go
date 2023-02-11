@@ -85,7 +85,7 @@ func CalcularSalarioPrecontratacion(docentesVincular []models.VinculacionDocente
 }
 
 // Calcula el valor de la modificación del contrato de un docente
-func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasRestantes int, horasOriginales int, nivelAcademico string, periodo int) (salarioTotal float64, outputError map[string]interface{}) {
+func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasRestantes int, horasOriginales int, nivelAcademico string) (salarioTotal float64, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "/CalcularValorContratoReduccion", "err": err, "status": "500"}
