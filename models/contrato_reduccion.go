@@ -12,6 +12,7 @@ type Reduccion struct {
 
 type ContratoReducir struct {
 	NumeroContratoOriginal string
+	ValorContratoReducido  float64
 	DesagregadoOriginal    *map[string]float64
 }
 

@@ -594,8 +594,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											panic(err)
 										}
 										for concepto, valor := range desagregado {
-											if concepto != "NumeroContrato" && concepto != "Vigencia" && concepto != "SueldoBasico" {
-												valores[concepto] = valor.(float64)
+											if concepto != "NumeroContrato" && concepto != "Vigencia" {
+												if concepto == "SueldoBasico" {
+													contratoReducir.ValorContratoReducido = valor.(float64)
+												} else {
+													valores[concepto] = valor.(float64)
+												}
 											}
 										}
 										contratoReducir.DesagregadoOriginal = &valores
