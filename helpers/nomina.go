@@ -165,39 +165,6 @@ func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.Vin
 		}
 	}()
 	var c models.ContratoPreliquidacion
-	valoresFinales := make(map[string]float64)
-
-	if reduccion.ContratoNuevo != nil {
-		// calcular el desagregado del nuevo contrato
-		var desagregadoReduccion []models.DisponibilidadVinculacion
-		url := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(modificacion.Id)
-		if err := GetRequestNew("UrlcrudResoluciones", url, &desagregadoReduccion); err != nil {
-			panic("Desagregado reduccion -> " + err.Error())
-		}
-
-		valoresCompletos := make(map[string]float64)
-		if err2 := CalcularTrazabilidad(strconv.Itoa(modificacion.Id), &valoresCompletos); err2 != nil {
-			logs.Error("Error en trazabilidad -> " + err2.Error())
-			panic("Error en trazabilidad -> " + err2.Error())
-		}
-
-		// se resta del desagregado total: la reducción y el resto de cada contrato
-		for _, disp := range desagregadoReduccion {
-			valoresCompletos[disp.Rubro] -= disp.Valor
-		}
-		for _, cont := range reduccion.ContratosOriginales {
-			for k, v := range *cont.DesagregadoOriginal {
-				valoresCompletos[k] -= v
-			}
-		}
-		for k, v := range valoresCompletos {
-			if k != "SueldoBasico" && k != "ValorContrato" && k != "NumeroSemanas" && k != "NumeroHorasSemanales" {
-				valoresFinales[k] = v
-			}
-		}
-
-		reduccion.ContratoNuevo.DesagregadoReduccion = &valoresFinales
-	}
 
 	JsonDebug(reduccion)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_reduccion", "POST", &c, &reduccion); err2 != nil {

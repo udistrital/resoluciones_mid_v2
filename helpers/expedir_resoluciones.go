@@ -636,15 +636,32 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											valorPagado := valorDiario * diasTranscurridos
 											salario = salario - valorPagado
 										}
-										subcontrato.ValorContrato = salario
-										beego.Info(subcontrato.ValorContrato)
-
+										contrato.ValorContrato = salario
+										beego.Info(contrato.ValorContrato)
+										// el subcontrato actual es reducido parcialmente y los siguientes no deben ser afectados
+										var desagregadoNuevo, err2 map[string]interface{}
+										if desagregadoNuevo, err2 = CalcularDesagregadoTitan(vinc[0], dedicacion, nivel); err2 != nil {
+											panic(err)
+										}
+										reduccion.ContratoNuevo = &models.ContratoReducido{}
+										valoresNuevo := make(map[string]float64)
+										for concepto, valor := range desagregadoNuevo {
+											if concepto != "NumeroContrato" && concepto != "Vigencia" {
+												if concepto == "SueldoBasico" {
+													reduccion.ContratoNuevo.ValorContratoReduccion = valor.(float64)
+												} else {
+													valoresNuevo[concepto] = valor.(float64)
+												}
+											}
+										}
+										reduccion.ContratoNuevo.DesagregadoReduccion = &valoresNuevo
 										break
 									}
 								}
 							}
 						}
 						if contrato.ValorContrato > 0 {
+							contratoGeneral["ValorContrato"] = int(contrato.ValorContrato)
 							if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
 								numContrato := contrato.Id
 								vigencia := contrato.VigenciaContrato
@@ -686,10 +703,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 													panic(err.Error())
 												}
 												if tipoRes.CodigoAbreviacion == "RRED" {
-													reduccion.ContratoNuevo = &models.ContratoReducido{
-														NumeroContratoReduccion: numContrato,
-														ValorContratoReduccion:  contrato.ValorContrato,
-													}
+													reduccion.ContratoNuevo.NumeroContratoReduccion = numContrato
 												}
 											} else {
 												fmt.Println("Error en If 1.12 - contrato_disponibilidad! ", err)
