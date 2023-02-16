@@ -734,6 +734,8 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								logs.Error(contratoGeneral)
 								panic(err.Error())
 							}
+						} else {
+							reduccion.ContratoNuevo = nil
 						}
 					}
 				} else { // If 1.2
