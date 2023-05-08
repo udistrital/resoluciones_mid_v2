@@ -499,7 +499,15 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 		}
 	}()
 	var cancelacionesRegistradas []models.VinculacionDocente
+	var actaInicio []models.ActaInicio
 	for i := range p.CambiosVinculacion {
+		vin := p.CambiosVinculacion[i].VinculacionOriginal
+		url := "acta_inicio?query=NumeroContrato:" + vin.NumeroContrato + ",Vigencia:" + strconv.Itoa(vin.Vigencia)
+		if err := GetRequestLegacy("UrlcrudAgora", url, &actaInicio); err != nil {
+			panic("Acta de inicio -> " + err.Error())
+		}
+		semanasFinales := vin.NumeroSemanas - p.CambiosVinculacion[i].NumeroSemanas
+		p.CambiosVinculacion[i].FechaInicio = CalcularFechaFin(actaInicio[0].FechaInicio, semanasFinales)
 		cancelacion := models.ObjetoModificaciones{
 			CambiosVinculacion:       &p.CambiosVinculacion[i],
 			ResolucionNuevaId:        p.ResolucionNuevaId,
@@ -588,7 +596,8 @@ func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigenci
 		return numeroSemanas, err
 	}
 	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
-	numeroSemanas = int(math.Round(diferencia.Hours() / (24 * 7)))
+	dif := diferencia.Hours() / (24 * 7)
+	numeroSemanas = int(math.Ceil(dif))
 	return
 }
 
@@ -602,22 +611,33 @@ func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError ma
 	}()
 
 	var v *models.VinculacionDocente
+	var v1 []models.VinculacionDocente
 	var v2 models.VinculacionDocente
 
 	for _, rp := range registros {
 		// Recuperación de la vinculación original
 		v = nil
-		url := VinculacionEndpoint + strconv.Itoa(rp.VinculacionId)
-		if err := GetRequestNew("UrlcrudResoluciones", url, &v); err != nil {
+		url := "vinculacion_docente?query=Id:" + strconv.Itoa(rp.VinculacionId)
+		if err := GetRequestNew("UrlcrudResoluciones", url, &v1); err != nil {
 			panic("Cargando vinculacion original -> " + err.Error())
+		} else if len(v1) == 0 {
+			panic("No se encontró la vinculacion original")
 		}
+		v = &v1[0]
 
-		v.NumeroRp = float64(rp.Consecutivo)
-		v.VigenciaRp = float64(rp.Vigencia)
+		if v.NumeroRp != float64(rp.Consecutivo) {
+			v.NumeroRp = float64(rp.Consecutivo)
+			v.VigenciaRp = float64(rp.Vigencia)
 
-		// Actualización de la vinculación
-		if err := SendRequestNew("UrlcrudResoluciones", url, "PUT", &v2, &v); err != nil {
-			panic("Actualizando vinculacion original -> " + err.Error())
+			// Actualización de la vinculación
+			if err := SendRequestNew("UrlcrudResoluciones", "vinculacion_docente/"+strconv.Itoa(v.Id), "PUT", &v2, &v); err != nil {
+				panic("Actualizando vinculacion original -> " + err.Error())
+			}
+
+			// Ejecutar preliquidacion
+			if err2 := EjecutarPreliquidacionTitan(*v); err2 != nil {
+				panic(err2)
+			}
 		}
 	}
 

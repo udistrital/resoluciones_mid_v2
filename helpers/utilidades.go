@@ -97,7 +97,7 @@ func GetRequestWSO2(service string, route string, target interface{}) error {
 func ExtractData(respuesta map[string]interface{}, v interface{}) error {
 	var err error
 	if respuesta["Success"] == false {
-		err = errors.New(respuesta["Message"].(string))
+		err = errors.New(fmt.Sprint(respuesta["Data"], respuesta["Message"]))
 		panic(err)
 	}
 	datatype := fmt.Sprintf("%v", respuesta["Data"])
