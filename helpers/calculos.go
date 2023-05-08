@@ -85,7 +85,7 @@ func CalcularSalarioPrecontratacion(docentesVincular []models.VinculacionDocente
 }
 
 // Calcula el valor de la modificación del contrato de un docente
-func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasRestantes int, horasOriginales int, nivelAcademico string, periodo int) (salarioTotal float64, outputError map[string]interface{}) {
+func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasRestantes int, horasOriginales int, nivelAcademico string) (salarioTotal float64, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "/CalcularValorContratoReduccion", "err": err, "status": "500"}
@@ -116,39 +116,6 @@ func CalcularValorContratoReduccion(v [1]models.VinculacionDocente, semanasResta
 
 	salarioTotal = salarioSemanasReducidas + salarioSemanasRestantes
 	return salarioTotal, outputError
-}
-
-// Envia a Titan la información necesaria para calcular el valor de un contrato desagregado por rubros
-func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcademico string) (d map[string]interface{}, outputError map[string]interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "CalcularDesagregadoTitan", "err": err, "status": "500"}
-			panic(outputError)
-		}
-	}()
-
-	// var desagregado models.DesagregadoContrato
-	var desagregado map[string]interface{}
-	datos := &models.DatosVinculacion{
-		NumeroContrato: "",
-		Vigencia:       v.Vigencia,
-		Documento:      strconv.Itoa(int(v.PersonaId)),
-		Dedicacion:     dedicacion,
-		Categoria:      v.Categoria,
-		NumeroSemanas:  v.NumeroSemanas,
-		HorasSemanales: v.NumeroHorasSemanales,
-		NivelAcademico: nivelAcademico,
-	}
-	if nivelAcademico == "POSGRADO" {
-		datos.NumeroSemanas = 1
-	}
-
-	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
-		logs.Error(err.Error())
-		panic("Consultando desagregado -> " + err.Error())
-	}
-
-	return desagregado, outputError
 }
 
 // Calcula el desagregado general unitario para los parámetros recibidos
@@ -284,6 +251,9 @@ func CargarParametroPeriodo(vigencia, codigo string) (id int, parametro float64,
 	}
 	if err := GetRequestNew("UrlcrudParametros", url, &s); err != nil {
 		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo", "err": err.Error(), "status": "500"}
+		return id, parametro, outputError
+	} else if len(s) == 0 {
+		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo", "err": "No se pudo cargar el parámetro " + codigo, "status": "500"}
 		return id, parametro, outputError
 	}
 	if err2 := json.Unmarshal([]byte(s[0].Valor), &valor); err2 != nil {
