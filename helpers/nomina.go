@@ -32,7 +32,7 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 	if nivelAcademico == "POSGRADO" {
 		datos.NumeroSemanas = 1
 	}
-
+	// fmt.Println("DESAGREGADO HCS ", datos)
 	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
 		logs.Error(err.Error())
 		panic("Consultando desagregado -> " + err.Error())
@@ -104,6 +104,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	preliquidacion.Cdp = desagregado[0].Disponibilidad
 	preliquidacion.NombreCompleto = docente[0].NomProveedor
 	preliquidacion.PersonaId = docente[0].Id
+	preliquidacion.NumeroSemanas = v.NumeroSemanas
 
 	if err2 := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &c, &preliquidacion); err2 != nil {
 		panic("Preliquidando -> " + err2.Error())
@@ -149,6 +150,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		contratoReliquidar.Desagregado = &valores
 	}
 
+	// fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}
@@ -167,6 +169,7 @@ func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.Vin
 	var c models.ContratoPreliquidacion
 
 	JsonDebug(reduccion)
+	// fmt.Println("APLICAR REDUCCIÓN ", reduccion)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_reduccion", "POST", &c, &reduccion); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}
