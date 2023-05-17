@@ -603,7 +603,26 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											}
 										}
 										contratoReducir.DesagregadoOriginal = &valores
-									}
+									} /*else {
+										var desagregado, err map[string]interface{}
+										subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+										fmt.Println(subcontrato)
+										fmt.Println(dedicacion)
+										fmt.Println(nivel)
+										if desagregado, err = CalcularDesagregadoTitan(subcontrato, dedicacion, nivel); err != nil {
+											panic(err)
+										}
+										for concepto, valor := range desagregado {
+											fmt.Println("CONCEPTO ", concepto)
+											if concepto != "NumeroContrato" && concepto != "Vigencia" {
+												if concepto == "Honorarios" {
+													contratoReducir.ValorContratoReducido = valor.(float64)
+												} else {
+													valores[concepto] = valor.(float64)
+												}
+											}
+										}
+									}*/
 									reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
 									// actualizacion acta_inicio
 									fechaFinOriginal := actaInicioAnterior.FechaFin
@@ -628,6 +647,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											Categoria:                      modificacion.Categoria,
 										}
 										salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, subcontrato.NumeroHorasSemanales, nivel)
+										// fmt.Println("SALARIO ", salario)
 										if err != nil {
 											fmt.Println("Error en cálculo del contrato reducción!", err)
 											panic(err)
@@ -664,6 +684,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								}
 							}
 						}
+						//fmt.Println("VALOR CONTRATO ", contrato.ValorContrato)
 						if contrato.ValorContrato > 0 {
 							contratoGeneral["ValorContrato"] = int(contrato.ValorContrato)
 							if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
@@ -744,7 +765,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 					panic(err.Error())
 				}
 				if tipoRes.CodigoAbreviacion == "RRED" {
-					if err := ReducirContratosTitan(reduccion, &modificacion); err != nil {
+					if err := ReducirContratosTitan(reduccion, &modificacion, contrato.ValorContrato); err != nil {
 						fmt.Println("Error en reliquidacion de reducciones Titan")
 						panic(err)
 					}

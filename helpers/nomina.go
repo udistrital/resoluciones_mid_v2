@@ -151,6 +151,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	}
 
 	// fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
+	// fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar.Desagregado)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}
@@ -159,7 +160,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 }
 
 // Envía a Titan la información de lso contratos afectados en una reducción
-func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.VinculacionDocente) (outputError map[string]interface{}) {
+func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.VinculacionDocente, valorReduccion float64) (outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "ReducirContratosTitan", "err": err, "status": "500"}
@@ -169,7 +170,11 @@ func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.Vin
 	var c models.ContratoPreliquidacion
 
 	JsonDebug(reduccion)
-	// fmt.Println("APLICAR REDUCCIÓN ", reduccion)
+	if reduccion.ContratoNuevo.ValorContratoReduccion == 0 {
+		reduccion.ContratoNuevo.ValorContratoReduccion = valorReduccion
+	}
+	fmt.Println("APLICAR REDUCCIÓN ", reduccion)
+	fmt.Println("APLICAR REDUCCIÓN ", reduccion.ContratoNuevo.DesagregadoReduccion)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_reduccion", "POST", &c, &reduccion); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}
