@@ -603,26 +603,28 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											}
 										}
 										contratoReducir.DesagregadoOriginal = &valores
-									} /*else {
-										var desagregado, err map[string]interface{}
+									} else {
+										var vin []models.VinculacionDocente
+										//var desagregado, err map[string]interface{}
 										subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
-										fmt.Println(subcontrato)
-										fmt.Println(dedicacion)
-										fmt.Println(nivel)
-										if desagregado, err = CalcularDesagregadoTitan(subcontrato, dedicacion, nivel); err != nil {
-											panic(err)
+										nuevaVinculacion := models.VinculacionDocente{
+											Vigencia:                       subcontrato.Vigencia,
+											PersonaId:                      subcontrato.PersonaId,
+											NumeroHorasSemanales:           subcontrato.NumeroHorasSemanales,
+											NumeroSemanas:                  subcontrato.NumeroSemanas,
+											ResolucionVinculacionDocenteId: subcontrato.ResolucionVinculacionDocenteId,
+											Categoria:                      subcontrato.Categoria,
+											Activo:                         true,
 										}
-										for concepto, valor := range desagregado {
-											fmt.Println("CONCEPTO ", concepto)
-											if concepto != "NumeroContrato" && concepto != "Vigencia" {
-												if concepto == "Honorarios" {
-													contratoReducir.ValorContratoReducido = valor.(float64)
-												} else {
-													valores[concepto] = valor.(float64)
-												}
-											}
+										vin = append(vin, nuevaVinculacion)
+										if w, err2 := CalcularSalarioPrecontratacion(vin); err2 == nil {
+											vin = nil
+											contratoReducir.ValorContratoReducido = w[0].ValorContrato
+										} else {
+											panic(err2)
 										}
-									}*/
+
+									}
 									reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
 									// actualizacion acta_inicio
 									fechaFinOriginal := actaInicioAnterior.FechaFin
@@ -647,7 +649,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											Categoria:                      modificacion.Categoria,
 										}
 										salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, subcontrato.NumeroHorasSemanales, nivel)
-										// fmt.Println("SALARIO ", salario)
 										if err != nil {
 											fmt.Println("Error en cálculo del contrato reducción!", err)
 											panic(err)
@@ -704,7 +705,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									ai.Vigencia = vigencia
 									ai.Descripcion = acta.Descripcion
 									ai.FechaInicio = modificacion.FechaInicio
-									ai.FechaFin = CalcularFechaFin(modificacion.FechaInicio, modificacion.NumeroSemanas)
+									ai.FechaFin = CalcularFechaFin(modificacion.FechaInicio, modificacion.NumeroSemanas-1)
 									ai.Usuario = usuario["documento_compuesto"].(string)
 									if err := SendRequestLegacy("UrlcrudAgora", "acta_inicio", "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)
 										var cd models.ContratoDisponibilidad
