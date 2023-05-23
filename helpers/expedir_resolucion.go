@@ -60,11 +60,11 @@ func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.T
 	// de manera que la fecha de fin resultante sea a final de semana
 
 	dias := numeroSemanas * 7
-	if fechaInicio.Weekday() >= 3 {
+	if fechaInicio.Weekday() >= 1 {
 		dias += (7 - int(fechaInicio.Weekday()))
-	} else {
+	} /*else {
 		dias -= int(fechaInicio.Weekday())
-	}
+	}*/
 	after := fechaInicio.AddDate(0, 0, dias-1)
 	return after
 }
