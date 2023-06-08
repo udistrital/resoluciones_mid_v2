@@ -16,7 +16,7 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 			panic(outputError)
 		}
 	}()
-
+	fmt.Println("VALOR CONTRATO DES", v.ValorContrato)
 	// var desagregado models.DesagregadoContrato
 	var desagregado map[string]interface{}
 	datos := &models.DatosVinculacion{
@@ -32,7 +32,7 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 	if nivelAcademico == "POSGRADO" {
 		datos.NumeroSemanas = 1
 	}
-	// fmt.Println("DESAGREGADO HCS ", datos)
+	fmt.Println("DESAGREGADO HCS ", datos)
 	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
 		logs.Error(err.Error())
 		panic("Consultando desagregado -> " + err.Error())
@@ -128,7 +128,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	contratoReliquidar := &models.ContratoCancelacion{
 		NumeroContrato: *cancelado.NumeroContrato,
 		Vigencia:       cancelado.Vigencia,
-		ValorContrato:  cancelado.ValorContrato - cancelacion.ValorContrato,
+		//ValorContrato:  cancelado.ValorContrato - cancelacion.ValorContrato,
 		FechaAnulacion: cancelacion.FechaInicio,
 		Documento:      strconv.Itoa(int(cancelacion.PersonaId)),
 	}
@@ -150,8 +150,8 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		contratoReliquidar.Desagregado = &valores
 	}
 
-	// fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
-	// fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar.Desagregado)
+	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
+	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar.Desagregado)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}
@@ -170,11 +170,13 @@ func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.Vin
 	var c models.ContratoPreliquidacion
 
 	JsonDebug(reduccion)
-	if reduccion.ContratoNuevo.ValorContratoReduccion == 0 {
+	if reduccion.ContratoNuevo != nil && reduccion.ContratoNuevo.ValorContratoReduccion == 0 {
 		reduccion.ContratoNuevo.ValorContratoReduccion = valorReduccion
 	}
 	fmt.Println("APLICAR REDUCCIÓN ", reduccion)
-	fmt.Println("APLICAR REDUCCIÓN ", reduccion.ContratoNuevo.DesagregadoReduccion)
+	if reduccion.ContratoNuevo != nil {
+		fmt.Println("APLICAR REDUCCIÓN ", reduccion.ContratoNuevo.DesagregadoReduccion)
+	}
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_reduccion", "POST", &c, &reduccion); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}

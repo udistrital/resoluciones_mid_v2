@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -29,8 +30,8 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 		logs.Error(err.Error())
 		panic(err.Error())
 	}
-
 	for i := range previnculaciones {
+		fmt.Println("previnculacion ", previnculaciones[i].ValorContrato)
 		persona, err2 = BuscarDatosPersonalesDocente(previnculaciones[i].PersonaId)
 		if err2 != nil {
 			panic(err2)
@@ -53,7 +54,8 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 		if previnculaciones[i].NumeroContrato == nil {
 			previnculaciones[i].NumeroContrato = new(string)
 		}
-
+		fmt.Println("previnculaciones ", previnculaciones[i])
+		fmt.Println(previnculaciones[i].ValorContrato)
 		vinculacion := &models.Vinculaciones{
 			Id:                   previnculaciones[i].Id,
 			Nombre:               persona.NomProveedor,
@@ -362,7 +364,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	}
 
 	vin = append(vin, nuevaVinculacion)
-
+	//fmt.Println("VIN ", vin)
 	// calculo del valor del contrato para la nueva vinculación
 	if vin, err = CalcularSalarioPrecontratacion(vin); err != nil {
 		panic(err)
@@ -500,13 +502,38 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 	}()
 	var cancelacionesRegistradas []models.VinculacionDocente
 	var actaInicio []models.ActaInicio
+	var vinculacionDocente models.VinculacionDocente
+	var resolucion models.Resolucion
+	var parametro models.Parametro
 	for i := range p.CambiosVinculacion {
+		fmt.Println("FEHCA INICIO ", p.CambiosVinculacion[i].FechaInicio)
 		vin := p.CambiosVinculacion[i].VinculacionOriginal
 		url := "acta_inicio?query=NumeroContrato:" + vin.NumeroContrato + ",Vigencia:" + strconv.Itoa(vin.Vigencia)
 		if err := GetRequestLegacy("UrlcrudAgora", url, &actaInicio); err != nil {
 			panic("Acta de inicio -> " + err.Error())
 		}
+		//url3 := "resolucion_estado?order=desc&sortby=Id&query=Activo:true,ResolucionId.Id:" + strconv.Itoa(res[i].Id)
+		url1 := "vinculacion_docente/" + strconv.Itoa(vin.Id)
+		if err := GetRequestNew("UrlcrudResoluciones", url1, &vinculacionDocente); err != nil {
+			panic(err.Error())
+		}
+
+		/*if err := GetRequestLegacy("UrlCrudResoluciones", url1, &vinculacionDocente); err != nil {
+			panic("Vinculación docente -> " + err.Error())
+		}*/
+		url2 := "resolucion/" + strconv.Itoa(vinculacionDocente.ResolucionVinculacionDocenteId.Id)
+		if err := GetRequestNew("UrlcrudResoluciones", url2, &resolucion); err != nil {
+			panic(err.Error())
+		}
+		url3 := "parametro/" + strconv.Itoa(resolucion.TipoResolucionId)
+		if err := GetRequestNew("UrlcrudParametros", url3, &parametro); err != nil {
+			logs.Error(err)
+			panic("Cargando tipo_resolucion -> " + err.Error())
+		}
 		semanasFinales := vin.NumeroSemanas - p.CambiosVinculacion[i].NumeroSemanas
+		if parametro.CodigoAbreviacion == "RADD" || parametro.CodigoAbreviacion == "RRED" {
+			semanasFinales -= 1
+		}
 		p.CambiosVinculacion[i].FechaInicio = CalcularFechaFin(actaInicio[0].FechaInicio, semanasFinales)
 		cancelacion := models.ObjetoModificaciones{
 			CambiosVinculacion:       &p.CambiosVinculacion[i],
@@ -527,6 +554,7 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64) error {
 	var modificaciones []models.ModificacionVinculacion
 	var modVin models.ModificacionVinculacion
+	var resolucion models.Resolucion
 	var tipoResolucion models.Parametro
 
 	url := "modificacion_vinculacion?query=VinculacionDocenteRegistradaId.Id:" + vinculacionId
@@ -534,7 +562,7 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 		logs.Error(err.Error())
 		return err
 	}
-
+	fmt.Println("Modificaciones ", modificaciones)
 	// Caso de salida
 	if len(modificaciones) == 0 {
 		return nil
@@ -550,7 +578,13 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 		return err2
 	}
 
-	url3 := ParametroEndpoint + strconv.Itoa(modVin.ModificacionResolucionId.ResolucionAnteriorId.TipoResolucionId)
+	urlaux := "resolucion/" + strconv.Itoa(modVin.VinculacionDocenteCanceladaId.ResolucionVinculacionDocenteId.Id)
+	if erraux := GetRequestNew("UrlCrudResoluciones", urlaux, &resolucion); erraux != nil {
+		logs.Error(erraux.Error())
+		return erraux
+	}
+
+	url3 := ParametroEndpoint + strconv.Itoa(resolucion.TipoResolucionId)
 	if err3 := GetRequestNew("UrlcrudParametros", url3, &tipoResolucion); err3 != nil {
 		logs.Error(err3.Error())
 		return err3
@@ -563,7 +597,7 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 			(*valoresAntes)[disp.Rubro] = (*valoresAntes)[disp.Rubro] - disp.Valor
 		}
 	}
-
+	fmt.Println("Tipo de resolución ", tipoResolucion)
 	switch tipoResolucion.CodigoAbreviacion {
 	case "RCAN":
 		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas) - (*valoresAntes)["NumeroSemanas"]
