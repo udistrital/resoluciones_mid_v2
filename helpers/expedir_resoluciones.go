@@ -636,6 +636,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										panic(err.Error())
 									}
 									if horasReducir == 0 {
+										fmt.Println("HORAS A REDUCIR 0")
 										// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
 										semanasTranscurridas := math.Ceil(modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours() / (24 * 7)) // cálculo con base en semanas
 										semanasRestantes := subcontrato.NumeroSemanas - modificacion.NumeroSemanas - int(semanasTranscurridas)
@@ -685,7 +686,9 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								}
 							}
 						}
-						//fmt.Println("VALOR CONTRATO ", contrato.ValorContrato)
+						fmt.Println("VALOR CONTRATO ", contrato.ValorContrato)
+						// fmt.Println("VALOR CONTRATO ", reduccion.ContratoNuevo)
+						fmt.Println("ERROR ", reduccion)
 						if contrato.ValorContrato > 0 {
 							contratoGeneral["ValorContrato"] = int(contrato.ValorContrato)
 							if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
