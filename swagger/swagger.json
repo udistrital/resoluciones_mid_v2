@@ -212,6 +212,40 @@
                 }
             }
         },
+        "/gestion_plantillas/calculo_fecha_fin": {
+            "post": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "calcula Fecha Fin",
+                "operationId": "GestionPlantillasController.CalculoFechaFin",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for FechaFin content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.FechaFin"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.FechaFinCalculada"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_plantillas/{id}": {
             "get": {
                 "tags": [
@@ -286,13 +320,20 @@
                 "tags": [
                     "gestion_plantillas"
                 ],
-                "description": "delete the GestionPlantillas",
+                "description": "post the fehcaFin",
                 "operationId": "GestionPlantillasController.Delete",
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id",
-                        "description": "The id you want to delete",
+                        "name": "fecha_inicio",
+                        "description": "Fecha de inicio",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "path",
+                        "name": "numerosemanas",
+                        "description": "Numero de semanas",
                         "required": true,
                         "type": "string"
                     }
@@ -1659,6 +1700,30 @@
                 }
             }
         },
+        "models.FechaFin": {
+            "title": "FechaFin",
+            "type": "object",
+            "properties": {
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.FechaFinCalculada": {
+            "title": "FechaFinCalculada",
+            "type": "object",
+            "properties": {
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                }
+            }
+        },
         "models.LugarEjecucion": {
             "title": "LugarEjecucion",
             "type": "object",
@@ -1888,6 +1953,14 @@
                     "type": "string"
                 },
                 "FechaExpedicion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaInicio": {
                     "type": "string",
                     "format": "datetime"
                 },

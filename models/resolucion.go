@@ -22,4 +22,6 @@ type Resolucion struct {
 	Activo                  bool
 	FechaCreacion           string
 	FechaModificacion       string
+	FechaInicio             *time.Time
+	FechaFin                *time.Time
 }

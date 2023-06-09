@@ -17,6 +17,10 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
+var meses = map[string][]string{
+	"es": {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"},
+}
+
 // Función que orquesta el proceso de generación de la resolución en formato pdf
 func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[string]interface{}) {
 	defer func() {
@@ -89,6 +93,24 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 		encodedPdf = encodePDF(pdf)
 	}
 	return
+}
+
+func obtenerNombreMes(m time.Month, idioma string) string {
+	// Verifica si el idioma está soportado
+	nombresMeses, ok := meses[idioma]
+	if !ok {
+		return ""
+	}
+
+	// Resta 1 al valor del mes porque en Go los meses empiezan desde 1
+	mes := int(m) - 1
+
+	// Verifica si el mes está dentro del rango válido
+	if mes < 0 || mes >= len(nombresMeses) {
+		return ""
+	}
+
+	return nombresMeses[mes]
 }
 
 // Esta función genera un documento en formato pdf con la información de la resolución registrada en la base de datos
@@ -237,6 +259,23 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		x := pdf.GetX()
 		pdf.SetFont(CalibriBold, "B", fontSize)
 		tArticulo := fmt.Sprintf("ARTÍCULO %dº.   ", articulo.Articulo.Numero)
+		if articulo.Articulo.Numero == 1 {
+			var inicio *time.Time = datos.Resolucion.FechaInicio
+			var diaInicio = inicio.Day()
+			var mesInicio = obtenerNombreMes(inicio.Month(), "es")
+			var añoInicio = inicio.Year()
+			var stringInicio string = strconv.Itoa(diaInicio) + " de " + mesInicio + " del " + strconv.Itoa(añoInicio)
+			var fin *time.Time = datos.Resolucion.FechaFin
+			var diaFin = fin.Day()
+			var mesFin = obtenerNombreMes(fin.Month(), "es")
+			var añoFin = fin.Year()
+			var stringFin string = strconv.Itoa(diaFin) + " de " + mesFin + " del " + strconv.Itoa(añoFin)
+			var replaceI string = "$i"
+			var replaceF string = "$f"
+
+			articulo.Articulo.Texto = strings.Replace(articulo.Articulo.Texto, replaceI, stringInicio, 1)
+			articulo.Articulo.Texto = strings.Replace(articulo.Articulo.Texto, replaceF, stringFin, 1)
+		}
 		tArticuloLen := pdf.GetStringWidth(tArticulo)
 		pdf.Write(lineHeight, tArticulo)
 

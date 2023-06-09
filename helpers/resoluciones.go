@@ -78,6 +78,8 @@ func InsertarResolucion(nuevaRes models.ContenidoResolucion) (resolucionId int, 
 	nuevaRes.Resolucion.PreambuloResolucion = plantilla.Resolucion.PreambuloResolucion
 	nuevaRes.Resolucion.ConsideracionResolucion = plantilla.Resolucion.ConsideracionResolucion
 	nuevaRes.Resolucion.CuadroResponsabilidades = plantilla.Resolucion.CuadroResponsabilidades
+	nuevaRes.Resolucion.FechaInicio = plantilla.Resolucion.FechaInicio
+	nuevaRes.Resolucion.FechaFin = plantilla.Resolucion.FechaFin
 	for _, art := range plantilla.Articulos {
 		articulo := models.ComponenteResolucion{
 			Texto: art.Articulo.Texto,
