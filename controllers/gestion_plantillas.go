@@ -21,6 +21,7 @@ func (c *GestionPlantillasController) URLMapping() {
 	c.Mapping("GetAll", c.GetAll)
 	c.Mapping("Put", c.Put)
 	c.Mapping("Delete", c.Delete)
+	c.Mapping("CalculoFechaFin", c.CalculoFechaFin)
 }
 
 // Post ...
@@ -139,8 +140,9 @@ func (c *GestionPlantillasController) Put() {
 
 // Delete ...
 // @Title Delete
-// @Description delete the GestionPlantillas
-// @Param	id		path 	string	true		"The id you want to delete"
+// @Description post the fehcaFin
+// @Param	fecha_inicio		path 	string	true		"Fecha de inicio"
+// @Param	numerosemanas		path 	string	true		"Numero de semanas"
 // @Success 200 {object} int Id de la resolucion anulada
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -161,6 +163,36 @@ func (c *GestionPlantillasController) Delete() {
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla eliminada con exito", "Data": d}
 	} else {
 		panic(err2)
+	}
+	c.ServeJSON()
+}
+
+// CalculoFechaFin ...
+// @Title CalculoFechaFin
+// @Description calcula Fecha Fin
+// @Param	body		body 	models.FechaFin	true		"body for FechaFin content"
+// @Success 201 {object} models.FechaFinCalculada
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /calculo_fecha_fin [post]
+func (c *GestionPlantillasController) CalculoFechaFin() {
+	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
+	}
+
+	var m models.FechaFin
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
+		if fechaFin := helpers.CalcularFechaFin(m.FechaInicio, m.NumeroSemanas); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Plantilla insertada con exito", "Data": fechaFin}
+		} else {
+			panic(err)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
 	}
 	c.ServeJSON()
 }

@@ -105,6 +105,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	preliquidacion.NombreCompleto = docente[0].NomProveedor
 	preliquidacion.PersonaId = docente[0].Id
 	preliquidacion.NumeroSemanas = v.NumeroSemanas
+	preliquidacion.ResolucionId = v.ResolucionVinculacionDocenteId.Id
 
 	if err2 := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &c, &preliquidacion); err2 != nil {
 		panic("Preliquidando -> " + err2.Error())
