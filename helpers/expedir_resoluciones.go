@@ -566,6 +566,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 							}
 
 							for _, subcontrato := range *contratosAnteriores {
+								// fmt.Println("subcontrato ", subcontrato)
 								var respActaInicioAnterior []models.ActaInicio
 								var actaInicioAnterior models.ActaInicio
 								url = fmt.Sprintf("acta_inicio?query=NumeroContrato:%s,Vigencia:%d", *subcontrato.NumeroContrato, subcontrato.Vigencia)
@@ -589,7 +590,13 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									if modificacion.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
 										// calcular el desagregado del resto de cada contrato
 										var desagregado, err map[string]interface{}
-										subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+										if nivel == "POSGRADO" {
+											horasXSemana := subcontrato.NumeroHorasSemanales / subcontrato.NumeroSemanas
+											horasAntesReduccion := horasXSemana * (subcontrato.NumeroSemanas - modificacion.NumeroSemanas)
+											subcontrato.NumeroHorasSemanales = horasAntesReduccion
+										} else {
+											subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+										}
 										if desagregado, err = CalcularDesagregadoTitan(subcontrato, dedicacion, nivel); err != nil {
 											panic(err)
 										}
@@ -606,7 +613,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									} else {
 										var vin []models.VinculacionDocente
 										//var desagregado, err map[string]interface{}
-										subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+										// subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
 										nuevaVinculacion := models.VinculacionDocente{
 											Vigencia:                       subcontrato.Vigencia,
 											PersonaId:                      subcontrato.PersonaId,
@@ -615,6 +622,14 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											ResolucionVinculacionDocenteId: subcontrato.ResolucionVinculacionDocenteId,
 											Categoria:                      subcontrato.Categoria,
 											Activo:                         true,
+										}
+										if nivel == "POSGRADO" {
+											horasXSemana := subcontrato.NumeroHorasSemanales / subcontrato.NumeroSemanas
+											// horasRestantesTotales := subcontrato.NumeroHorasSemanales - modificacion.NumeroHorasSemanales
+											horasAntesReduccion := horasXSemana * (subcontrato.NumeroSemanas - modificacion.NumeroSemanas)
+											nuevaVinculacion.NumeroHorasSemanales = horasAntesReduccion
+										} else {
+											nuevaVinculacion.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
 										}
 										vin = append(vin, nuevaVinculacion)
 										if w, err2 := CalcularSalarioPrecontratacion(vin); err2 == nil {
@@ -627,7 +642,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									}
 									reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
 									// actualizacion acta_inicio
-									fechaFinOriginal := actaInicioAnterior.FechaFin
+									// fechaFinOriginal := actaInicioAnterior.FechaFin
 									actaInicioAnterior.FechaFin = modificacion.FechaInicio
 									actaInicioAnterior.Usuario = usuario["documento_compuesto"].(string)
 									url = "acta_inicio/" + strconv.Itoa(actaInicioAnterior.Id)
@@ -649,19 +664,25 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											Vigencia:                       modificacion.Vigencia,
 											Categoria:                      modificacion.Categoria,
 										}
+										if nivel == "POSGRADO" {
+											vinc[0].NumeroHorasSemanales = horasFinales - subcontrato.NumeroHorasSemanales
+										}
 										salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, subcontrato.NumeroHorasSemanales, nivel)
 										if err != nil {
 											fmt.Println("Error en cálculo del contrato reducción!", err)
 											panic(err)
 										}
+										fmt.Println("SALARIO ", salario)
 										// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
-										if nivel == "POSGRADO" {
+										/*if nivel == "POSGRADO" {
 											diasOriginales, _ := math.Modf((fechaFinOriginal.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+											fmt.Println("dias o ", diasOriginales)
 											diasTranscurridos, _ := math.Modf((modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+											fmt.Println("dias t ", diasTranscurridos)
 											valorDiario := subcontrato.ValorContrato / diasOriginales
 											valorPagado := valorDiario * diasTranscurridos
 											salario = salario - valorPagado
-										}
+										}*/
 										contrato.ValorContrato = salario
 										beego.Info(contrato.ValorContrato)
 										// el subcontrato actual es reducido parcialmente y los siguientes no deben ser afectados
@@ -850,9 +871,11 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 			panic("Vinculacion (cancelacion) -> " + err.Error())
 		}
 		v = v2[0]
+		fmt.Println("V ", v)
 		contratos := new([]models.VinculacionDocente)
 		if err := BuscarContratosModificar(v.Id, contratos); err == nil { // If 1 - vinculacion_docente
 			for _, contrato := range *contratos {
+				fmt.Println("Contrato ", contrato)
 				url := "acta_inicio?query=NumeroContrato:" + *contrato.NumeroContrato + ",Vigencia:" + strconv.Itoa(contrato.Vigencia)
 				var ai []models.ActaInicio
 				if err := GetRequestLegacy("UrlcrudAgora", url, &ai); err != nil {
@@ -861,6 +884,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 					panic("Acta de inicio no encontrada")
 				}
 				actaInicio := ai[0]
+				fmt.Println(actaInicio)
 				if actaInicio.FechaInicio.Before(v.FechaInicio) && actaInicio.FechaFin.After(v.FechaInicio) {
 					contratoCancelado := &models.ContratoCancelado{
 						NumeroContrato:    *contrato.NumeroContrato,
