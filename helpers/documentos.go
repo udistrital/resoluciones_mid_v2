@@ -132,7 +132,6 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		fecha = time.Now()
 	}
 	fechaParsed := fmt.Sprintf("(%s %02d de %d)", TranslateMonth(fecha.Month().String()), fecha.Day(), fecha.Year())
-
 	var tipoResolucion models.Parametro
 	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(datos.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
 		panic(map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"})
