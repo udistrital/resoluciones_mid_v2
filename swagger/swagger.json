@@ -1239,6 +1239,10 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "NumeroHorasTrabajadas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "NumeroSemanas": {
                     "type": "integer",
                     "format": "int64"
@@ -2226,6 +2230,10 @@
                     "type": "string"
                 },
                 "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroHorasTrabajadas": {
                     "type": "integer",
                     "format": "int64"
                 },

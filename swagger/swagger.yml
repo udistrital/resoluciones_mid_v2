@@ -821,6 +821,9 @@ definitions:
       NumeroHorasSemanales:
         type: integer
         format: int64
+      NumeroHorasTrabajadas:
+        type: integer
+        format: int64
       NumeroSemanas:
         type: integer
         format: int64
@@ -1512,6 +1515,9 @@ definitions:
       NumeroContrato:
         type: string
       NumeroHorasSemanales:
+        type: integer
+        format: int64
+      NumeroHorasTrabajadas:
         type: integer
         format: int64
       NumeroRp:
