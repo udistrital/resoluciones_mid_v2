@@ -56,6 +56,21 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 		}
 		fmt.Println("previnculaciones ", previnculaciones[i])
 		fmt.Println(previnculaciones[i].ValorContrato)
+		/*fmt.Println("1 ", previnculaciones[i].Id)
+		fmt.Println("2 ", persona.NomProveedor)
+		fmt.Println("3 ", persona.TipoDocumento.ValorParametro)
+		fmt.Println("4 ", ciudad["Nombre"].(string))
+		fmt.Println("5 ", previnculaciones[i].PersonaId)
+		fmt.Println("6 ", previnculaciones[i].NumeroHorasSemanales)
+		fmt.Println("7 ", previnculaciones[i].NumeroSemanas)
+		fmt.Println("8 ", strings.Trim(previnculaciones[i].Categoria, " "))
+		fmt.Println("9 ", previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion)
+		fmt.Println("10 ", FormatMoney(int(previnculaciones[i].ValorContrato), 2))
+		fmt.Println("11 ", *previnculaciones[i].NumeroContrato)
+		fmt.Println("12 ", previnculaciones[i].Vigencia)
+		fmt.Println("13 ", previnculaciones[i].ProyectoCurricularId)
+		fmt.Println("14 ", disponibilidad[0].Disponibilidad)
+		fmt.Println("15 ", int(previnculaciones[i].NumeroRp))*/
 		vinculacion := &models.Vinculaciones{
 			Id:                   previnculaciones[i].Id,
 			Nombre:               persona.NomProveedor,
@@ -351,6 +366,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		Vigencia:                       obj.CambiosVinculacion.VinculacionOriginal.Vigencia,
 		PersonaId:                      obj.CambiosVinculacion.VinculacionOriginal.PersonaId,
 		NumeroHorasSemanales:           obj.CambiosVinculacion.NumeroHorasSemanales,
+		NumeroHorasTrabajadas:          obj.CambiosVinculacion.NumeroHorasTrabajadas,
 		NumeroSemanas:                  obj.CambiosVinculacion.NumeroSemanas,
 		ResolucionVinculacionDocenteId: obj.ResolucionNuevaId,
 		DedicacionId:                   vinculacion.DedicacionId,

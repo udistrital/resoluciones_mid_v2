@@ -557,6 +557,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								Vigencia:       modificacion.Vigencia,
 								Documento:      fmt.Sprintf("%.f", modificacion.PersonaId),
 								FechaReduccion: modificacion.FechaInicio,
+								NivelAcademico: nivel,
 							}
 
 							contratosAnteriores := new([]models.VinculacionDocente)
@@ -589,15 +590,21 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									}
 									if modificacion.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
 										// calcular el desagregado del resto de cada contrato
+										var subcontratoAux = subcontrato
 										var desagregado, err map[string]interface{}
 										if nivel == "POSGRADO" {
-											horasXSemana := subcontrato.NumeroHorasSemanales / subcontrato.NumeroSemanas
+											/*horasXSemana := subcontrato.NumeroHorasSemanales / subcontrato.NumeroSemanas
 											horasAntesReduccion := horasXSemana * (subcontrato.NumeroSemanas - modificacion.NumeroSemanas)
-											subcontrato.NumeroHorasSemanales = horasAntesReduccion
+											subcontrato.NumeroHorasSemanales = horasAntesReduccion*/
+											subcontratoAux.NumeroHorasSemanales = modificacion.NumeroHorasTrabajadas
+											fmt.Println(subcontratoAux.NumeroHorasSemanales)
+											fmt.Println(modificacion.NumeroHorasTrabajadas)
+
 										} else {
 											subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+											subcontratoAux.NumeroSemanas = subcontrato.NumeroSemanas
 										}
-										if desagregado, err = CalcularDesagregadoTitan(subcontrato, dedicacion, nivel); err != nil {
+										if desagregado, err = CalcularDesagregadoTitan(subcontratoAux, dedicacion, nivel); err != nil {
 											panic(err)
 										}
 										for concepto, valor := range desagregado {
@@ -665,7 +672,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											Categoria:                      modificacion.Categoria,
 										}
 										if nivel == "POSGRADO" {
-											vinc[0].NumeroHorasSemanales = horasFinales - subcontrato.NumeroHorasSemanales
+											vinc[0].NumeroHorasSemanales = subcontrato.NumeroHorasSemanales - modificacion.NumeroHorasSemanales - modificacion.NumeroHorasTrabajadas
 										}
 										salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, subcontrato.NumeroHorasSemanales, nivel)
 										if err != nil {
