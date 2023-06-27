@@ -125,6 +125,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	var c models.ContratoPreliquidacion
 	var desagregado, err map[string]interface{}
 	valores := make(map[string]float64)
+	var sueldoBasico float64
 
 	contratoReliquidar := &models.ContratoCancelacion{
 		NumeroContrato: *cancelado.NumeroContrato,
@@ -139,7 +140,10 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		cancelado.NumeroSemanas = cancelado.NumeroSemanas - cancelacion.NumeroSemanas
 		dedicacion := cancelado.ResolucionVinculacionDocenteId.Dedicacion
 		nivel := cancelado.ResolucionVinculacionDocenteId.NivelAcademico
-		if desagregado, err = CalcularDesagregadoTitan(cancelado, dedicacion, nivel); err != nil {
+		if nivel == "POSGRADO" {
+			cancelacion.NumeroHorasSemanales = cancelado.NumeroHorasSemanales - cancelacion.NumeroHorasSemanales
+		}
+		if desagregado, err = CalcularDesagregadoTitan(cancelacion, dedicacion, nivel); err != nil {
 			panic(err)
 		}
 
@@ -147,8 +151,14 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 			if concepto != "NumeroContrato" && concepto != "Vigencia" && concepto != "SueldoBasico" {
 				valores[concepto] = valor.(float64)
 			}
+			if concepto == "SueldoBasico" {
+				sueldoBasico = valor.(float64)
+			}
 		}
+		contratoReliquidar.ValorContrato = sueldoBasico
+		contratoReliquidar.NivelAcademico = cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 		contratoReliquidar.Desagregado = &valores
+
 	}
 
 	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
