@@ -1135,6 +1135,40 @@
                 }
             }
         },
+        "/reporte_financiera/": {
+            "post": {
+                "tags": [
+                    "reporte_financiera"
+                ],
+                "description": "Genera el reporte para financiera",
+                "operationId": "ReporteFinancieraController.ReporteFinanciera",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for DatosReporte content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DatosReporte"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "\"Reporte Financiera generado con exito\"",
+                        "schema": {
+                            "$ref": "#/definitions/models.ReporteFinancieraFinal"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/services/desagregado_planeacion": {
             "post": {
                 "tags": [
@@ -1618,6 +1652,26 @@
                 }
             }
         },
+        "models.DatosReporte": {
+            "title": "DatosReporte",
+            "type": "object",
+            "properties": {
+                "Facultad": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NivelAcademico": {
+                    "type": "string"
+                },
+                "Resolucion": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
         "models.DocumentoPresupuestal": {
             "title": "DocumentoPresupuestal",
             "type": "object",
@@ -1929,6 +1983,77 @@
                 "Id": {
                     "type": "integer",
                     "format": "int64"
+                }
+            }
+        },
+        "models.ReporteFinancieraFinal": {
+            "title": "ReporteFinancieraFinal",
+            "type": "object",
+            "properties": {
+                "BonificacionServicios": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Cdp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Cedula": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Cesantias": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Facultad": {
+                    "type": "string"
+                },
+                "Horas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "InteresesCesantias": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "PrimaNavidad": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "PrimaServicios": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "PrimaVacaciones": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Resolucion": {
+                    "type": "string"
+                },
+                "Semanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "SueldoBasico": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Total": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Vacaciones": {
+                    "type": "number",
+                    "format": "double"
                 }
             }
         },
@@ -2358,6 +2483,10 @@
         {
             "name": "expedir_resolucion",
             "description": "ExpedirResolucionController operations for ExpedirResolucion\n"
+        },
+        {
+            "name": "reporte_financiera",
+            "description": "Reporte_financieraController operations for Reporte_financiera\n"
         }
     ]
 }
