@@ -1669,6 +1669,8 @@ definitions:
       ProyectoCurricularId:
         type: integer
         format: int64
+      ProyectoCurricularNombre:
+        type: string
       RegistroPresupuestal:
         type: integer
         format: int64
