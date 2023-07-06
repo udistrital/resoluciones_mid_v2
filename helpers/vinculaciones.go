@@ -51,6 +51,13 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 			panic(err4.Error())
 		}
 
+		var proycur []models.Dependencia
+		url1 := "dependencia?query=Id:" + strconv.Itoa(previnculaciones[i].ProyectoCurricularId)
+		if err := GetRequestLegacy("UrlcrudOikos", url1, &proycur); err != nil { // If 6
+			logs.Error(proycur)
+			outputError = map[string]interface{}{"funcion": "/ValidarDatosExpedicion6", "err": err.Error(), "status": "502"}
+		}
+
 		if previnculaciones[i].NumeroContrato == nil {
 			previnculaciones[i].NumeroContrato = new(string)
 		}
@@ -72,21 +79,22 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 		fmt.Println("14 ", disponibilidad[0].Disponibilidad)
 		fmt.Println("15 ", int(previnculaciones[i].NumeroRp))*/
 		vinculacion := &models.Vinculaciones{
-			Id:                   previnculaciones[i].Id,
-			Nombre:               persona.NomProveedor,
-			TipoDocumento:        persona.TipoDocumento.ValorParametro,
-			ExpedicionDocumento:  ciudad["Nombre"].(string),
-			PersonaId:            previnculaciones[i].PersonaId,
-			NumeroHorasSemanales: previnculaciones[i].NumeroHorasSemanales,
-			NumeroSemanas:        previnculaciones[i].NumeroSemanas,
-			Categoria:            strings.Trim(previnculaciones[i].Categoria, " "),
-			Dedicacion:           previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion,
-			ValorContratoFormato: FormatMoney(int(previnculaciones[i].ValorContrato), 2),
-			NumeroContrato:       *previnculaciones[i].NumeroContrato,
-			Vigencia:             previnculaciones[i].Vigencia,
-			ProyectoCurricularId: previnculaciones[i].ProyectoCurricularId,
-			Disponibilidad:       disponibilidad[0].Disponibilidad,
-			RegistroPresupuestal: int(previnculaciones[i].NumeroRp),
+			Id:                       previnculaciones[i].Id,
+			Nombre:                   persona.NomProveedor,
+			TipoDocumento:            persona.TipoDocumento.ValorParametro,
+			ExpedicionDocumento:      ciudad["Nombre"].(string),
+			PersonaId:                previnculaciones[i].PersonaId,
+			NumeroHorasSemanales:     previnculaciones[i].NumeroHorasSemanales,
+			NumeroSemanas:            previnculaciones[i].NumeroSemanas,
+			Categoria:                strings.Trim(previnculaciones[i].Categoria, " "),
+			Dedicacion:               previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion,
+			ValorContratoFormato:     FormatMoney(int(previnculaciones[i].ValorContrato), 2),
+			NumeroContrato:           *previnculaciones[i].NumeroContrato,
+			Vigencia:                 previnculaciones[i].Vigencia,
+			ProyectoCurricularId:     previnculaciones[i].ProyectoCurricularId,
+			ProyectoCurricularNombre: proycur[0].Nombre,
+			Disponibilidad:           disponibilidad[0].Disponibilidad,
+			RegistroPresupuestal:     int(previnculaciones[i].NumeroRp),
 		}
 		vinculaciones = append(vinculaciones, *vinculacion)
 	}
