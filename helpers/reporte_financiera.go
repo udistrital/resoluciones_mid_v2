@@ -18,10 +18,11 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 	}()
 
 	var resp []models.ReporteFinanciera
+	var facultad models.Dependencia
 	var proyectoCurricular models.Dependencia
 
 	url := "dependencia/" + strconv.Itoa(reporte.Facultad)
-	if err2 := GetRequestLegacy("UrlcrudOikos", url, &proyectoCurricular); err2 != nil {
+	if err2 := GetRequestLegacy("UrlcrudOikos", url, &facultad); err2 != nil {
 		outputError = map[string]interface{}{"funcion": "/Obtención proyecto curricular reporte", "err": err2.Error(), "status": "500"}
 		panic(outputError)
 	}
@@ -35,7 +36,13 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		var infoDocente models.ObjetoDocenteTg
 		//var aux interface{}
 
-		url := fmt.Sprintf("docente_tg/%d", resp[i].Cedula)
+		url := "dependencia/" + strconv.Itoa(resp[i].ProyectoCurricular)
+		if err2 := GetRequestLegacy("UrlcrudOikos", url, &proyectoCurricular); err2 != nil {
+			outputError = map[string]interface{}{"funcion": "/Obtención proyecto curricular reporte", "err": err2.Error(), "status": "500"}
+			panic(outputError)
+		}
+
+		url = fmt.Sprintf("docente_tg/%d", resp[i].Cedula)
 		if err2 := GetRequestWSO2("NscrudAcademica", url, &infoDocente); err2 != nil {
 			panic(err2.Error())
 		}
@@ -56,7 +63,9 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		reporteAux.PrimaServicios = resp[i].PrimaServicios
 		reporteAux.BonificacionServicios = resp[i].BonificacionServicios
 		reporteAux.Nombre = infoDocente.DocenteTg.Docente[0].Nombre
-		reporteAux.Facultad = proyectoCurricular.Nombre
+		reporteAux.ProyectoCurricular = proyectoCurricular.Nombre
+		reporteAux.CodigoProyecto = resp[i].ProyectoCurricular
+		reporteAux.Facultad = facultad.Nombre
 		reporteFinal = append(reporteFinal, reporteAux)
 	}
 	return reporteFinal, nil
