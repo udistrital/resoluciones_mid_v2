@@ -1355,6 +1355,9 @@ definitions:
       Cesantias:
         type: number
         format: double
+      CodigoProyecto:
+        type: integer
+        format: int64
       Facultad:
         type: string
       Horas:
@@ -1377,6 +1380,8 @@ definitions:
       PrimaVacaciones:
         type: number
         format: double
+      ProyectoCurricular:
+        type: string
       Resolucion:
         type: string
       Semanas:
