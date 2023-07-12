@@ -16,6 +16,7 @@ type ReporteFinanciera struct {
 	InteresesCesantias    float64
 	PrimaServicios        float64
 	BonificacionServicios float64
+	ProyectoCurricular    int
 }
 
 type ReporteFinancieraFinal struct {
@@ -35,6 +36,8 @@ type ReporteFinancieraFinal struct {
 	PrimaServicios        float64
 	BonificacionServicios float64
 	Nombre                string
+	ProyectoCurricular    string
+	CodigoProyecto        int
 	Facultad              string
 }
 

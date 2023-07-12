@@ -2006,6 +2006,10 @@
                     "type": "number",
                     "format": "double"
                 },
+                "CodigoProyecto": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "Facultad": {
                     "type": "string"
                 },
@@ -2035,6 +2039,9 @@
                 "PrimaVacaciones": {
                     "type": "number",
                     "format": "double"
+                },
+                "ProyectoCurricular": {
+                    "type": "string"
                 },
                 "Resolucion": {
                     "type": "string"
