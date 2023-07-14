@@ -15,9 +15,10 @@ type ObjetoCancelaciones struct {
 }
 
 type CambioVinculacion struct {
-	NumeroHorasSemanales int
-	NumeroSemanas        int
-	FechaInicio          time.Time
-	DocPresupuestal      *DocumentoPresupuestal
-	VinculacionOriginal  *Vinculaciones
+	NumeroHorasSemanales  int
+	NumeroHorasTrabajadas int
+	NumeroSemanas         int
+	FechaInicio           time.Time
+	DocPresupuestal       *DocumentoPresupuestal
+	VinculacionOriginal   *Vinculaciones
 }

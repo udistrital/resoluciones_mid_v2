@@ -23,8 +23,8 @@ const (
 	ErrorParametros     string = "Error en los parametros de ingreso"
 	ErrorBody           string = "Cuerpo de la peticion invalido"
 	CargaResExito       string = "Resoluciones cargadas con exito"
-	CampoMeses          string = "%.1f meses"
-	PasaA               string = "Pasa a %.1f"
+	CampoMeses          string = "%d semanas"
+	PasaA               string = "Pasa a %d"
 	ResolucionEndpoint  string = "resolucion/"
 	ParametroEndpoint   string = "parametro/"
 	VinculacionEndpoint string = "vinculacion_docente/"
@@ -97,7 +97,7 @@ func GetRequestWSO2(service string, route string, target interface{}) error {
 func ExtractData(respuesta map[string]interface{}, v interface{}) error {
 	var err error
 	if respuesta["Success"] == false {
-		err = errors.New(respuesta["Message"].(string))
+		err = errors.New(fmt.Sprint(respuesta["Data"], respuesta["Message"]))
 		panic(err)
 	}
 	datatype := fmt.Sprintf("%v", respuesta["Data"])

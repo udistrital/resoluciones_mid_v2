@@ -212,6 +212,40 @@
                 }
             }
         },
+        "/gestion_plantillas/calculo_fecha_fin": {
+            "post": {
+                "tags": [
+                    "gestion_plantillas"
+                ],
+                "description": "calcula Fecha Fin",
+                "operationId": "GestionPlantillasController.CalculoFechaFin",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for FechaFin content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.FechaFin"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.FechaFinCalculada"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_plantillas/{id}": {
             "get": {
                 "tags": [
@@ -286,13 +320,20 @@
                 "tags": [
                     "gestion_plantillas"
                 ],
-                "description": "delete the GestionPlantillas",
+                "description": "post the fehcaFin",
                 "operationId": "GestionPlantillasController.Delete",
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id",
-                        "description": "The id you want to delete",
+                        "name": "fecha_inicio",
+                        "description": "Fecha de inicio",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "path",
+                        "name": "numerosemanas",
+                        "description": "Numero de semanas",
                         "required": true,
                         "type": "string"
                     }
@@ -1094,6 +1135,40 @@
                 }
             }
         },
+        "/reporte_financiera/": {
+            "post": {
+                "tags": [
+                    "reporte_financiera"
+                ],
+                "description": "Genera el reporte para financiera",
+                "operationId": "ReporteFinancieraController.ReporteFinanciera",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body for DatosReporte content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DatosReporte"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "\"Reporte Financiera generado con exito\"",
+                        "schema": {
+                            "$ref": "#/definitions/models.ReporteFinancieraFinal"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/services/desagregado_planeacion": {
             "post": {
                 "tags": [
@@ -1195,6 +1270,10 @@
                     "format": "datetime"
                 },
                 "NumeroHorasSemanales": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NumeroHorasTrabajadas": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -1573,6 +1652,26 @@
                 }
             }
         },
+        "models.DatosReporte": {
+            "title": "DatosReporte",
+            "type": "object",
+            "properties": {
+                "Facultad": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "NivelAcademico": {
+                    "type": "string"
+                },
+                "Resolucion": {
+                    "type": "string"
+                },
+                "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
         "models.DocumentoPresupuestal": {
             "title": "DocumentoPresupuestal",
             "type": "object",
@@ -1656,6 +1755,30 @@
                     "items": {
                         "$ref": "#/definitions/models.ContratoVinculacion"
                     }
+                }
+            }
+        },
+        "models.FechaFin": {
+            "title": "FechaFin",
+            "type": "object",
+            "properties": {
+                "FechaInicio": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "NumeroSemanas": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.FechaFinCalculada": {
+            "title": "FechaFinCalculada",
+            "type": "object",
+            "properties": {
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
                 }
             }
         },
@@ -1863,6 +1986,84 @@
                 }
             }
         },
+        "models.ReporteFinancieraFinal": {
+            "title": "ReporteFinancieraFinal",
+            "type": "object",
+            "properties": {
+                "BonificacionServicios": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Cdp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Cedula": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Cesantias": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "CodigoProyecto": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Facultad": {
+                    "type": "string"
+                },
+                "Horas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "Id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "InteresesCesantias": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Nombre": {
+                    "type": "string"
+                },
+                "PrimaNavidad": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "PrimaServicios": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "PrimaVacaciones": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ProyectoCurricular": {
+                    "type": "string"
+                },
+                "Resolucion": {
+                    "type": "string"
+                },
+                "Semanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "SueldoBasico": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Total": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "Vacaciones": {
+                    "type": "number",
+                    "format": "double"
+                }
+            }
+        },
         "models.Resolucion": {
             "title": "Resolucion",
             "type": "object",
@@ -1888,6 +2089,14 @@
                     "type": "string"
                 },
                 "FechaExpedicion": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaFin": {
+                    "type": "string",
+                    "format": "datetime"
+                },
+                "FechaInicio": {
                     "type": "string",
                     "format": "datetime"
                 },
@@ -2156,6 +2365,10 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "NumeroHorasTrabajadas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "NumeroRp": {
                     "type": "number",
                     "format": "double"
@@ -2240,6 +2453,9 @@
                     "type": "integer",
                     "format": "int64"
                 },
+                "ProyectoCurricularNombre": {
+                    "type": "string"
+                },
                 "RegistroPresupuestal": {
                     "type": "integer",
                     "format": "int64"
@@ -2277,6 +2493,10 @@
         {
             "name": "expedir_resolucion",
             "description": "ExpedirResolucionController operations for ExpedirResolucion\n"
+        },
+        {
+            "name": "reporte_financiera",
+            "description": "Reporte_financieraController operations for Reporte_financiera\n"
         }
     ]
 }

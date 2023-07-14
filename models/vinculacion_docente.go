@@ -24,4 +24,5 @@ type VinculacionDocente struct {
 	Activo                         bool
 	FechaCreacion                  string
 	FechaModificacion              string
+	NumeroHorasTrabajadas          int
 }
