@@ -670,8 +670,6 @@ func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError ma
 
 	var v *models.VinculacionDocente
 	var v1 []models.VinculacionDocente
-	var v2 models.VinculacionDocente
-
 	for _, rp := range registros {
 		// Recuperación de la vinculación original
 		v = nil
@@ -682,20 +680,12 @@ func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError ma
 			panic("No se encontró la vinculacion original")
 		}
 		v = &v1[0]
+		v.NumeroRp = float64(rp.Consecutivo)
+		v.VigenciaRp = float64(rp.Vigencia)
 
-		if v.NumeroRp != float64(rp.Consecutivo) {
-			v.NumeroRp = float64(rp.Consecutivo)
-			v.VigenciaRp = float64(rp.Vigencia)
-
-			// Actualización de la vinculación
-			if err := SendRequestNew("UrlcrudResoluciones", "vinculacion_docente/"+strconv.Itoa(v.Id), "PUT", &v2, &v); err != nil {
-				panic("Actualizando vinculacion original -> " + err.Error())
-			}
-
-			// Ejecutar preliquidacion
-			if err2 := EjecutarPreliquidacionTitan(*v); err2 != nil {
-				panic(err2)
-			}
+		// Ejecutar preliquidacion
+		if err2 := EjecutarPreliquidacionTitan(*v); err2 != nil {
+			panic(err2)
 		}
 	}
 
