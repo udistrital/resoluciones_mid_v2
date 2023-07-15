@@ -480,12 +480,23 @@ func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoReso
 	}()
 
 	var err error
+	var modificacionResolucion []models.ModificacionResolucion
+	var tipoResolucion models.Parametro
 
 	if err = GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(ResolucionId), &resolucion.Resolucion); err != nil {
 		panic(err.Error())
 	}
 	if err = GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(ResolucionId), &resolucion.Vinculacion); err != nil {
 		panic(err.Error())
+	}
+	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(resolucion.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
+		panic(map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"})
+	}
+	if tipoResolucion.CodigoAbreviacion != "RVIN" {
+		if err = GetRequestNew("UrlCrudResoluciones", "modificacion_resolucion?query=resolucionNuevaId:"+strconv.Itoa(ResolucionId), &modificacionResolucion); err != nil {
+			panic(err.Error())
+		}
+		resolucion.ResolucionAnteriorId = modificacionResolucion[0].ResolucionAnteriorId.Id
 	}
 	if resolucion.Articulos, err = CargarArticulos(ResolucionId); err != nil {
 		panic(err.Error())

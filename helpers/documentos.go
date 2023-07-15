@@ -21,6 +21,10 @@ var meses = map[string][]string{
 	"es": {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"},
 }
 
+var periodo = map[string][]string{
+	"es": {"Primer", "Segundo", "Tercer"},
+}
+
 // Función que orquesta el proceso de generación de la resolución en formato pdf
 func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[string]interface{}) {
 	defer func() {
@@ -113,6 +117,35 @@ func obtenerNombreMes(m time.Month, idioma string) string {
 	return nombresMeses[mes]
 }
 
+func cambiarString(original string) (cambiado string) {
+	switch {
+	case original == "HCH":
+		cambiado = "Hora Cátedra Honorarios"
+	case original == "HCP":
+		cambiado = "Hora Cátedra Salarios"
+	case original == "TCO-MTO":
+		cambiado = "Tiempo Completo Ocasional - Medio Tiempo Ocasional"
+	default:
+		cambiado = original
+	}
+	return cambiado
+}
+
+func obtenerPeriodo(periodoA int, idioma string) string {
+	periodoV, ok := periodo[idioma]
+	if !ok {
+		return ""
+	}
+
+	periodoF := periodoA - 1
+
+	if periodoF < 0 || periodoF >= len(periodoV) {
+		return ""
+	}
+
+	return periodoV[periodoF]
+}
+
 // Esta función genera un documento en formato pdf con la información de la resolución registrada en la base de datos
 func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculaciones []models.Vinculaciones) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
 	defer func() {
@@ -191,6 +224,23 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 
 	pdf.SetTopMargin(85)
 
+	var facultad models.Dependencia
+	var resAnterior models.Resolucion
+	var resVinDocente []models.ResolucionVinculacionDocente
+	url = "dependencia/" + strconv.Itoa(int(datos.Vinculacion.FacultadId))
+	if err2 := GetRequestLegacy("UrlcrudOikos", url, &facultad); err2 != nil {
+		outputError = map[string]interface{}{"funcion": "/ConstruirTablaVinculaciones-dep", "err": err2.Error(), "status": "500"}
+		panic(outputError)
+	}
+	if tipoResolucion.CodigoAbreviacion != "RVIN" {
+		if err := GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(datos.ResolucionAnteriorId), &resAnterior); err != nil {
+			panic(err.Error())
+		}
+		if err := GetRequestNew("UrlCrudResoluciones", "resolucion_vinculacion_docente?query=id:"+strconv.Itoa(datos.ResolucionAnteriorId), &resVinDocente); err != nil {
+			panic(err.Error())
+		}
+	}
+
 	pdf.SetHeaderFuncMode(func() {
 
 		pdf.SetLeftMargin(10)
@@ -203,8 +253,34 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		pdf.Ln(lineHeight)
 		pdf.WriteAligned(0, lineHeight+1, fechaParsed, "C")
 		pdf.Ln(lineHeight * 2)
-
 		pdf.SetFont(MinionProBoldItalic, "BI", fontSize)
+		var replaceFacultad string = "$facultad"
+		var stringFacultad = facultad.Nombre
+		datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceFacultad, stringFacultad, 1)
+		if tipoResolucion.CodigoAbreviacion != "RVIN" {
+			fechaExpedicion := resAnterior.FechaExpedicion
+			var mesExpedicion string = obtenerNombreMes(fechaExpedicion.Month(), "es")
+			var periodo string = obtenerPeriodo(resAnterior.Periodo, "es")
+			var vigencia string = strconv.Itoa(resAnterior.Vigencia)
+			var modalidad string = cambiarString(resVinDocente[0].Dedicacion)
+			var nivelAcademico string = resVinDocente[0].NivelAcademico
+			var stringResolucionAnterior string = resAnterior.NumeroResolucion
+			var stringFechaExpedicionAnterior string = mesExpedicion + " de " + strconv.Itoa(fechaExpedicion.Year())
+			var replaceResolucionAnterior string = "$resanterior"
+			var replaceFechaExpedicionAnterior string = "$expanterior"
+			var replacePeriodo string = "$periodo"
+			var replaceVigencia string = "$vigencia"
+			var replaceModalidad string = "$modalidad"
+			var replaceFacultad string = "$facultad"
+			var replaceNivel string = "$nivel.”"
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceResolucionAnterior, stringResolucionAnterior, 1)
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceFechaExpedicionAnterior, stringFechaExpedicionAnterior, 1)
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replacePeriodo, periodo, 1)
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceVigencia, vigencia, 1)
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceModalidad, modalidad, 1)
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceFacultad, stringFacultad, 1)
+			datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceNivel, nivelAcademico, 1)
+		}
 		pdf.WriteAligned(0, lineHeight+1, datos.Resolucion.Titulo, "C")
 		pdf.Ln(lineHeight * 2)
 	}, true)
@@ -235,6 +311,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	pdf.Ln(lineHeight)
 
 	pdf.SetFont(Calibri, "", fontSize)
+	var replaceFacultad string = "$facultad"
+	var stringFacultad = facultad.Nombre
+	datos.Resolucion.PreambuloResolucion = strings.Replace(datos.Resolucion.PreambuloResolucion, replaceFacultad, stringFacultad, 1)
 	pdf.MultiCell(0, lineHeight, datos.Resolucion.PreambuloResolucion, "", "J", false)
 	pdf.Ln(lineHeight * 2)
 
