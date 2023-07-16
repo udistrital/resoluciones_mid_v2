@@ -738,6 +738,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									ai.FechaInicio = modificacion.FechaInicio
 									ai.FechaFin = CalcularFechaFin(modificacion.FechaInicio, modificacion.NumeroSemanas-1)
 									ai.Usuario = usuario["documento_compuesto"].(string)
+									ai.FechaRegistro = time.Now()
 									if err := SendRequestLegacy("UrlcrudAgora", "acta_inicio", "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)
 										var cd models.ContratoDisponibilidad
 										cd.NumeroContrato = numContrato
@@ -750,6 +751,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										if err := GetRequestNew("UrlCrudResoluciones", url, &disp); err == nil { // If 1.11 - DisponibilidadVinculacion
 											dv = disp[0]
 											cd.NumeroCdp = int(dv.Disponibilidad)
+											cd.VigenciaCdp = vigencia
 											if err := SendRequestLegacy("UrlcrudAgora", "contrato_disponibilidad", "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
 												modificacion.NumeroContrato = &numContrato
 												modificacion.Vigencia = vigencia

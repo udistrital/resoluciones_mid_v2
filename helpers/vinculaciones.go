@@ -401,8 +401,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaVinculacion.NumeroRp = obj.CambiosVinculacion.DocPresupuestal.Consecutivo
 		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.DocPresupuestal.Vigencia)
 	} else {
-		nuevaVinculacion.NumeroRp = 0
-		nuevaVinculacion.VigenciaRp = 0
+		nuevaVinculacion.NumeroRp = float64(obj.CambiosVinculacion.VinculacionOriginal.RegistroPresupuestal)
+		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.VinculacionOriginal.Vigencia)
 	}
 
 	// Se desactiva la vinculación original, asi no estará disponible para ser modificada
