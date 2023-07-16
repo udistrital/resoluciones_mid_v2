@@ -492,7 +492,7 @@ func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoReso
 	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(resolucion.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
 		panic(map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"})
 	}
-	if tipoResolucion.CodigoAbreviacion != "RVIN" {
+	if tipoResolucion.CodigoAbreviacion != "RVIN" && tipoResolucion.CodigoAbreviacion != "RTP" {
 		if err = GetRequestNew("UrlCrudResoluciones", "modificacion_resolucion?query=resolucionNuevaId:"+strconv.Itoa(ResolucionId), &modificacionResolucion); err != nil {
 			panic(err.Error())
 		}
