@@ -232,7 +232,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		outputError = map[string]interface{}{"funcion": "/ConstruirTablaVinculaciones-dep", "err": err2.Error(), "status": "500"}
 		panic(outputError)
 	}
-	if tipoResolucion.CodigoAbreviacion != "RVIN" {
+	if tipoResolucion.CodigoAbreviacion != "RVIN" && tipoResolucion.CodigoAbreviacion != "RTP" {
 		if err := GetRequestNew("UrlCrudResoluciones", ResolucionEndpoint+strconv.Itoa(datos.ResolucionAnteriorId), &resAnterior); err != nil {
 			panic(err.Error())
 		}
@@ -257,7 +257,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		var replaceFacultad string = "$facultad"
 		var stringFacultad = facultad.Nombre
 		datos.Resolucion.Titulo = strings.Replace(datos.Resolucion.Titulo, replaceFacultad, stringFacultad, 1)
-		if tipoResolucion.CodigoAbreviacion != "RVIN" {
+		if tipoResolucion.CodigoAbreviacion != "RVIN" && tipoResolucion.CodigoAbreviacion != "RTP" {
 			fechaExpedicion := resAnterior.FechaExpedicion
 			var mesExpedicion string = obtenerNombreMes(fechaExpedicion.Month(), "es")
 			var periodo string = obtenerPeriodo(resAnterior.Periodo, "es")
