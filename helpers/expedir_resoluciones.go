@@ -220,6 +220,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 										if err := GetRequestNew("UrlCrudResoluciones", url, &disp); err == nil { // If 1.1.8 - disponibilidad_vinculacion
 											dv = disp[0]
 											cd.NumeroCdp = int(dv.Disponibilidad)
+											cd.VigenciaCdp = aux2
 											var response4 models.ContratoDisponibilidad
 											url = "contrato_disponibilidad"
 											if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response4, &cd); err == nil { // If 1.1.9 - contrato_disponibilidad
