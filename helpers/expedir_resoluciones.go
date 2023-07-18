@@ -169,8 +169,8 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 								},
 								"ClaseContratista": contrato.ClaseContratista,
 								"TipoContrato": map[string]interface{}{
-									"Id":           6,
-									"TipoContrato": "Contrato de Prestación de Servicios Profesionales o Apoyo a la Gestión",
+									"Id":           tipoCon.Id,
+									"TipoContrato": tipoCon.TipoContrato,
 									"Estado":       true,
 								},
 								"LugarEjecucion": map[string]interface{}{
@@ -203,7 +203,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 									ai.FechaInicio = acta.FechaInicio
 									ai.FechaFin = acta.FechaFin
 									ai.FechaFin = CalcularFechaFin(acta.FechaInicio, v.NumeroSemanas)
-									ai.FechaRegistro = time.Now()
+									ai.FechaRegistro = ai.FechaFin
 									ai.Usuario = usuario["documento_compuesto"].(string)
 									var response3 models.ActaInicio
 									url = "acta_inicio"
