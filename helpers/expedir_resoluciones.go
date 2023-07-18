@@ -169,8 +169,8 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 								},
 								"ClaseContratista": contrato.ClaseContratista,
 								"TipoContrato": map[string]interface{}{
-									"Id":           6,
-									"TipoContrato": "Contrato de Prestación de Servicios Profesionales o Apoyo a la Gestión",
+									"Id":           tipoCon.Id,
+									"TipoContrato": tipoCon.TipoContrato,
 									"Estado":       true,
 								},
 								"LugarEjecucion": map[string]interface{}{
