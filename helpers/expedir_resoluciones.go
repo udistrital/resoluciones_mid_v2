@@ -203,7 +203,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 									ai.FechaInicio = acta.FechaInicio
 									ai.FechaFin = acta.FechaFin
 									ai.FechaFin = CalcularFechaFin(acta.FechaInicio, v.NumeroSemanas)
-									ai.FechaRegistro = ai.FechaFin
+									ai.FechaRegistro = time.Now()
 									ai.Usuario = usuario["documento_compuesto"].(string)
 									var response3 models.ActaInicio
 									url = "acta_inicio"
