@@ -42,6 +42,7 @@ func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[str
 		if vinculaciones, err2 := ListarVinculaciones(strconv.Itoa(resolucionId)); err2 != nil {
 			panic(err2)
 		} else {
+			fmt.Println("vinc ", vinculaciones)
 			if pdf, err3 = ConstruirDocumentoResolucion(contenidoResolucion, vinculaciones); err3 != nil {
 				panic(err3)
 			}
@@ -249,7 +250,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		pdf.ImageOptions(filepath.Join(imgPath, "escudo.png"), 82, 8, 45, 45, false, gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: true}, 0, "")
 		pdf.SetY(55)
 		pdf.SetFont(MinionProBoldCn, "B", fontSize)
+		fmt.Println("LLEGA ", datos.Resolucion)
 		pdf.WriteAligned(0, lineHeight+1, "RESOLUCIÓN Nº "+datos.Resolucion.NumeroResolucion, "C")
+		fmt.Println("SALE ")
 		pdf.Ln(lineHeight)
 		pdf.WriteAligned(0, lineHeight+1, fechaParsed, "C")
 		pdf.Ln(lineHeight * 2)
@@ -843,7 +846,15 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 
 			cellHeight = lineHeight * 4
 			pdf.CellFormat(7, cellHeight, strconv.Itoa(vinc.Disponibilidad), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w+1, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
+			var totalAux float64
+			totalAux += valores["SueldoBasico"]
+			totalAux += valores["PrimaNavidad"]
+			totalAux += valores["Vacaciones"]
+			totalAux += valores["PrimaVacaciones"]
+			totalAux += valores["InteresesCesantias"]
+			totalAux += valores["Cesantias"]
+			totalAux += valores["PrimaServicios"]
+			pdf.CellFormat(w+1, cellHeight, FormatMoney(totalAux, 2), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
 
 			x, y = pdf.GetXY()
