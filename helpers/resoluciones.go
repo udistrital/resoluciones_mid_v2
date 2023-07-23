@@ -382,7 +382,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		queryRes = strings.TrimSuffix(queryRes, ",")
 
 		// carga de datos filtrados
-		url1 := "resolucion_estado?" + queryRes + "&order=desc&sortby=Id&limit=0&fields=ResolucionId"
+		url1 := "resolucion_estado?" + queryRes + "&limit=0&fields=ResolucionId"
 		if err = GetRequestNew("UrlcrudResoluciones", url1, &rest); err != nil {
 			logs.Error(err)
 			panic(err.Error())
