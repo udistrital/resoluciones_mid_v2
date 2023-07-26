@@ -679,6 +679,30 @@ paths:
           description: bad request
         "500":
           description: Internal server error
+  /gestion_vinculaciones/editar_vinculaciones:
+    post:
+      tags:
+      - gestion_vinculaciones
+      description: Modifica las vinculaciones docente
+      operationId: GestionVinculacionesController.EditarVinculacion
+      parameters:
+      - in: body
+        name: body
+        description: body for ObjetoModificaciones content
+        required: true
+        schema:
+          $ref: '#/definitions/models.EdicionVinculaciones'
+      responses:
+        "201":
+          description: '"Vinculaciones modificadas con éxito"'
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/models.EdicionVinculaciones'
+        "400":
+          description: bad request
+        "500":
+          description: Internal server error
   /gestion_vinculaciones/informe_vinculaciones:
     post:
       tags:
@@ -1151,6 +1175,21 @@ definitions:
       Vigencia:
         type: integer
         format: int64
+  models.EdicionVinculaciones:
+    title: EdicionVinculaciones
+    type: object
+    properties:
+      Dedicacion:
+        type: string
+      NivelAcademico:
+        type: string
+      Semanas:
+        type: integer
+        format: int64
+      Vinculaciones:
+        type: array
+        items:
+          $ref: '#/definitions/models.VinculacionDocente'
   models.ExpedicionCancelacion:
     title: ExpedicionCancelacion
     type: object

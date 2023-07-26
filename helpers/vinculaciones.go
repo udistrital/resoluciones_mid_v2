@@ -234,6 +234,75 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 	return vinculaciones, outputError
 }
 
+func EditarVinculaciones(vd models.EdicionVinculaciones) (v []models.VinculacionDocente, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{"funcion": "/EditarVinculaciones", "err": err, "status": "500"}
+			panic(outputError)
+		}
+	}()
+	var vinculacionesModificadas []models.VinculacionDocente
+	var err map[string]interface{}
+	var disVinc []models.DisponibilidadVinculacion
+
+	for i := range vd.Vinculaciones {
+		vd.Vinculaciones[i].NumeroSemanas = vd.Semanas
+	}
+	if vd.Vinculaciones, err = CalcularSalarioPrecontratacion(vd.Vinculaciones); err != nil {
+		panic(err)
+	}
+	for i := range vd.Vinculaciones {
+		var vRegistrada models.VinculacionDocente
+		url := VinculacionEndpoint + strconv.Itoa(vd.Vinculaciones[i].Id)
+		if err2 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &vRegistrada, vd.Vinculaciones[i]); err2 != nil {
+			logs.Error(err2.Error())
+			panic("Registrando vinculacion -> " + err2.Error())
+		}
+		vinculacionesModificadas = append(vinculacionesModificadas, vRegistrada)
+	}
+	for j := range vinculacionesModificadas {
+		if err := GetRequestNew("UrlCrudResoluciones", "disponibilidad_vinculacion?query=vinculacion_docente_id:"+strconv.Itoa(vinculacionesModificadas[j].Id)+",activo:true", &disVinc); err != nil {
+			panic(err.Error())
+		}
+
+		if vd.Dedicacion != "HCH" {
+			desagregado, err := CalcularDesagregadoTitan(vinculacionesModificadas[j], vd.Dedicacion, vd.NivelAcademico)
+			if err != nil {
+				panic(err)
+			}
+
+			for nombre, valor := range desagregado {
+				if nombre != "NumeroContrato" && nombre != "Vigencia" {
+					var index int
+					for k := range disVinc {
+						if disVinc[k].Rubro == nombre {
+							index = k
+						}
+					}
+					disVinc[index].Valor = valor.(float64)
+					var dvModificada models.DisponibilidadVinculacion
+					url := "disponibilidad_vinculacion/" + strconv.Itoa(disVinc[index].Id)
+					if err3 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &dvModificada, disVinc[index]); err3 != nil {
+						logs.Error(err3.Error())
+						panic("Modificando disponibilidad vinculación -> " + err3.Error())
+					}
+				}
+			}
+		} else {
+			var index int
+			disVinc[index].Valor = vinculacionesModificadas[j].ValorContrato
+			var dvModificada models.DisponibilidadVinculacion
+			url := "disponibilidad_vinculacion/" + strconv.Itoa(disVinc[index].Id)
+			if err3 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &dvModificada, disVinc[index]); err3 != nil {
+				logs.Error(err3.Error())
+				panic("Modificando disponibilidad vinculación -> " + err3.Error())
+			}
+		}
+	}
+
+	return vinculacionesModificadas, outputError
+}
+
 // Registra en el CRUD a traves de POST las vinculaciones de los docentes y la disponibilidad correspondiente con los rubros elegidos
 func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.VinculacionDocente, outputError map[string]interface{}) {
 	defer func() {
