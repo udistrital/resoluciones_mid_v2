@@ -19,6 +19,7 @@ type GestionVinculacionesController struct {
 // URLMapping ...
 func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("Post", c.Post)
+	c.Mapping("EditarVinculaciones", c.EditarVinculaciones)
 	c.Mapping("ModificarVinculacion", c.ModificarVinculacion)
 	c.Mapping("DocentesPrevinculados", c.DocentesPrevinculados)
 	c.Mapping("DocentesCargaHoraria", c.DocentesCargaHoraria)
@@ -55,6 +56,36 @@ func (c *GestionVinculacionesController) Post() {
 		}
 	} else {
 		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
+	}
+	c.ServeJSON()
+}
+
+// EditarVinculacion ...
+// @Title EditarVinculacion
+// @Description Modifica las vinculaciones docente
+// @Param	body		body 	models.EdicionVinculaciones	true		"body for ObjetoModificaciones content"
+// @Success 201 {object} []models.EdicionVinculaciones "Vinculaciones modificadas con éxito"
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /editar_vinculaciones [post]
+func (c *GestionVinculacionesController) EditarVinculaciones() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
+		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": helpers.ErrorBody, "status": "400"})
+	}
+
+	var vd models.EdicionVinculaciones
+
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &vd); err == nil {
+		if r, err2 := helpers.EditarVinculaciones(vd); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones modificadas con éxito", "Data": r}
+		} else {
+			panic(err2)
+		}
+	} else {
+		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": err.Error(), "status": "400"})
 	}
 	c.ServeJSON()
 }
