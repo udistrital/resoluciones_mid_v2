@@ -884,7 +884,25 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			} else {
 				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
 			}
-			pdf.CellFormat((w*2)-2, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
+			var desagregadoDespuesAux []models.DisponibilidadVinculacion
+			url3Aux := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(vinc.Id)
+			if err := GetRequestNew("UrlCrudResoluciones", url3Aux, &desagregadoDespuesAux); err != nil {
+				logs.Error(err.Error())
+				panic(err.Error())
+			}
+			valoresDespuesAux := map[string]float64{}
+			for _, disp := range desagregadoDespuesAux {
+				valoresDespuesAux[disp.Rubro] = disp.Valor
+			}
+			var totalAux1 float64
+			totalAux1 += valoresDespuesAux["SueldoBasico"]
+			totalAux1 += valoresDespuesAux["PrimaNavidad"]
+			totalAux1 += valoresDespuesAux["Vacaciones"]
+			totalAux1 += valoresDespuesAux["PrimaVacaciones"]
+			totalAux1 += valoresDespuesAux["InteresesCesantias"]
+			totalAux1 += valoresDespuesAux["Cesantias"]
+			totalAux1 += valoresDespuesAux["PrimaServicios"]
+			pdf.CellFormat((w*2)-2, cellHeight, FormatMoney(totalAux1, 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, cellHeight*2, valorHoras, "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-2, cellHeight*2, fmt.Sprintf(CampoMeses, vinc.NumeroSemanas), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
