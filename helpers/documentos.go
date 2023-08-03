@@ -884,7 +884,25 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			} else {
 				pdf.CellFormat(w-2, cellHeight, strconv.Itoa(vinc.RegistroPresupuestal), "1", 0, "C", false, 0, "")
 			}
-			pdf.CellFormat((w*2)-2, cellHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
+			var desagregadoDespuesAux []models.DisponibilidadVinculacion
+			url3Aux := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(vinc.Id)
+			if err := GetRequestNew("UrlCrudResoluciones", url3Aux, &desagregadoDespuesAux); err != nil {
+				logs.Error(err.Error())
+				panic(err.Error())
+			}
+			valoresDespuesAux := map[string]float64{}
+			for _, disp := range desagregadoDespuesAux {
+				valoresDespuesAux[disp.Rubro] = disp.Valor
+			}
+			var totalAux1 float64
+			totalAux1 += valoresDespuesAux["SueldoBasico"]
+			totalAux1 += valoresDespuesAux["PrimaNavidad"]
+			totalAux1 += valoresDespuesAux["Vacaciones"]
+			totalAux1 += valoresDespuesAux["PrimaVacaciones"]
+			totalAux1 += valoresDespuesAux["InteresesCesantias"]
+			totalAux1 += valoresDespuesAux["Cesantias"]
+			totalAux1 += valoresDespuesAux["PrimaServicios"]
+			pdf.CellFormat((w*2)-2, cellHeight, FormatMoney(totalAux1, 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, cellHeight*2, valorHoras, "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-2, cellHeight*2, fmt.Sprintf(CampoMeses, vinc.NumeroSemanas), "1", 0, "C", false, 0, "")
 			pdf.Ln(-1)
@@ -959,7 +977,15 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["Cesantias"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"], 2), "1", 0, "C", false, 0, "")
+			var totalAux float64
+			totalAux += valoresAntes["SueldoBasico"]
+			totalAux += valoresAntes["PrimaNavidad"]
+			totalAux += valoresAntes["Vacaciones"]
+			totalAux += valoresAntes["PrimaVacaciones"]
+			totalAux += valoresAntes["InteresesCesantias"]
+			totalAux += valoresAntes["Cesantias"]
+			totalAux += valoresAntes["PrimaServicios"]
+			pdf.CellFormat(w+1, lineHeight, FormatMoney(totalAux, 2), "1", 0, "C", false, 0, "")
 
 			if tipoRes == "RADD" || tipoRes == "RRED" {
 				pdf.CellFormat(w-3, lineHeight, strconv.Itoa(int(valoresAntes["NumeroHorasSemanales"])), "1", 0, "C", false, 0, "")
@@ -991,7 +1017,15 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresDespues["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w+1, lineHeight, vinc.ValorContratoFormato, "1", 0, "C", false, 0, "")
+			var totalAux1 float64
+			totalAux1 += valoresDespues["SueldoBasico"]
+			totalAux1 += valoresDespues["PrimaNavidad"]
+			totalAux1 += valoresDespues["Vacaciones"]
+			totalAux1 += valoresDespues["PrimaVacaciones"]
+			totalAux1 += valoresDespues["InteresesCesantias"]
+			totalAux1 += valoresDespues["Cesantias"]
+			totalAux1 += valoresDespues["PrimaServicios"]
+			pdf.CellFormat(w+1, lineHeight, FormatMoney(totalAux1, 2), "1", 0, "C", false, 0, "")
 			switch tipoRes {
 			case "RADD":
 				pdf.CellFormat(w-3, lineHeight*2, fmt.Sprintf(PasaA, int(valoresAntes["NumeroHorasSemanales"]+float64(vinc.NumeroHorasSemanales))), "1", 0, "C", false, 0, "")
@@ -1006,7 +1040,6 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 			pdf.SetXY(x, y-lineHeight)
 			pdf.Ln(-1)
 
-			valorContrato := DeformatNumber(vinc.ValorContratoFormato)
 			pdf.CellFormat(w+4, lineHeight, "Pasa a", "1", 0, "C", false, 0, "")
 			if tipoRes == "RADD" {
 				pdf.CellFormat(w+2, lineHeight, FormatMoney(valoresAntes["SueldoBasico"]+valoresDespues["SueldoBasico"], 2), "1", 0, "C", false, 0, "")
@@ -1016,7 +1049,15 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"]+valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["Cesantias"]+valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"]+valoresDespues["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"]+valorContrato, 2), "1", 0, "C", false, 0, "")
+				var totalAux2 float64
+				totalAux2 += valoresAntes["SueldoBasico"] + valoresDespues["SueldoBasico"]
+				totalAux2 += valoresAntes["PrimaNavidad"] + valoresDespues["PrimaNavidad"]
+				totalAux2 += valoresAntes["Vacaciones"] + valoresDespues["Vacaciones"]
+				totalAux2 += valoresAntes["PrimaVacaciones"] + valoresDespues["PrimaVacaciones"]
+				totalAux2 += valoresAntes["InteresesCesantias"] + valoresDespues["InteresesCesantias"]
+				totalAux2 += valoresAntes["Cesantias"] + valoresDespues["Cesantias"]
+				totalAux2 += valoresAntes["PrimaServicios"] + valoresDespues["PrimaServicios"]
+				pdf.CellFormat(w+1, lineHeight, FormatMoney(totalAux2, 2), "1", 0, "C", false, 0, "")
 			} else {
 				pdf.CellFormat(w+2, lineHeight, FormatMoney(valoresAntes["SueldoBasico"]-valoresDespues["SueldoBasico"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["PrimaNavidad"]-valoresDespues["PrimaNavidad"], 2), "1", 0, "C", false, 0, "")
@@ -1025,7 +1066,15 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["InteresesCesantias"]-valoresDespues["InteresesCesantias"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-2, lineHeight, FormatMoney(valoresAntes["Cesantias"]-valoresDespues["Cesantias"], 2), "1", 0, "C", false, 0, "")
 				pdf.CellFormat(w-3, lineHeight, FormatMoney(valoresAntes["PrimaServicios"]-valoresDespues["PrimaServicios"], 2), "1", 0, "C", false, 0, "")
-				pdf.CellFormat(w+1, lineHeight, FormatMoney(valoresAntes["ValorContrato"]-valorContrato, 2), "1", 0, "C", false, 0, "")
+				var totalAux2 float64
+				totalAux2 += valoresAntes["SueldoBasico"] - valoresDespues["SueldoBasico"]
+				totalAux2 += valoresAntes["PrimaNavidad"] - valoresDespues["PrimaNavidad"]
+				totalAux2 += valoresAntes["Vacaciones"] - valoresDespues["Vacaciones"]
+				totalAux2 += valoresAntes["PrimaVacaciones"] - valoresDespues["PrimaVacaciones"]
+				totalAux2 += valoresAntes["InteresesCesantias"] - valoresDespues["InteresesCesantias"]
+				totalAux2 += valoresAntes["Cesantias"] - valoresDespues["Cesantias"]
+				totalAux2 += valoresAntes["PrimaServicios"] - valoresDespues["PrimaServicios"]
+				pdf.CellFormat(w+1, lineHeight, FormatMoney(totalAux2, 2), "1", 0, "C", false, 0, "")
 			}
 			pdf.Ln(-1)
 
