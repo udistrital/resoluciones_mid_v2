@@ -20,15 +20,21 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 		}
 	}()
 	var previnculaciones []models.VinculacionDocente
+	var previnculacionesAux []models.VinculacionDocente
 	var disponibilidad []models.DisponibilidadVinculacion
 	var persona models.InformacionPersonaNatural
 	var ciudad map[string]interface{}
 	var err2 map[string]interface{}
 
-	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=Activo:true,ResolucionVinculacionDocenteId.Id:" + resolucionId
-	if err := GetRequestNew("UrlcrudResoluciones", url, &previnculaciones); err != nil {
+	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=ResolucionVinculacionDocenteId.Id:" + resolucionId
+	if err := GetRequestNew("UrlcrudResoluciones", url, &previnculacionesAux); err != nil {
 		logs.Error(err.Error())
 		panic(err.Error())
+	}
+	for i := range previnculacionesAux {
+		if previnculacionesAux[i].NumeroContrato != nil {
+			previnculaciones = append(previnculaciones, previnculacionesAux[i])
+		}
 	}
 	for i := range previnculaciones {
 		fmt.Println("previnculacion ", previnculaciones[i].ValorContrato)
