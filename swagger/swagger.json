@@ -1100,6 +1100,41 @@
                 }
             }
         },
+        "/gestion_vinculaciones/rp/{resolucion_id}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Docentes previnculados a una resolución con rps",
+                "operationId": "GestionVinculacionesController.DocentesPrevinculadosRp",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "resolucion_id",
+                        "description": "El id de la resolución",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Vinculaciones"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/rp_vinculaciones": {
             "post": {
                 "tags": [

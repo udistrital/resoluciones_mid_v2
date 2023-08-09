@@ -22,6 +22,7 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("EditarVinculaciones", c.EditarVinculaciones)
 	c.Mapping("ModificarVinculacion", c.ModificarVinculacion)
 	c.Mapping("DocentesPrevinculados", c.DocentesPrevinculados)
+	c.Mapping("DocentesPrevinculadosRp", c.DocentesPrevinculadosRp)
 	c.Mapping("DocentesCargaHoraria", c.DocentesCargaHoraria)
 	c.Mapping("InformeVinculaciones", c.InformeVinculaciones)
 	c.Mapping("DesvincularDocentes", c.DesvincularDocentes)
@@ -168,7 +169,34 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 		panic(map[string]interface{}{"funcion": "DocentesPrevinculados", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
-	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId); err2 == nil {
+	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId, false); err2 == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
+	} else {
+		panic(err2)
+	}
+	c.ServeJSON()
+}
+
+// DocentesPrevinculadosRp ...
+// @Title DocentesPrevinculadosRp
+// @Description Docentes previnculados a una resolución con rps
+// @Param	resolucion_id		path 	string	true		"El id de la resolución"
+// @Success 200 {object} []models.Vinculaciones
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /rp/:resolucion_id [get]
+func (c *GestionVinculacionesController) DocentesPrevinculadosRp() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	resolucionId := c.Ctx.Input.Param(":resolucion_id")
+	id, err := strconv.Atoi(resolucionId)
+
+	if err != nil || id <= 0 {
+		panic(map[string]interface{}{"funcion": "DocentesPrevinculadosRp", "err": helpers.ErrorParametros, "status": "400"})
+	}
+
+	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId, true); err2 == nil {
 		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
 	} else {

@@ -663,7 +663,7 @@ func AnularResolucion(ResolucionId int) (outputError map[string]interface{}) {
 			panic(err3.Error())
 		}
 	}
-	if vinculaciones, err4 := ListarVinculaciones(strconv.Itoa(ResolucionId)); err4 != nil {
+	if vinculaciones, err4 := ListarVinculaciones(strconv.Itoa(ResolucionId), false); err4 != nil {
 		panic(err4)
 	} else {
 		if len(vinculaciones) > 0 {
