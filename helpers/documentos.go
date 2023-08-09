@@ -39,7 +39,7 @@ func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[str
 	if contenidoResolucion, err := CargarResolucionCompleta(resolucionId); err != nil {
 		panic(err)
 	} else {
-		if vinculaciones, err2 := ListarVinculaciones(strconv.Itoa(resolucionId)); err2 != nil {
+		if vinculaciones, err2 := ListarVinculaciones(strconv.Itoa(resolucionId), false); err2 != nil {
 			panic(err2)
 		} else {
 			fmt.Println("vinc ", vinculaciones)
