@@ -27,21 +27,12 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 	var err2 map[string]interface{}
 
 	if rp {
+		fmt.Println("RPS ")
 		previnculaciones, outputError = PrevinculacionesRps(resolucionId)
 	} else {
 		previnculaciones, outputError = Previnculaciones(resolucionId)
 	}
 
-	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=Activo:true,ResolucionVinculacionDocenteId.Id:" + resolucionId
-	if err := GetRequestNew("UrlcrudResoluciones", url, &previnculaciones); err != nil {
-		logs.Error(err.Error())
-		panic(err.Error())
-	}
-	/*for i := range previnculacionesAux {
-		if previnculacionesAux[i].NumeroContrato != nil {
-			previnculaciones = append(previnculaciones, previnculacionesAux[i])
-		}
-	}*/
 	for i := range previnculaciones {
 		fmt.Println("previnculacion ", previnculaciones[i].ValorContrato)
 		persona, err2 = BuscarDatosPersonalesDocente(previnculaciones[i].PersonaId)
