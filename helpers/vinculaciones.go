@@ -26,7 +26,7 @@ func ListarVinculaciones(resolucionId string) (vinculaciones []models.Vinculacio
 	var ciudad map[string]interface{}
 	var err2 map[string]interface{}
 
-	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=ResolucionVinculacionDocenteId.Id:" + resolucionId
+	url := "vinculacion_docente?limit=0&sortby=ProyectoCurricularId&order=asc&query=Activo:true,ResolucionVinculacionDocenteId.Id:" + resolucionId
 	if err := GetRequestNew("UrlcrudResoluciones", url, &previnculaciones); err != nil {
 		logs.Error(err.Error())
 		panic(err.Error())
