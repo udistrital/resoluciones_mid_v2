@@ -895,7 +895,7 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 				}
 				actaInicio := ai[0]
 				fmt.Println(actaInicio)
-				if actaInicio.FechaInicio.Before(v.FechaInicio) && actaInicio.FechaFin.After(v.FechaInicio) {
+				if actaInicio.FechaFin.After(v.FechaInicio) {
 					contratoCancelado := &models.ContratoCancelado{
 						NumeroContrato:    *contrato.NumeroContrato,
 						Vigencia:          contrato.Vigencia,
