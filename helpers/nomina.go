@@ -141,9 +141,9 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		dedicacion := cancelado.ResolucionVinculacionDocenteId.Dedicacion
 		nivel := cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 		if nivel == "POSGRADO" {
-			cancelacion.NumeroHorasSemanales = cancelado.NumeroHorasSemanales - cancelacion.NumeroHorasSemanales
+			cancelado.NumeroHorasSemanales = cancelado.NumeroHorasSemanales - cancelacion.NumeroHorasSemanales
 		}
-		if desagregado, err = CalcularDesagregadoTitan(cancelacion, dedicacion, nivel); err != nil {
+		if desagregado, err = CalcularDesagregadoTitan(cancelado, dedicacion, nivel); err != nil {
 			panic(err)
 		}
 
@@ -156,11 +156,10 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 			}
 		}
 		contratoReliquidar.ValorContrato = sueldoBasico
-		contratoReliquidar.NivelAcademico = cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 		contratoReliquidar.Desagregado = &valores
 
 	}
-
+	contratoReliquidar.NivelAcademico = cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
 	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar.Desagregado)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
