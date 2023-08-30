@@ -572,7 +572,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									fmt.Println("Error en if - Buscar contratos!", err)
 									panic(err.Error())
 								}
-								// fmt.Println("subcontrato ", subcontrato)
 								var respActaInicioAnterior []models.ActaInicio
 								var actaInicioAnterior models.ActaInicio
 								fmt.Println("CONTRATOS ANTERIORES ", contratosAnteriores)
