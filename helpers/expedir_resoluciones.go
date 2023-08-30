@@ -552,7 +552,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									"Ciudad":      96,
 								},
 							}
-
 							if tipoRes.CodigoAbreviacion == "RRED" {
 								//horasFinales := 0
 								horasReducir := modificacion.NumeroHorasSemanales
