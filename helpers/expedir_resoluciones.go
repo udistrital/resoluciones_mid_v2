@@ -555,11 +555,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 							dedicacion := modificacion.ResolucionVinculacionDocenteId.Dedicacion
 							nivel := modificacion.ResolucionVinculacionDocenteId.NivelAcademico
 							reduccion = &models.Reduccion{
-								Vigencia:       modificacion.Vigencia,
-								Documento:      fmt.Sprintf("%.f", modificacion.PersonaId),
-								FechaReduccion: modificacion.FechaInicio,
-								Semanas:        modificacion.NumeroSemanas,
-								NivelAcademico: nivel,
+								Vigencia:          modificacion.Vigencia,
+								Documento:         fmt.Sprintf("%.f", modificacion.PersonaId),
+								FechaReduccion:    modificacion.FechaInicio,
+								Semanas:           modificacion.NumeroSemanas,
+								SemanasAnteriores: 0,
+								NivelAcademico:    nivel,
 							}
 
 							contratosAnteriores := new([]models.VinculacionDocente)
@@ -604,7 +605,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								}
 							}
 							fmt.Println("ULTIMA VINCULACION ", ultimaVinculacon)
-
+							reduccion.SemanasAnteriores = ultimaVinculacon.NumeroSemanas
 							url = fmt.Sprintf("acta_inicio?query=NumeroContrato:%s,Vigencia:%d", *ultimaVinculacon.NumeroContrato, ultimaVinculacon.Vigencia)
 							if err := GetRequestLegacy("UrlcrudAgora", url, &respActaInicioAnterior); err != nil {
 								fmt.Println("Error en if - Acta inicio "+*ultimaVinculacon.NumeroContrato, err)
