@@ -130,6 +130,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	contratoReliquidar := &models.ContratoCancelacion{
 		NumeroContrato: *cancelado.NumeroContrato,
 		Vigencia:       cancelado.Vigencia,
+		Semanas:        cancelado.NumeroSemanas - cancelacion.NumeroSemanas,
 		//ValorContrato:  cancelado.ValorContrato - cancelacion.ValorContrato,
 		FechaAnulacion: cancelacion.FechaInicio,
 		Documento:      strconv.Itoa(int(cancelacion.PersonaId)),
