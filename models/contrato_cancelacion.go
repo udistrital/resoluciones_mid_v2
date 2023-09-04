@@ -8,6 +8,7 @@ type ContratoCancelacion struct {
 	Documento      string
 	ValorContrato  float64
 	NivelAcademico string
+	Semanas        int
 	FechaAnulacion time.Time
 	Desagregado    *map[string]float64
 }
