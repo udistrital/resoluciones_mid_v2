@@ -139,6 +139,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	// calcular el desagregado de la cancelación individual
 	if cancelado.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
 		cancelado.NumeroSemanas = cancelado.NumeroSemanas - cancelacion.NumeroSemanas
+		cancelado.NumeroHorasSemanales = cancelacion.NumeroHorasSemanales
 		dedicacion := cancelado.ResolucionVinculacionDocenteId.Dedicacion
 		nivel := cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 		if nivel == "POSGRADO" {
