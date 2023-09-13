@@ -143,6 +143,8 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		nivel := cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 		if nivel == "POSGRADO" {
 			cancelado.NumeroHorasSemanales = cancelado.NumeroHorasSemanales - cancelacion.NumeroHorasSemanales
+		} else {
+			cancelado.NumeroHorasSemanales = cancelacion.NumeroHorasSemanales
 		}
 		if desagregado, err = CalcularDesagregadoTitan(cancelado, dedicacion, nivel); err != nil {
 			panic(err)
