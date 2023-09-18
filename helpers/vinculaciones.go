@@ -441,6 +441,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	var vin []models.VinculacionDocente
 	var desagregado map[string]interface{}
 	var err map[string]interface{}
+	var tipoResolucionAux models.Parametro
+	var resolucionAux models.Resolucion
 
 	// Recuperación de la vinculación original
 	url := VinculacionEndpoint + strconv.Itoa(obj.CambiosVinculacion.VinculacionOriginal.Id)
@@ -515,6 +517,20 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	} else {
 		nuevaVinculacion.NumeroRp = float64(obj.CambiosVinculacion.VinculacionOriginal.RegistroPresupuestal)
 		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.VinculacionOriginal.Vigencia)
+	}
+
+	err2 := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(obj.ResolucionNuevaId.Id), &resolucionAux)
+	if err2 != nil {
+		panic(err2.Error())
+	}
+	err3 := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(resolucionAux.TipoResolucionId), &tipoResolucionAux)
+	if err3 != nil {
+		panic(err3.Error())
+	}
+
+	if tipoResolucionAux.CodigoAbreviacion == "RADD" {
+		nuevaVinculacion.NumeroRp = 0
+		nuevaVinculacion.VigenciaRp = 0
 	}
 
 	// Se desactiva la vinculación original, asi no estará disponible para ser modificada
