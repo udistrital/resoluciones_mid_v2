@@ -18,5 +18,6 @@ type ContratoPreliquidacion struct {
 	Activo         bool
 	NumeroSemanas  int
 	ResolucionId   int
+	Resolucion     string
 	Desagregado    *map[string]float64
 }
