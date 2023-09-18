@@ -54,6 +54,12 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	var desagregado []models.DisponibilidadVinculacion
 	var docente []models.InformacionProveedor
 	var actaInicio []models.ActaInicio
+	var resolucion models.Resolucion
+
+	urlAux := "resolucion/" + strconv.Itoa(v.ResolucionVinculacionDocenteId.Id)
+	if err := GetRequestNew("UrlcrudResoluciones", urlAux, &resolucion); err != nil {
+		panic("Consultando resolución -> " + err.Error())
+	}
 
 	preliquidacion := &models.ContratoPreliquidacion{
 		NumeroContrato: *v.NumeroContrato,
@@ -106,6 +112,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	preliquidacion.PersonaId = docente[0].Id
 	preliquidacion.NumeroSemanas = v.NumeroSemanas
 	preliquidacion.ResolucionId = v.ResolucionVinculacionDocenteId.Id
+	preliquidacion.Resolucion = resolucion.NumeroResolucion
 
 	if err2 := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &c, &preliquidacion); err2 != nil {
 		panic("Preliquidando -> " + err2.Error())
