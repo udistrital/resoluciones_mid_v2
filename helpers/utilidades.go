@@ -16,6 +16,7 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
+	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/utils_oas/formatdata"
 )
 
@@ -51,7 +52,6 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 // Envia una petición con datos a endponts que responden con el body sin encapsular
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
-
 	if err := SendJson(url, trequest, &target, &datajson); err != nil {
 		return err
 	}
@@ -61,7 +61,6 @@ func SendRequestLegacy(endpoint string, route string, trequest string, target in
 // Envia una petición al endpoint indicado y extrae la respuesta del campo Data para retornarla
 func GetRequestNew(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
-
 	var response map[string]interface{}
 	var err error
 	err = GetJson(url, &response)
@@ -72,11 +71,9 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 // Envia una petición a endponts que responden con el body sin encapsular
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
-
 	if err := GetJson(url, target); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -84,12 +81,35 @@ func GetRequestWSO2(service string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" +
 		beego.AppConfig.String("UrlcrudWSO2") +
 		beego.AppConfig.String(service) + "/" + route
-
 	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {
 		return nil
 	} else {
 		return err
 	}
+}
+
+func GetTipoResolucion(id int) (tipoResolucion models.Parametro) {
+	var tipoResolucionAux models.Parametro
+	var resolucionAux models.Resolucion
+	err2 := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(id), &resolucionAux)
+	if err2 != nil {
+		panic(err2.Error())
+	}
+	err3 := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(resolucionAux.TipoResolucionId), &tipoResolucionAux)
+	if err3 != nil {
+		panic(err3.Error())
+	}
+
+	return tipoResolucionAux
+}
+
+func GetResolucion(id int) (resolucion models.Resolucion) {
+
+	urlAux := "resolucion/" + strconv.Itoa(id)
+	if err := GetRequestNew("UrlcrudResoluciones", urlAux, &resolucion); err != nil {
+		panic("Consultando resolución -> " + err.Error())
+	}
+	return resolucion
 }
 
 // Esta función extrae la información cuando se recibe encapsulada en una estructura
