@@ -56,10 +56,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	var actaInicio []models.ActaInicio
 	var resolucion models.Resolucion
 
-	urlAux := "resolucion/" + strconv.Itoa(v.ResolucionVinculacionDocenteId.Id)
-	if err := GetRequestNew("UrlcrudResoluciones", urlAux, &resolucion); err != nil {
-		panic("Consultando resolución -> " + err.Error())
-	}
+	resolucion = GetResolucion(v.ResolucionVinculacionDocenteId.Id)
 
 	preliquidacion := &models.ContratoPreliquidacion{
 		NumeroContrato: *v.NumeroContrato,

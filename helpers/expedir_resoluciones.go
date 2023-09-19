@@ -813,6 +813,8 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 													if tipoRes.CodigoAbreviacion == "RRED" {
 														fmt.Println(numContrato)
 														reduccion.ContratoNuevo.NumeroContratoReduccion = numContrato
+														reduccion.ContratoNuevo.NumeroResolucion = resolucion.NumeroResolucion
+														reduccion.ContratoNuevo.IdResolucion = resolucion.Id
 														fmt.Println("SALE")
 													}
 												} else {
