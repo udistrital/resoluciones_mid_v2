@@ -517,6 +517,13 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.VinculacionOriginal.Vigencia)
 	}
 
+	tipoResolucion := GetTipoResolucion(obj.ResolucionNuevaId.Id)
+
+	if tipoResolucion.CodigoAbreviacion == "RADD" {
+		nuevaVinculacion.NumeroRp = 0
+		nuevaVinculacion.VigenciaRp = 0
+	}
+
 	// Se desactiva la vinculación original, asi no estará disponible para ser modificada
 	var vinc *models.VinculacionDocente
 	vinculacion.Activo = false

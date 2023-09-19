@@ -22,5 +22,7 @@ type ContratoReducir struct {
 type ContratoReducido struct {
 	NumeroContratoReduccion string
 	ValorContratoReduccion  float64
+	NumeroResolucion        string
+	IdResolucion            int
 	DesagregadoReduccion    *map[string]float64
 }
