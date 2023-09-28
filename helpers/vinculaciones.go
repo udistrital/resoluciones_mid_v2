@@ -34,7 +34,7 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 	}
 
 	for i := range previnculaciones {
-		fmt.Println("previnculacion ", previnculaciones[i].ValorContrato)
+		fmt.Println("previnculacion ", previnculaciones[i].PersonaId)
 		persona, err2 = BuscarDatosPersonalesDocente(previnculaciones[i].PersonaId)
 		if err2 != nil {
 			panic(err2)

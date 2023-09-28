@@ -579,7 +579,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								var parametro models.Parametro
 								var ultimaVinculacon models.VinculacionDocente
 								var aux = 0
-								horasAnterior := 0
+								//horasAnterior := 0
 								horasNuevo := 0
 								for _, subcontratoAux := range *contratosAnteriores {
 									fmt.Println("LLEGA")
@@ -603,161 +603,161 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										horasNuevo -= subcontratoAux.NumeroHorasSemanales
 									}
 									aux += 1
-									if aux == len(*contratosAnteriores) {
-										horasAnterior = horasNuevo
-									}
-								}
-								fmt.Println("ULTIMA VINCULACION ", ultimaVinculacon)
-								reduccion.SemanasAnteriores = ultimaVinculacon.NumeroSemanas
-								url = fmt.Sprintf("acta_inicio?query=NumeroContrato:%s,Vigencia:%d", *ultimaVinculacon.NumeroContrato, ultimaVinculacon.Vigencia)
-								if err := GetRequestLegacy("UrlcrudAgora", url, &respActaInicioAnterior); err != nil {
-									fmt.Println("Error en if - Acta inicio "+*ultimaVinculacon.NumeroContrato, err)
-									panic(err.Error())
-								} else if len(respActaInicioAnterior) == 0 {
-									panic("Acta de inicio no encontrada")
-								}
-								horasNuevo -= horasReducir
-								fmt.Println("HORAS ANTERIORE ", horasAnterior)
-								fmt.Println("HORAS DESPUES ", horasNuevo)
-								actaInicioAnterior = respActaInicioAnterior[0]
-								fmt.Println("fecha inicio modificacion ", modificacion.FechaInicio)
-								fmt.Println("fecha inicio modificacion ", modificacion.ResolucionVinculacionDocenteId.Dedicacion)
-								if actaInicioAnterior.FechaInicio.Before(modificacion.FechaInicio) || actaInicioAnterior.FechaInicio.Equal(modificacion.FechaInicio) {
-									fmt.Println("acta inicio anterior entra")
-									//horasReducir -= ultimaVinculacon.NumeroHorasSemanales
-									fmt.Println("horasreducir ", horasReducir)
-									/*if horasReducir < 0 {
-										horasFinales -= horasReducir
-										fmt.Println("horasfinales ", horasFinales)
-										horasReducir = 0
-									}*/
-									valores := make(map[string]float64)
-									contratoReducir := &models.ContratoReducir{
-										NumeroContratoOriginal: *ultimaVinculacon.NumeroContrato,
-									}
-									if modificacion.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
-										// calcular el desagregado del resto de cada contrato
-										var subcontratoAux = ultimaVinculacon
-										var desagregado, err map[string]interface{}
-										if nivel == "POSGRADO" {
-											/*horasXSemana := subcontrato.NumeroHorasSemanales / subcontrato.NumeroSemanas
-											horasAntesReduccion := horasXSemana * (subcontrato.NumeroSemanas - modificacion.NumeroSemanas)
-											subcontrato.NumeroHorasSemanales = horasAntesReduccion*/
-											subcontratoAux.NumeroHorasSemanales = modificacion.NumeroHorasTrabajadas
-											fmt.Println(subcontratoAux.NumeroHorasSemanales)
-											fmt.Println(modificacion.NumeroHorasTrabajadas)
-
-										} else {
-											ultimaVinculacon.NumeroSemanas = ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas
-											subcontratoAux.NumeroSemanas = ultimaVinculacon.NumeroSemanas
-											subcontratoAux.NumeroHorasSemanales = horasAnterior
-										}
-										if desagregado, err = CalcularDesagregadoTitan(subcontratoAux, dedicacion, nivel); err != nil {
-											panic(err)
-										}
-										fmt.Println("DESAGRADO ", desagregado)
-										for concepto, valor := range desagregado {
-											if concepto != "NumeroContrato" && concepto != "Vigencia" {
-												if concepto == "SueldoBasico" {
-													contratoReducir.ValorContratoReducido = valor.(float64)
-												} else {
-													valores[concepto] = valor.(float64)
-												}
-											}
-										}
-										contratoReducir.DesagregadoOriginal = &valores
-									} else {
-										var vin []models.VinculacionDocente
-										//var desagregado, err map[string]interface{}
-										// subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
-										nuevaVinculacion := models.VinculacionDocente{
-											Vigencia:                       ultimaVinculacon.Vigencia,
-											PersonaId:                      ultimaVinculacon.PersonaId,
-											NumeroHorasSemanales:           horasAnterior,
-											NumeroSemanas:                  ultimaVinculacon.NumeroSemanas,
-											ResolucionVinculacionDocenteId: ultimaVinculacon.ResolucionVinculacionDocenteId,
-											Categoria:                      ultimaVinculacon.Categoria,
-											Activo:                         true,
-										}
-										if nivel == "POSGRADO" {
-											horasXSemana := ultimaVinculacon.NumeroHorasSemanales / ultimaVinculacon.NumeroSemanas
-											// horasRestantesTotales := subcontrato.NumeroHorasSemanales - modificacion.NumeroHorasSemanales
-											horasAntesReduccion := horasXSemana * (ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas)
-											nuevaVinculacion.NumeroHorasSemanales = horasAntesReduccion
-										} else {
-											nuevaVinculacion.NumeroSemanas = ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas
-										}
-										vin = append(vin, nuevaVinculacion)
-										if w, err2 := CalcularSalarioPrecontratacion(vin); err2 == nil {
-											vin = nil
-											contratoReducir.ValorContratoReducido = w[0].ValorContrato
-										} else {
-											panic(err2)
-										}
-									}
-									reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
-									// actualizacion acta_inicio
-									// fechaFinOriginal := actaInicioAnterior.FechaFin
-									actaInicioAnterior.FechaFin = modificacion.FechaInicio
-									actaInicioAnterior.Usuario = usuario["documento_compuesto"].(string)
-									url = "acta_inicio/" + strconv.Itoa(actaInicioAnterior.Id)
-									if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &actaInicioAnterior); err != nil {
-										fmt.Println("Error en acta_inicio PUT ", err)
+									fmt.Println("ULTIMA VINCULACION ", ultimaVinculacon)
+									reduccion.SemanasAnteriores = ultimaVinculacon.NumeroSemanas
+									url = fmt.Sprintf("acta_inicio?query=NumeroContrato:%s,Vigencia:%d", *ultimaVinculacon.NumeroContrato, ultimaVinculacon.Vigencia)
+									if err := GetRequestLegacy("UrlcrudAgora", url, &respActaInicioAnterior); err != nil {
+										fmt.Println("Error en if - Acta inicio "+*ultimaVinculacon.NumeroContrato, err)
 										panic(err.Error())
+									} else if len(respActaInicioAnterior) == 0 {
+										panic("Acta de inicio no encontrada")
 									}
-									if horasNuevo != 0 {
-										fmt.Println("HORAS A REDUCIR DIFERENTE 0")
-										// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
-										semanasTranscurridas := math.Ceil(modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours() / (24 * 7)) // cálculo con base en semanas
-										semanasRestantes := ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas - int(semanasTranscurridas)
-										var vinc [1]models.VinculacionDocente
-										vinc[0] = models.VinculacionDocente{
-											ResolucionVinculacionDocenteId: modificacion.ResolucionVinculacionDocenteId,
-											PersonaId:                      modificacion.PersonaId,
-											NumeroHorasSemanales:           horasNuevo,
-											NumeroSemanas:                  modificacion.NumeroSemanas,
-											Vigencia:                       modificacion.Vigencia,
-											Categoria:                      modificacion.Categoria,
-										}
-										if nivel == "POSGRADO" {
-											vinc[0].NumeroHorasSemanales = ultimaVinculacon.NumeroHorasSemanales - modificacion.NumeroHorasSemanales - modificacion.NumeroHorasTrabajadas
-										}
-										salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, ultimaVinculacon.NumeroHorasSemanales, nivel)
-										if err != nil {
-											fmt.Println("Error en cálculo del contrato reducción!", err)
-											panic(err)
-										}
-										fmt.Println("SALARIO ", salario)
-										// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
-										/*if nivel == "POSGRADO" {
-											diasOriginales, _ := math.Modf((fechaFinOriginal.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-											fmt.Println("dias o ", diasOriginales)
-											diasTranscurridos, _ := math.Modf((modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-											fmt.Println("dias t ", diasTranscurridos)
-											valorDiario := subcontrato.ValorContrato / diasOriginales
-											valorPagado := valorDiario * diasTranscurridos
-											salario = salario - valorPagado
+									horasNuevoAux := horasNuevo - horasReducir
+									fmt.Println("HORAS ANTERIORE ", subcontratoAux.NumeroHorasSemanales)
+									fmt.Println("HORAS DESPUES ", horasNuevoAux)
+									actaInicioAnterior = respActaInicioAnterior[0]
+									fmt.Println("fecha inicio modificacion ", modificacion.FechaInicio)
+									fmt.Println("fecha inicio modificacion ", modificacion.ResolucionVinculacionDocenteId.Dedicacion)
+									if actaInicioAnterior.FechaInicio.Before(modificacion.FechaInicio) || actaInicioAnterior.FechaInicio.Equal(modificacion.FechaInicio) {
+										fmt.Println("acta inicio anterior entra")
+										//horasReducir -= ultimaVinculacon.NumeroHorasSemanales
+										fmt.Println("horasreducir ", horasReducir)
+										/*if horasReducir < 0 {
+											horasFinales -= horasReducir
+											fmt.Println("horasfinales ", horasFinales)
+											horasReducir = 0
 										}*/
-										contrato.ValorContrato = salario
-										beego.Info(contrato.ValorContrato)
-										// el subcontrato actual es reducido parcialmente y los siguientes no deben ser afectados
-										var desagregadoNuevo, err2 map[string]interface{}
-										fmt.Println("VINCULAC ", vinc[0])
-										if desagregadoNuevo, err2 = CalcularDesagregadoTitan(vinc[0], dedicacion, nivel); err2 != nil {
-											panic(err)
+										valores := make(map[string]float64)
+										contratoReducir := &models.ContratoReducir{
+											NumeroContratoOriginal: *subcontratoAux.NumeroContrato,
 										}
-										reduccion.ContratoNuevo = &models.ContratoReducido{}
-										valoresNuevo := make(map[string]float64)
-										for concepto, valor := range desagregadoNuevo {
-											if concepto != "NumeroContrato" && concepto != "Vigencia" {
-												if concepto == "SueldoBasico" {
-													reduccion.ContratoNuevo.ValorContratoReduccion = valor.(float64)
-												} else {
-													valoresNuevo[concepto] = valor.(float64)
+										if modificacion.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
+											// calcular el desagregado del resto de cada contrato
+											//var subcontratoAux = ultimaVinculacon
+											var desagregado, err map[string]interface{}
+											if nivel == "POSGRADO" {
+												/*horasXSemana := subcontrato.NumeroHorasSemanales / subcontrato.NumeroSemanas
+												horasAntesReduccion := horasXSemana * (subcontrato.NumeroSemanas - modificacion.NumeroSemanas)
+												subcontrato.NumeroHorasSemanales = horasAntesReduccion*/
+												subcontratoAux.NumeroHorasSemanales = modificacion.NumeroHorasTrabajadas
+												fmt.Println(subcontratoAux.NumeroHorasSemanales)
+												fmt.Println(modificacion.NumeroHorasTrabajadas)
+
+											} else {
+												//ultimaVinculacon.NumeroSemanas = ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas
+												subcontratoAux.NumeroSemanas = subcontratoAux.NumeroSemanas - modificacion.NumeroSemanas
+												//subcontratoAux.NumeroHorasSemanales = horasAnterior
+											}
+											if desagregado, err = CalcularDesagregadoTitan(subcontratoAux, dedicacion, nivel); err != nil {
+												panic(err)
+											}
+											fmt.Println("DESAGRADO ", desagregado)
+											for concepto, valor := range desagregado {
+												if concepto != "NumeroContrato" && concepto != "Vigencia" {
+													if concepto == "SueldoBasico" {
+														contratoReducir.ValorContratoReducido = valor.(float64)
+													} else {
+														valores[concepto] = valor.(float64)
+													}
 												}
 											}
+											contratoReducir.DesagregadoOriginal = &valores
+										} else {
+											var vin []models.VinculacionDocente
+											//var desagregado, err map[string]interface{}
+											// subcontrato.NumeroSemanas = subcontrato.NumeroSemanas - modificacion.NumeroSemanas
+											nuevaVinculacion := models.VinculacionDocente{
+												Vigencia:                       ultimaVinculacon.Vigencia,
+												PersonaId:                      ultimaVinculacon.PersonaId,
+												NumeroHorasSemanales:           subcontratoAux.NumeroHorasSemanales,
+												NumeroSemanas:                  subcontratoAux.NumeroSemanas - modificacion.NumeroSemanas,
+												ResolucionVinculacionDocenteId: ultimaVinculacon.ResolucionVinculacionDocenteId,
+												Categoria:                      ultimaVinculacon.Categoria,
+												Activo:                         true,
+											}
+											if nivel == "POSGRADO" {
+												horasXSemana := subcontratoAux.NumeroHorasSemanales / subcontratoAux.NumeroSemanas
+												// horasRestantesTotales := subcontrato.NumeroHorasSemanales - modificacion.NumeroHorasSemanales
+												horasAntesReduccion := horasXSemana * (subcontratoAux.NumeroSemanas - modificacion.NumeroSemanas)
+												nuevaVinculacion.NumeroHorasSemanales = horasAntesReduccion
+											} else {
+												nuevaVinculacion.NumeroSemanas = subcontratoAux.NumeroSemanas - modificacion.NumeroSemanas
+											}
+											vin = append(vin, nuevaVinculacion)
+											if w, err2 := CalcularSalarioPrecontratacion(vin); err2 == nil {
+												vin = nil
+												contratoReducir.ValorContratoReducido = w[0].ValorContrato
+											} else {
+												panic(err2)
+											}
 										}
-										reduccion.ContratoNuevo.DesagregadoReduccion = &valoresNuevo
+										reduccion.ContratosOriginales = append(reduccion.ContratosOriginales, *contratoReducir)
+										// actualizacion acta_inicio
+										// fechaFinOriginal := actaInicioAnterior.FechaFin
+										actaInicioAnterior.FechaFin = modificacion.FechaInicio
+										actaInicioAnterior.Usuario = usuario["documento_compuesto"].(string)
+										url = "acta_inicio/" + strconv.Itoa(actaInicioAnterior.Id)
+										if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &actaInicioAnterior); err != nil {
+											fmt.Println("Error en acta_inicio PUT ", err)
+											panic(err.Error())
+										}
+										if horasNuevoAux > 0 && horasNuevoAux != 0 {
+											fmt.Println("HORAS A REDUCIR DIFERENTE 0")
+											// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
+											semanasTranscurridas := math.Ceil(modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours() / (24 * 7)) // cálculo con base en semanas
+											semanasRestantes := ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas - int(semanasTranscurridas)
+											var vinc [1]models.VinculacionDocente
+											vinc[0] = models.VinculacionDocente{
+												ResolucionVinculacionDocenteId: modificacion.ResolucionVinculacionDocenteId,
+												PersonaId:                      modificacion.PersonaId,
+												NumeroHorasSemanales:           horasNuevoAux,
+												NumeroSemanas:                  modificacion.NumeroSemanas,
+												Vigencia:                       modificacion.Vigencia,
+												Categoria:                      modificacion.Categoria,
+											}
+											if nivel == "POSGRADO" {
+												vinc[0].NumeroHorasSemanales = horasNuevo - modificacion.NumeroHorasSemanales - modificacion.NumeroHorasTrabajadas
+											}
+											salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, ultimaVinculacon.NumeroHorasSemanales, nivel)
+											if err != nil {
+												fmt.Println("Error en cálculo del contrato reducción!", err)
+												panic(err)
+											}
+											fmt.Println("SALARIO ", salario)
+											// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
+											/*if nivel == "POSGRADO" {
+												diasOriginales, _ := math.Modf((fechaFinOriginal.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+												fmt.Println("dias o ", diasOriginales)
+												diasTranscurridos, _ := math.Modf((modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
+												fmt.Println("dias t ", diasTranscurridos)
+												valorDiario := subcontrato.ValorContrato / diasOriginales
+												valorPagado := valorDiario * diasTranscurridos
+												salario = salario - valorPagado
+											}*/
+											contrato.ValorContrato = salario
+											beego.Info(contrato.ValorContrato)
+											// el subcontrato actual es reducido parcialmente y los siguientes no deben ser afectados
+											var desagregadoNuevo, err2 map[string]interface{}
+											fmt.Println("VINCULAC ", vinc[0])
+											if desagregadoNuevo, err2 = CalcularDesagregadoTitan(vinc[0], dedicacion, nivel); err2 != nil {
+												panic(err)
+											}
+											reduccion.ContratoNuevo = &models.ContratoReducido{}
+											valoresNuevo := make(map[string]float64)
+											for concepto, valor := range desagregadoNuevo {
+												if concepto != "NumeroContrato" && concepto != "Vigencia" {
+													if concepto == "SueldoBasico" {
+														reduccion.ContratoNuevo.ValorContratoReduccion = valor.(float64)
+													} else {
+														valoresNuevo[concepto] = valor.(float64)
+													}
+												}
+											}
+											reduccion.ContratoNuevo.DesagregadoReduccion = &valoresNuevo
+											break
+										} else if horasNuevoAux == 0 {
+											break
+										}
 									}
 								}
 							}
@@ -812,10 +812,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 													}
 													if tipoRes.CodigoAbreviacion == "RRED" {
 														fmt.Println(numContrato)
-														reduccion.ContratoNuevo.NumeroContratoReduccion = numContrato
-														reduccion.ContratoNuevo.NumeroResolucion = resolucion.NumeroResolucion
-														reduccion.ContratoNuevo.IdResolucion = resolucion.Id
-														fmt.Println("SALE")
+														if reduccion.ContratoNuevo != nil {
+															reduccion.ContratoNuevo.NumeroContratoReduccion = numContrato
+															reduccion.ContratoNuevo.NumeroResolucion = resolucion.NumeroResolucion
+															reduccion.ContratoNuevo.IdResolucion = resolucion.Id
+															fmt.Println("SALE")
+														}
 													}
 												} else {
 													fmt.Println("Error en If 1.12 - contrato_disponibilidad! ", err)
