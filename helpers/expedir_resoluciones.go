@@ -716,7 +716,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												Categoria:                      modificacion.Categoria,
 											}
 											if nivel == "POSGRADO" {
-												vinc[0].NumeroHorasSemanales = ultimaVinculacon.NumeroHorasSemanales - modificacion.NumeroHorasSemanales - modificacion.NumeroHorasTrabajadas
+												vinc[0].NumeroHorasSemanales = horasNuevo - modificacion.NumeroHorasSemanales - modificacion.NumeroHorasTrabajadas
 											}
 											salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, ultimaVinculacon.NumeroHorasSemanales, nivel)
 											if err != nil {
