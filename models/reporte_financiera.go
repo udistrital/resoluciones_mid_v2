@@ -49,5 +49,5 @@ type ObjetoDocenteTg struct {
 
 type Docente struct {
 	Id     string `json:"id"`
-	Nombre string `json:"nombre"`
+	Nombre string `json:"NOMBRE"`
 }
