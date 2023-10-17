@@ -42,7 +42,7 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 			panic(outputError)
 		}
 
-		url = fmt.Sprintf("docente_tg/%d", resp[i].Cedula)
+		url = fmt.Sprintf("docente/%d", resp[i].Cedula)
 		if err2 := GetRequestWSO2("NscrudAcademica", url, &infoDocente); err2 != nil {
 			panic(err2.Error())
 		}
