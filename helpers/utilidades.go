@@ -18,6 +18,7 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/utils_oas/formatdata"
+	"github.com/udistrital/utils_oas/xray"
 )
 
 const (
@@ -45,7 +46,7 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 	var response map[string]interface{}
 	var err error
 	err = SendJson(url, trequest, &response, &datajson)
-	err = ExtractData(response, target)
+	err = ExtractData(response, target, err)
 	return err
 }
 
@@ -64,7 +65,7 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 	var response map[string]interface{}
 	var err error
 	err = GetJson(url, &response)
-	err = ExtractData(response, &target)
+	err = ExtractData(response, &target, err)
 	return err
 }
 
@@ -114,8 +115,12 @@ func GetResolucion(id int) (resolucion models.Resolucion) {
 
 // Esta función extrae la información cuando se recibe encapsulada en una estructura
 // y da manejo a las respuestas que contienen arreglos de objetos vacíos
-func ExtractData(respuesta map[string]interface{}, v interface{}) error {
+func ExtractData(respuesta map[string]interface{}, v interface{}, err2 error) error {
 	var err error
+
+	if err2 != nil {
+		return err2
+	}
 	if respuesta["Success"] == false {
 		err = errors.New(fmt.Sprint(respuesta["Data"], respuesta["Message"]))
 		panic(err)
@@ -152,7 +157,9 @@ func SendJson(url string, trequest string, target interface{}, datajson interfac
 	// headers para asegurar compatibilidad con GestorDocumentalMid
 	req.Header.Set("Accept", AppJson)
 	req.Header.Add("Content-Type", AppJson)
+	seg := xray.BeginSegmentSec(req)
 	r, err := client.Do(req)
+	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		beego.Error("error", err)
 		return err
@@ -167,7 +174,11 @@ func SendJson(url string, trequest string, target interface{}, datajson interfac
 }
 
 func GetJsonTest(url string, target interface{}) (status int, err error) {
-	r, err := http.Get(url)
+	req, _ := http.NewRequest("GET", url, nil)
+	seg := xray.BeginSegmentSec(req)
+	client := &http.Client{}
+	r, err := client.Do(req)
+	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		return r.StatusCode, err
 	}
@@ -181,7 +192,11 @@ func GetJsonTest(url string, target interface{}) (status int, err error) {
 }
 
 func GetJson(url string, target interface{}) error {
-	r, err := http.Get(url)
+	req, _ := http.NewRequest("GET", url, nil)
+	seg := xray.BeginSegmentSec(req)
+	client := &http.Client{}
+	r, err := client.Do(req)
+	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		return err
 	}
@@ -195,7 +210,11 @@ func GetJson(url string, target interface{}) error {
 }
 
 func GetXml(url string, target interface{}) error {
-	r, err := http.Get(url)
+	req, _ := http.NewRequest("GET", url, nil)
+	seg := xray.BeginSegmentSec(req)
+	client := &http.Client{}
+	r, err := client.Do(req)
+	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		return err
 	}
@@ -213,7 +232,9 @@ func GetJsonWSO2(urlp string, target interface{}) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", urlp, b)
 	req.Header.Set("Accept", AppJson)
+	seg := xray.BeginSegmentSec(req)
 	r, err := client.Do(req)
+	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		beego.Error("error", err)
 		return err
@@ -232,7 +253,9 @@ func GetJsonWSO2Test(urlp string, target interface{}) (status int, err error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", urlp, b)
 	req.Header.Set("Accept", AppJson)
+	seg := xray.BeginSegmentSec(req)
 	r, err := client.Do(req)
+	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		beego.Error("error", err)
 		return r.StatusCode, err
@@ -414,6 +437,7 @@ func ErrorController(c beego.Controller, controller string) {
 		localError := err.(map[string]interface{})
 		c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + controller + "/" + (localError["funcion"]).(string))
 		c.Data["data"] = (localError["err"])
+		xray.EndSegmentErr(http.StatusBadRequest, localError["err"])
 		if status, ok := localError["status"]; ok {
 			c.Abort(status.(string))
 		} else {
