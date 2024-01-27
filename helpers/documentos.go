@@ -204,8 +204,10 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			logs.Error(err)
 			panic(err.Error())
 		}
+		fmt.Println("JEFE DEPENDENCIA ", jefeDependencia)
 		if len(jefeDependencia) > 0 {
 			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
+				fmt.Println("ORDENADOR ", ordenador)
 				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
 			} else {
 				logs.Error(err2)
