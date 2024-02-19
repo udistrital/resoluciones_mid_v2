@@ -72,6 +72,7 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 // Envia una petición a endponts que responden con el body sin encapsular
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+	fmt.Println("URL ", url)
 	if err := GetJson(url, target); err != nil {
 		return err
 	}
