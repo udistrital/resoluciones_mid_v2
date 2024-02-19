@@ -204,8 +204,10 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			logs.Error(err)
 			panic(err.Error())
 		}
+		fmt.Println("JEFE DEPENDENCIA ", jefeDependencia)
 		if len(jefeDependencia) > 0 {
 			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
+				fmt.Println("ORDENADOR ", ordenador)
 				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
 			} else {
 				logs.Error(err2)
@@ -476,7 +478,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			pdf.CellFormat(w, lineHeight*2, "Cédula", "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w, lineHeight*2, "Expedida", "1", 0, "C", false, 0, "")
 			pdf.CellFormat(w, lineHeight*2, "Categoría", "1", 0, "C", false, 0, "")
-			pdf.CellFormat(w-1, lineHeight*2, "Dedicación", "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w-3, lineHeight*2, "Dedicación", "1", 0, "C", false, 0, "")
 			x, y := pdf.GetXY()
 			if nivel == "PREGRADO" {
 				pdf.MultiCell(w-2, lineHeight, "Horas semanales", "1", "C", false)
@@ -491,7 +493,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			if pdf.GetY()-y > lineHeight {
 				pdf.SetXY(x+w-1, y)
 			}
-			pdf.CellFormat(w+1, lineHeight*2, "Valor total", "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w+3, lineHeight*2, "Valor total", "1", 0, "C", false, 0, "")
 			if tipoRes == "RADD" {
 				pdf.CellFormat(w+2, lineHeight*2, "Valor a adicionar", "1", 0, "C", false, 0, "")
 			}
@@ -547,7 +549,7 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 		pdf.CellFormat(w, cellHeight, fmt.Sprintf("%.f", vinc.PersonaId), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w, cellHeight, vinc.ExpedicionDocumento, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(w, cellHeight, vinc.Categoria, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(w-1, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
+		pdf.CellFormat(w-3, cellHeight, vinc.Dedicacion, "1", 0, "C", false, 0, "")
 
 		valoresAntes := make(map[string]float64)
 		if err := CalcularTrazabilidad(strconv.Itoa(vinc.Id), &valoresAntes); err != nil {
@@ -632,9 +634,9 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 
 			// Valor contrato
 			x, y = pdf.GetXY()
-			pdf.MultiCell(w+1, lineHeight, FormatMoney(valoresAntes["SueldoBasico"], 2), "1", "C", false)
+			pdf.MultiCell(w+3, lineHeight, FormatMoney(valoresAntes["SueldoBasico"], 2), "1", "C", false)
 			pdf.SetX(x)
-			pdf.MultiCell(w+1, lineHeight, "", "1", "C", false)
+			pdf.MultiCell(w+3, lineHeight, "", "1", "C", false)
 			pdf.SetX(x)
 			valorContratoCambio := DeformatNumber(vinc.ValorContratoFormato)
 			valorFinalContrato := 0.0
@@ -643,9 +645,9 @@ func ConstruirTablaVinculaciones(pdf *gofpdf.Fpdf, vinculaciones []models.Vincul
 			} else {
 				valorFinalContrato = valoresAntes["SueldoBasico"] - valorContratoCambio
 			}
-			pdf.MultiCell(w+1, lineHeight, FormatMoney(valorFinalContrato, 2), "1", "C", false)
+			pdf.MultiCell(w+3, lineHeight, FormatMoney(valorFinalContrato, 2), "1", "C", false)
 			if pdf.GetY()-y > lineHeight {
-				pdf.SetXY(x+w+1, y)
+				pdf.SetXY(x+w+3, y)
 			}
 
 			//Valor Adicionar|Reversar

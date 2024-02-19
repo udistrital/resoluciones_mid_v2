@@ -44,10 +44,10 @@ type ReporteFinancieraFinal struct {
 type ObjetoDocenteTg struct {
 	DocenteTg struct {
 		Docente []Docente `json:"docente"`
-	} `json:"docenteTg"`
+	} `json:"docentes"`
 }
 
 type Docente struct {
 	Id     string `json:"id"`
-	Nombre string `json:"nombre"`
+	Nombre string `json:"NOMBRE"`
 }
