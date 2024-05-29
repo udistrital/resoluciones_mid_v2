@@ -574,7 +574,14 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 					NombreRubro:          dv[i].NombreRubro,
 					VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 					Activo:               true,
-					Valor:                desagregado[dv[i].Rubro].(float64),
+					Valor:                0,
+				}
+				// Se coloca la validacion de prima de servicios para la reduccion del contrato de un TCO a
+				// Menos de 24 semanas
+				if (dv[i].Rubro == "PrimaServicios") && ((obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas-obj.CambiosVinculacion.NumeroSemanas < 24) && obj.CambiosVinculacion.VinculacionOriginal.Dedicacion == "TCO") {
+					nuevaDv.Valor = dv[i].Valor
+				} else {
+					nuevaDv.Valor = desagregado[dv[i].Rubro].(float64)
 				}
 				if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
 					panic("Registrando disponibilidad -> " + err6.Error())
