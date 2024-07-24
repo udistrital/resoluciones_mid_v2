@@ -9,7 +9,7 @@ import (
 )
 
 // Envia a Titan la información necesaria para calcular el valor de un contrato desagregado por rubros
-func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcademico string) (d map[string]interface{}, outputError map[string]interface{}) {
+func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcademico string, tipoResolucion ...string) (d map[string]interface{}, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "CalcularDesagregadoTitan", "err": err, "status": "500"}
@@ -29,6 +29,11 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 		HorasSemanales: v.NumeroHorasSemanales,
 		NivelAcademico: nivelAcademico,
 	}
+
+	if len(tipoResolucion) > 0 && tipoResolucion[0] == "RCAN" {
+		datos.Cancelacion = true
+	}
+
 	if nivelAcademico == "POSGRADO" {
 		datos.NumeroSemanas = 1
 	}
