@@ -552,7 +552,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	}
 
 	if obj.ResolucionNuevaId.Dedicacion != "HCH" {
-		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico)
+		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico, tipoResolucion.CodigoAbreviacion)
 		if err != nil {
 			panic(err)
 		}
