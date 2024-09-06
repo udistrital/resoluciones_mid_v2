@@ -58,7 +58,8 @@ func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.T
 	// Segunda modificación, estrictamente por dias o semanas de 7 dias ajustando
 	// los dias sobrantes cuando el calendario academico inicia a mitad de semana
 	// de manera que la fecha de fin resultante sea a final de semana
-
+	// ahora, se debe tener en cuenta las fechas de liquidacion en titan,
+	// donde fecha fin debe ser siempre el 30 de cada mes
 	dias := numeroSemanas * 7
 	if fechaInicio.Weekday() >= 1 && numeroSemanas != 0 {
 		dias += (7 - int(fechaInicio.Weekday()))
@@ -70,6 +71,11 @@ func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.T
 		after = fechaInicio.AddDate(0, 0, dias-1)
 	} else {
 		after = fechaInicio
+	}
+
+	//Se valida que la fecha fin no sea un dia 31 para que titan no genere errores
+	if after.Day() == 31 {
+		after = after.AddDate(0, 0, -1)
 	}
 	return after
 }
