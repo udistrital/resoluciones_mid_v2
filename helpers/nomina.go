@@ -171,11 +171,6 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		contratoReliquidar.Desagregado = &valores
 
 	}
-
-	if cancelado.ResolucionVinculacionDocenteId.NivelAcademico == "POSGRADO" && cancelado.ResolucionVinculacionDocenteId.Dedicacion == "HCH" {
-		contratoReliquidar.ValorContrato = cancelado.ValorContrato - cancelacion.ValorContrato
-	}
-
 	contratoReliquidar.NivelAcademico = cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
 	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar.Desagregado)
