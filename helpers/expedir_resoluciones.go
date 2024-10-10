@@ -674,6 +674,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												ResolucionVinculacionDocenteId: ultimaVinculacon.ResolucionVinculacionDocenteId,
 												Categoria:                      ultimaVinculacon.Categoria,
 												Activo:                         true,
+												ValorPuntoSalarial:             ultimaVinculacon.ValorPuntoSalarial,
 											}
 											if nivel == "POSGRADO" {
 												horasXSemana := subcontratoAux.NumeroHorasSemanales / subcontratoAux.NumeroSemanas
@@ -714,6 +715,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												NumeroSemanas:                  modificacion.NumeroSemanas,
 												Vigencia:                       modificacion.Vigencia,
 												Categoria:                      modificacion.Categoria,
+												ValorPuntoSalarial:             modificacion.ValorPuntoSalarial,
 											}
 											if nivel == "POSGRADO" {
 												vinc[0].NumeroHorasSemanales = horasNuevo - modificacion.NumeroHorasSemanales - modificacion.NumeroHorasTrabajadas
