@@ -28,6 +28,7 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 		NumeroSemanas:  v.NumeroSemanas,
 		HorasSemanales: v.NumeroHorasSemanales,
 		NivelAcademico: nivelAcademico,
+		PuntoSalarial:  v.ValorPuntoSalarial,
 	}
 
 	if len(tipoResolucion) > 0 && tipoResolucion[0] == "RCAN" {
