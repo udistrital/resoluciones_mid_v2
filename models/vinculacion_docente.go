@@ -9,7 +9,7 @@ type VinculacionDocente struct {
 	PersonaId                      float64
 	NumeroHorasSemanales           int
 	NumeroSemanas                  int
-	PuntoSalarialId                int
+	ValorPuntoSalarial             float64
 	SalarioMinimoId                int
 	ResolucionVinculacionDocenteId *ResolucionVinculacionDocente
 	DedicacionId                   int
