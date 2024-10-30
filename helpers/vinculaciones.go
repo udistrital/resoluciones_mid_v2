@@ -231,6 +231,9 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 	}()
 
 	var vinculaciones []models.VinculacionDocente
+	var resolucion models.Resolucion
+	var tipoResolucion models.Parametro
+	var valorPunto float64
 	vigencia := strconv.Itoa(d.Vigencia)
 	for i := range d.Docentes {
 		docDocente, e1 := strconv.Atoi(d.Docentes[i].DocDocente)
@@ -255,12 +258,35 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 		}
 
 		if d.ResolucionData.NivelAcademico == "PREGRADO" {
-			puntoSalarialId, _, err := CargarParametroPeriodo(vigencia, "PSAL")
+			//1.)Validar el tipo de resolucion
+			// 1.1 ) Se obtiene la resolucion
+			url := "resolucion/" + strconv.Itoa(vinculacion.ResolucionVinculacionDocenteId.Id)
+			err := GetRequestNew("UrlCrudResoluciones", url, &resolucion)
 			if err != nil {
-				logs.Error(err)
-				panic(err)
+				outputError = map[string]interface{}{"funcion": "/ConstruirVinculaciones-res", "err": err, "status": "500"}
+				panic(outputError)
 			}
-			vinculacion.PuntoSalarialId = puntoSalarialId
+
+			// 1.2 ) Se obtiene el tipo de resolucion
+			url2 := ParametroEndpoint + strconv.Itoa(resolucion.TipoResolucionId)
+			err2 := GetRequestNew("UrlCrudParametros", url2, &tipoResolucion)
+			if err2 != nil {
+				outputError = map[string]interface{}{"funcion": "/ConstruirVinculaciones-tipores", "err": err2, "status": "500"}
+				panic(outputError)
+			}
+
+			//Se valida si es una resolucion de vinculacion
+			if tipoResolucion.CodigoAbreviacion == "RVIN" {
+				// Se aplica el valor del punto de parametros
+				fmt.Println("entra")
+				_, vP, err3 := CargarParametroPeriodo(vigencia, "PSAL")
+				if err3 != nil {
+					logs.Error(err3)
+					panic(err3)
+				}
+				valorPunto = vP
+			}
+			vinculacion.ValorPuntoSalarial = valorPunto
 		}
 		if d.ResolucionData.NivelAcademico == "POSGRADO" {
 			salarioMinimoId, _, err2 := CargarParametroPeriodo(vigencia, "SMMLV")
@@ -493,7 +519,7 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		ProyectoCurricularId:           vinculacion.ProyectoCurricularId,
 		Categoria:                      vinculacion.Categoria,
 		DependenciaAcademica:           vinculacion.DependenciaAcademica,
-		PuntoSalarialId:                vinculacion.PuntoSalarialId,
+		ValorPuntoSalarial:             vinculacion.ValorPuntoSalarial,
 		SalarioMinimoId:                vinculacion.SalarioMinimoId,
 		FechaInicio:                    obj.CambiosVinculacion.FechaInicio,
 		Activo:                         true,

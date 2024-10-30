@@ -31,12 +31,6 @@ func CalcularSalarioPrecontratacion(docentesVincular []models.VinculacionDocente
 		panic(err1)
 	}
 
-	_, puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
-	if err != nil {
-		logs.Error(err)
-		panic(err)
-	}
-
 	for x, docente := range docentesVincular {
 		p, err2 := EsDocentePlanta(strconv.Itoa(int(docente.PersonaId)))
 		if err2 != nil {
@@ -54,7 +48,7 @@ func CalcularSalarioPrecontratacion(docentesVincular []models.VinculacionDocente
 			predicados = "valor_salario_minimo(" + strconv.Itoa(int(salarioMinimo)) + "," + vigencia + ")." + "\n"
 			docente.NumeroSemanas = 1
 		} else if strings.ToLower(nivelAcademico) == "pregrado" {
-			predicados = "valor_punto(" + strconv.Itoa(int(puntoSalarial)) + "," + vigencia + ")." + "\n"
+			predicados = "valor_punto(" + strconv.Itoa(int(docente.ValorPuntoSalarial)) + "," + vigencia + ")." + "\n"
 		}
 
 		predicados = predicados + "categoria(" + strconv.FormatInt(int64(docente.PersonaId), 10) + "," + strings.ToLower(categoria) + "," + vigencia + ")." + "\n"
