@@ -29,6 +29,8 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 	var r models.Resolucion
 	var err error
 
+	var documentos []string
+
 	vigencia, _, _ := time.Now().Date()
 	vin := m.Vinculaciones
 
@@ -64,12 +66,23 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 		numeroContratos := cdve
 		fmt.Println("numeroContratos:", numeroContratos)
 		// for vinculaciones
+
+		// for _, vinculacion := range vin {
+		// 	contrato := vinculacion.ContratoGeneral
+		// 	documentos = append(documentos, strconv.Itoa(contrato.Contratista))
+		// }
+		// if err := NotificarDocentes(documentos, "Asunto", "Mensaje"); err != nil {
+		// 	fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+		// 	logs.Error(response)
+		// 	panic(err)
+		// }
 		for _, vinculacion := range vin { // For vinculaciones
 			numeroContratos = numeroContratos + 1
 			var v models.VinculacionDocente
 			url = VinculacionEndpoint + strconv.Itoa(vinculacion.VinculacionDocente.Id)
 			if err := GetRequestNew("UrlCrudResoluciones", url, &v); err == nil { // If 1.1 - vinculacion_docente
 				contrato := vinculacion.ContratoGeneral
+				documentos = append(documentos, strconv.Itoa(contrato.Contratista))
 				url = "tipo_contrato/" + strconv.Itoa(contrato.TipoContrato.Id)
 				if err := GetRequestLegacy("UrlcrudAgora", url, &tipoCon); err == nil { // If 1.1.1 - tipoContrato
 					var sup models.SupervisorContrato
@@ -300,6 +313,11 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						logs.Error(response)
 						panic(err.Error())
 					}
+				}
+				if err := NotificarDocentes(documentos, "Asunto", "Mensaje"); err != nil {
+					fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+					logs.Error(response)
+					panic(err)
 				}
 			} else { // If 1.2.1
 				fmt.Println("Error en If 1.2.1 - Cambiar estado/ (POST)!")

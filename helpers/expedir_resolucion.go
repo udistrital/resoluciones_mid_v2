@@ -79,3 +79,80 @@ func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.T
 	}
 	return after
 }
+
+func NotificarDocentes(documentos []string, asunto string, mensaje string) (outputError map[string]interface{}) {
+
+	var emailRes models.EmailResponse
+
+	if correos, err := ObtenerCorreoDocentes(documentos); err != nil {
+		fmt.Println("No se ha podido obtener los correos de los docentes", err)
+		outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err, "status": "400"}
+		return outputError
+	} else {
+		url := "email/enviarEmail"
+		batchSize := 50
+		for i := 0; i < len(correos); i += batchSize {
+			end := i + batchSize
+			if end > len(correos) {
+				end = len(correos)
+			}
+			emailBatch := correos[i:end]
+			emailBody := models.Email{
+				Destination: models.Destination{
+					ToAddresses: emailBatch,
+				},
+				Message: models.Message{
+					Body: models.Body{
+						Html: models.Content{
+							Data: "<h1>" + mensaje + "</h1>",
+						},
+						Text: models.Content{
+							Data: mensaje,
+						},
+					},
+					Subject: models.Content{
+						Data: asunto,
+					},
+					Attachments: []models.Attachment{
+						{
+							ContentType: "",
+							FileName:    "",
+							Base64File:  "",
+						},
+					},
+				},
+				SourceEmail: "pruebas@udistrital.edu.co",
+				SourceName:  "pruebas",
+			}
+			if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, &emailBody); err != nil {
+				fmt.Println("No se ha podido enviar el correo a los docentes ", err)
+				outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
+			}
+		}
+	}
+	fmt.Println("outputError", outputError)
+	return outputError
+}
+
+func ObtenerCorreoDocentes(documentos []string) (correos []string, outputError map[string]interface{}) {
+	var response struct {
+		Email string `json:"email"`
+	}
+	type Documento struct {
+		Numero string `json:"numero"`
+	}
+	var docSrtct Documento
+	for _, doc := range documentos {
+		docSrtct = Documento{Numero: doc}
+		url := "token/documentoToken"
+		if err := SendRequestLegacy("UrlMidAutenticacion", url, "POST", &response, &docSrtct); err == nil {
+			if response.Email != "" {
+				correos = append(correos, response.Email)
+			}
+		} else {
+			fmt.Println("No se ha encontrado información del usuario", err)
+			outputError = map[string]interface{}{"funcion": "/ObtenerCorreoDocentes", "err": err.Error(), "status": "404"}
+		}
+	}
+	return correos, outputError
+}
