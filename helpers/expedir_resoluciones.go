@@ -28,8 +28,10 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 	var ordenadorGasto models.OrdenadorGasto
 	var r models.Resolucion
 	var err error
-
-	var documentos []string
+	var datosCorreo []models.EmailData
+	var resv models.ResolucionVinculacionDocente
+	var dep models.Dependencia
+	var parametro models.Parametro
 
 	vigencia, _, _ := time.Now().Date()
 	vin := m.Vinculaciones
@@ -45,9 +47,15 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 		panic(err.Error())
 	}
 
+	url := "parametro/" + strconv.Itoa(r.TipoResolucionId)
+	if err := GetRequestNew("UrlcrudParametros", url, &parametro); err != nil {
+		logs.Error(err)
+		panic("Cargando tipo_resolucion -> " + err.Error())
+	}
+
 	// Cambiar en el futuro por terceros_mid/tipo/ordenadoresGasto y filtrar por dependenciaId
-	url := "ordenador_gasto?query=DependenciaId:" + strconv.Itoa(r.DependenciaId)
-	if err := GetRequestLegacy("UrlcrudCore", url, &ordenadoresGasto); err != nil {
+	url2 := "ordenador_gasto?query=DependenciaId:" + strconv.Itoa(r.DependenciaId)
+	if err := GetRequestLegacy("UrlcrudCore", url2, &ordenadoresGasto); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	} else {
@@ -61,28 +69,26 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 		}
 	}
 
+	if err := GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(m.IdResolucion), &resv); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+
+	if err := GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
+
 	url = "contrato_general/maximo_dve"
 	if err := GetRequestLegacy("UrlcrudAgora", url, &cdve); err == nil { // If 1 - consecutivo contrato_general
 		numeroContratos := cdve
 		fmt.Println("numeroContratos:", numeroContratos)
-		// for vinculaciones
-
-		// for _, vinculacion := range vin {
-		// 	contrato := vinculacion.ContratoGeneral
-		// 	documentos = append(documentos, strconv.Itoa(contrato.Contratista))
-		// }
-		// if err := NotificarDocentes(documentos, "Asunto", "Mensaje"); err != nil {
-		// 	fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
-		// 	logs.Error(response)
-		// 	panic(err)
-		// }
 		for _, vinculacion := range vin { // For vinculaciones
 			numeroContratos = numeroContratos + 1
 			var v models.VinculacionDocente
 			url = VinculacionEndpoint + strconv.Itoa(vinculacion.VinculacionDocente.Id)
 			if err := GetRequestNew("UrlCrudResoluciones", url, &v); err == nil { // If 1.1 - vinculacion_docente
 				contrato := vinculacion.ContratoGeneral
-				documentos = append(documentos, strconv.Itoa(contrato.Contratista))
 				url = "tipo_contrato/" + strconv.Itoa(contrato.TipoContrato.Id)
 				if err := GetRequestLegacy("UrlcrudAgora", url, &tipoCon); err == nil { // If 1.1.1 - tipoContrato
 					var sup models.SupervisorContrato
@@ -116,6 +122,13 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						logs.Error(err)
 						panic(err)
 					}
+					datoMensaje := models.EmailData{
+						Documento:        strconv.FormatFloat(v.PersonaId, 'f', 0, 64),
+						ContratoId:       contrato.Id,
+						Facultad:         dep.Nombre,
+						NumeroResolucion: r.NumeroResolucion,
+					}
+					datosCorreo = append(datosCorreo, datoMensaje)
 					contrato.Supervisor = &sup
 					contrato.Condiciones = "Sin condiciones"
 					url = "informacion_proveedor?query=NumDocumento:" + strconv.Itoa(contrato.Contratista)
@@ -314,11 +327,12 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						panic(err.Error())
 					}
 				}
-				if err := NotificarDocentes(documentos, "Asunto", "Mensaje"); err != nil {
-					fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
-					logs.Error(response)
-					panic(err)
-				}
+				go func() {
+					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+						fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+						logs.Error(err)
+					}
+				}()
 			} else { // If 1.2.1
 				fmt.Println("Error en If 1.2.1 - Cambiar estado/ (POST)!")
 				logs.Error(response)
@@ -410,6 +424,10 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 	var ordenadoresGasto []models.OrdenadorGasto
 	var ordenadorGasto models.OrdenadorGasto
 	var tipoCon models.TipoContrato
+	var datosCorreo []models.EmailData
+	var parametro models.Parametro
+	var resv models.ResolucionVinculacionDocente
+	var dep models.Dependencia
 	vigencia, _, _ := time.Now().Date()
 	vinc := m.Vinculaciones
 
@@ -427,14 +445,20 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 		panic("cargando resolucion -> " + err.Error())
 	}
 
+	url := "parametro/" + strconv.Itoa(resolucion.TipoResolucionId)
+	if err := GetRequestNew("UrlcrudParametros", url, &parametro); err != nil {
+		logs.Error(err)
+		panic("Cargando tipo_resolucion -> " + err.Error())
+	}
+
 	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(resolucion.TipoResolucionId), &tipoRes); err != nil {
 		logs.Error(err)
 		panic("Cargando tipo_resolucion -> " + err.Error())
 	}
 
 	// Cambiar en el futuro por terceros_mid/tipo/ordenadoresGasto y filtrar por dependenciaId
-	url := "ordenador_gasto?query=DependenciaId:" + strconv.Itoa(resolucion.DependenciaId)
-	if err := GetRequestLegacy("UrlcrudCore", url, &ordenadoresGasto); err != nil {
+	url2 := "ordenador_gasto?query=DependenciaId:" + strconv.Itoa(resolucion.DependenciaId)
+	if err := GetRequestLegacy("UrlcrudCore", url2, &ordenadoresGasto); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	} else {
@@ -447,7 +471,15 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 			}
 		}
 	}
+	if err := GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(m.IdResolucion), &resv); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
 
+	if err := GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+		logs.Error(err)
+		panic(err.Error())
+	}
 	url = "contrato_general/maximo_dve"
 	if err := GetRequestLegacy("UrlcrudAgora", url, &cdve); err == nil { // If 1 - consecutivo contrato_general
 		numeroContratos := cdve
@@ -880,6 +912,13 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 							panic(err)
 						}
 					}
+					datoMensaje := models.EmailData{
+						Documento:        strconv.FormatFloat(modificacion.PersonaId, 'f', 0, 64),
+						ContratoId:       *modificacion.NumeroContrato,
+						Facultad:         dep.Nombre,
+						NumeroResolucion: resolucion.NumeroResolucion,
+					}
+					datosCorreo = append(datosCorreo, datoMensaje)
 				}
 			} else { // If 1.1
 				fmt.Println("Error en If 1.1 - vinculacion_docente! ", err)
@@ -911,6 +950,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 						panic(err.Error())
 					}
 				}
+				go func() {
+					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+						fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+						logs.Error(err)
+					}
+				}()
 			} else {
 				fmt.Println("Error en If 2.1 - Cambiar estado/ (POST)!")
 				logs.Error(response)
@@ -941,6 +986,9 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 
 	var response interface{}
 	var usuario map[string]interface{}
+	var datosCorreo []models.EmailData
+	var parametro models.Parametro
+	var resv models.ResolucionVinculacionDocente
 	var err error
 
 	usuario, err = GetUsuario(cancelaciones[0].ContratoCancelado.Usuario)
@@ -998,14 +1046,36 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 							url = "contrato_estado"
 							if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response, &ce); err == nil { // If 5 - contrato_estado
 								var r models.Resolucion
-								url = ResolucionEndpoint + strconv.Itoa(m.IdResolucion)
-								if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil {
+								var dep models.Dependencia
+								urlRes := ResolucionEndpoint + strconv.Itoa(m.IdResolucion)
+								if err := GetRequestNew("UrlCrudResoluciones", urlRes, &r); err == nil {
+									if err := GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(r.Id), &resv); err != nil {
+										logs.Error(err)
+										panic(err.Error())
+									}
+									if err := GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err != nil {
+										logs.Error(err)
+										panic(err.Error())
+									}
+									url := "parametro/" + strconv.Itoa(r.TipoResolucionId)
+									if err := GetRequestNew("UrlcrudParametros", url, &parametro); err != nil {
+										logs.Error(err)
+										panic("Cargando tipo_resolucion -> " + err.Error())
+									}
+
+									datoMensaje := models.EmailData{
+										Documento:        strconv.FormatFloat(v.PersonaId, 'f', 0, 64),
+										ContratoId:       "",
+										Facultad:         dep.Nombre,
+										NumeroResolucion: r.NumeroResolucion,
+									}
+									datosCorreo = append(datosCorreo, datoMensaje)
 									if err := CambiarEstadoResolucion(r.Id, "REXP", can.ContratoCancelado.Usuario); err == nil {
 										r.FechaExpedicion = m.FechaExpedicion
-										if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err == nil {
+										if err := SendRequestNew("UrlCrudResoluciones", urlRes, "PUT", &response, &r); err == nil {
 											if documento, err := AlmacenarResolucionGestorDocumental(r.Id); err == nil {
 												r.NuxeoUid = documento.Enlace
-												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err == nil { // if 10
+												if err := SendRequestNew("UrlCrudResoluciones", urlRes, "PUT", &response, &r); err == nil { // if 10
 													if err := ReliquidarContratoCancelado(v, contrato); err != nil {
 														panic(err)
 													}
@@ -1057,6 +1127,12 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 			panic(err.Error())
 		}
 	}
+	go func() {
+		if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+			fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+			logs.Error(err)
+		}
+	}()
 
 	return
 }
