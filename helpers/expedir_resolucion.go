@@ -79,3 +79,82 @@ func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.T
 	}
 	return after
 }
+
+func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (outputError map[string]interface{}) {
+
+	var emailRes models.EmailResponse
+
+	if updatedDatosCorreos, err := ObtenerCorreoDocentes(datosCorreo); err != nil {
+		fmt.Println("No se ha podido obtener los correos de los docentes", err)
+		outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err, "status": "400"}
+		return outputError
+	} else {
+		var destinationsArray = []models.Destinations{}
+		for _, datoCorreo := range updatedDatosCorreos {
+			destinations := models.Destinations{
+				Destination: models.Destination{
+					ToAddresses:  []string{datoCorreo.Correo},
+					BccAddresses: nil,
+					CcAddresses:  nil,
+				},
+				ReplacementTemplateData: models.TemplateData{
+					Facultad:         datoCorreo.Facultad,
+					NumeroContrato:   datoCorreo.ContratoId,
+					NumeroResolucion: datoCorreo.NumeroResolucion,
+				},
+				Attachments: []models.Attachments{},
+			}
+			destinationsArray = append(destinationsArray, destinations)
+		}
+		emailBody := models.TemplatedEmail{
+			Source:       "notificacion_resoluciones@udistrital.edu.co",
+			Template:     "",
+			Destinations: destinationsArray,
+			DefaultTemplateData: models.TemplateData{
+				Facultad:         "",
+				NumeroContrato:   "",
+				NumeroResolucion: "",
+			},
+		}
+		if tipoResolucion == "RVIN" {
+			emailBody.Template = "RESOLUCIONES_VINCULACION_PLANTILLA"
+		} else if tipoResolucion == "RCAN" {
+			emailBody.Template = "RESOLUCIONES_CANCELACION_PLANTILLA"
+		} else if tipoResolucion == "RRED" {
+			emailBody.Template = "RESOLUCIONES_REDUCCION_PLANTILLA"
+		} else if tipoResolucion == "RADD" {
+			emailBody.Template = "RESOLUCIONES_ADICION_PLANTILLA"
+		}
+		url := "email/enviar_templated_email"
+		if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, emailBody); err != nil {
+			fmt.Println("No se ha podido enviar el correo a los docentes ", err)
+			outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
+		}
+	}
+	fmt.Println("outputError", outputError)
+	return outputError
+}
+
+func ObtenerCorreoDocentes(datosCorreo []models.EmailData) (updatedDatosCorreo []models.EmailData, outputError map[string]interface{}) {
+	var response struct {
+		Email string `json:"email"`
+	}
+	type Documento struct {
+		Numero string `json:"numero"`
+	}
+	var docSrtct Documento
+	for i, datos := range datosCorreo {
+		docSrtct = Documento{Numero: datos.Documento}
+		url := "token/documentoToken"
+		if err := SendRequestLegacy("UrlMidAutenticacion", url, "POST", &response, &docSrtct); err == nil {
+			if response.Email != "" {
+				datosCorreo[i].Correo = response.Email
+			}
+		} else {
+			fmt.Println("No se ha encontrado información del usuario", err)
+			outputError = map[string]interface{}{"funcion": "/ObtenerCorreoDocentes", "err": err.Error(), "status": "404"}
+		}
+	}
+	updatedDatosCorreo = datosCorreo
+	return updatedDatosCorreo, outputError
+}
