@@ -75,6 +75,7 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		reporteAux.ProyectoCurricular = proyectoCurricular.Nombre
 		reporteAux.CodigoProyecto = resp[i].Proyectocurricular
 		reporteAux.Facultad = facultad.Nombre
+		reporteAux.CodigoFacultad = reporte.Facultad
 		reporteFinal = append(reporteFinal, reporteAux)
 	}
 	return reporteFinal, nil
