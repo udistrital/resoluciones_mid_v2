@@ -8,7 +8,7 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
-func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.ReporteFinancieraFinal, outputError map[string]interface{}) {
+func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.ReporteFinancieraFinal2, outputError map[string]interface{}) {
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -17,7 +17,7 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		}
 	}()
 
-	var resp []models.ReporteFinanciera
+	var resp []models.ReporteFinanciera2
 	var facultad models.Dependencia
 	var proyectoCurricular models.Dependencia
 
@@ -28,7 +28,7 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		panic(outputError)
 	}
 
-	if err := SendRequestNew("UrlCrudResoluciones", "reporte_financiera", "POST", &resp, &reporte); err != nil {
+	if err := SendRequestNew("UrlCrudResoluciones", "reporte_financiera/all", "POST", &resp, &reporte); err != nil {
 		logs.Error(err)
 		panic("reporte_financiera -> " + err.Error())
 	}
@@ -38,36 +38,42 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		var infoDocente models.ObjetoDocenteTg
 		//var aux interface{}
 
-		url := "dependencia/" + strconv.Itoa(resp[i].ProyectoCurricular)
+		url := "dependencia/" + strconv.Itoa(resp[i].Proyectocurricular)
 		if err2 := GetRequestLegacy("UrlcrudOikos", url, &proyectoCurricular); err2 != nil {
 			outputError = map[string]interface{}{"funcion": "/Obtención proyecto curricular reporte", "err": err2.Error(), "status": "500"}
 			panic(outputError)
 		}
 
-		url = fmt.Sprintf("docente/%d", resp[i].Cedula)
+		url = fmt.Sprintf("docente/%d", resp[i].DocumentoDocente)
 		fmt.Println("URL ", url)
 		if err2 := GetRequestWSO2("NscrudAcademica", url, &infoDocente); err2 != nil {
 			panic(err2.Error())
 		}
-		var reporteAux models.ReporteFinancieraFinal
+		var reporteAux models.ReporteFinancieraFinal2
 		reporteAux.Id = resp[i].Id
 		reporteAux.Resolucion = resp[i].Resolucion
-		reporteAux.Cedula = resp[i].Cedula
+		reporteAux.DocumentoDocente = resp[i].DocumentoDocente
 		reporteAux.Horas = resp[i].Horas
 		reporteAux.Semanas = resp[i].Semanas
 		reporteAux.Total = resp[i].Total
 		reporteAux.Cdp = resp[i].Cdp
-		reporteAux.SueldoBasico = resp[i].SueldoBasico
-		reporteAux.PrimaNavidad = resp[i].PrimaNavidad
+		reporteAux.Rp = resp[i].Rp
+		reporteAux.Vigencia = resp[i].Vigencia
+		reporteAux.Periodo = resp[i].Periodo
+		reporteAux.NivelAcademico = resp[i].NivelAcademico
+		reporteAux.TipoVinculacion = resp[i].TipoVinculacion
+		reporteAux.Sueldobasico = resp[i].Sueldobasico
+		reporteAux.Primanavidad = resp[i].Primanavidad
 		reporteAux.Vacaciones = resp[i].Vacaciones
-		reporteAux.PrimaVacaciones = resp[i].PrimaVacaciones
+		reporteAux.Primavacaciones = resp[i].Primavacaciones
 		reporteAux.Cesantias = resp[i].Cesantias
-		reporteAux.InteresesCesantias = resp[i].InteresesCesantias
-		reporteAux.PrimaServicios = resp[i].PrimaServicios
-		reporteAux.BonificacionServicios = resp[i].BonificacionServicios
+		reporteAux.TipoResolucion = resp[i].TipoResolucion
+		reporteAux.Interesescesantias = resp[i].Interesescesantias
+		reporteAux.Primaservicios = resp[i].Primaservicios
+		reporteAux.Bonificacionservicios = resp[i].Bonificacionservicios
 		reporteAux.Nombre = infoDocente.DocenteTg.Docente[0].Nombre
 		reporteAux.ProyectoCurricular = proyectoCurricular.Nombre
-		reporteAux.CodigoProyecto = resp[i].ProyectoCurricular
+		reporteAux.CodigoProyecto = resp[i].Proyectocurricular
 		reporteAux.Facultad = facultad.Nombre
 		reporteFinal = append(reporteFinal, reporteAux)
 	}

@@ -2479,10 +2479,6 @@
                     "type": "integer",
                     "format": "int64"
                 },
-                "PuntoSalarialId": {
-                    "type": "integer",
-                    "format": "int64"
-                },
                 "ResolucionVinculacionDocenteId": {
                     "$ref": "#/definitions/models.ResolucionVinculacionDocente"
                 },
@@ -2491,6 +2487,10 @@
                     "format": "int64"
                 },
                 "ValorContrato": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "ValorPuntoSalarial": {
                     "type": "number",
                     "format": "double"
                 },
