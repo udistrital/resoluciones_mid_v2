@@ -91,6 +91,7 @@ type ReporteFinancieraFinal2 struct {
 	Nombre                string
 	ProyectoCurricular    string
 	CodigoProyecto        int
+	CodigoFacultad        int
 	Facultad              string
 }
 
