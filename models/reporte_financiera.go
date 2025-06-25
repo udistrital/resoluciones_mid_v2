@@ -41,6 +41,59 @@ type ReporteFinancieraFinal struct {
 	Facultad              string
 }
 
+type ReporteFinanciera2 struct {
+	Id                    int
+	Resolucion            string
+	Vigencia              int
+	Periodo               int
+	NivelAcademico        string
+	TipoVinculacion       string
+	DocumentoDocente      int
+	Horas                 float64
+	Semanas               int
+	Total                 float64
+	Cdp                   int
+	Rp                    int
+	Proyectocurricular    int
+	TipoResolucion        string
+	Sueldobasico          float64
+	Primanavidad          float64
+	Vacaciones            float64
+	Primavacaciones       float64
+	Cesantias             float64
+	Interesescesantias    float64
+	Primaservicios        float64
+	Bonificacionservicios float64
+}
+
+type ReporteFinancieraFinal2 struct {
+	Id                    int
+	Resolucion            string
+	Vigencia              int
+	Periodo               int
+	NivelAcademico        string
+	TipoVinculacion       string
+	DocumentoDocente      int
+	Horas                 float64
+	Semanas               int
+	Total                 float64
+	Cdp                   int
+	Rp                    int
+	TipoResolucion        string
+	Sueldobasico          float64
+	Primanavidad          float64
+	Vacaciones            float64
+	Primavacaciones       float64
+	Cesantias             float64
+	Interesescesantias    float64
+	Primaservicios        float64
+	Bonificacionservicios float64
+	Nombre                string
+	ProyectoCurricular    string
+	CodigoProyecto        int
+	Facultad              string
+}
+
 type ObjetoDocenteTg struct {
 	DocenteTg struct {
 		Docente []Docente `json:"docente"`
