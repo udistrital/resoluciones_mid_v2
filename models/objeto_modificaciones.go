@@ -22,3 +22,10 @@ type CambioVinculacion struct {
 	DocPresupuestal       *DocumentoPresupuestal
 	VinculacionOriginal   *Vinculaciones
 }
+
+type ObjetoNovedad struct {
+	SemanasNuevas               int
+	TipoResolucion              string
+	VinculacionOriginal         string
+	VigenciaVinculacionOriginal int
+}

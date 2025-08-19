@@ -578,7 +578,18 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	}
 
 	if obj.ResolucionNuevaId.Dedicacion != "HCH" {
-		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico, tipoResolucion.CodigoAbreviacion)
+		var objetoNovedad models.ObjetoNovedad
+		objetoNovedad.TipoResolucion = tipoResolucion.CodigoAbreviacion
+		/* se necesita obtener la diferencia del desagregado a restar a la vinculacion original pero la aplicacion de porcentajes depende de cuantas semanas quedara
+		durando el contrato despues de la cancelacion*/
+		if obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas-obj.CambiosVinculacion.NumeroSemanas < 0 {
+			objetoNovedad.SemanasNuevas = 0
+		} else {
+			objetoNovedad.SemanasNuevas = obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas - obj.CambiosVinculacion.NumeroSemanas
+		}
+		objetoNovedad.VinculacionOriginal = obj.CambiosVinculacion.VinculacionOriginal.NumeroContrato
+		objetoNovedad.VigenciaVinculacionOriginal = obj.CambiosVinculacion.VinculacionOriginal.Vigencia
+		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico, &objetoNovedad)
 		if err != nil {
 			panic(err)
 		}
@@ -602,13 +613,9 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 					Activo:               true,
 					Valor:                0,
 				}
-				// Se coloca la validacion de prima de servicios para la reduccion del contrato de un TCO a
-				// Menos de 24 semanas
-				if (dv[i].Rubro == "PrimaServicios") && ((obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas-obj.CambiosVinculacion.NumeroSemanas < 24) && obj.CambiosVinculacion.VinculacionOriginal.Dedicacion == "TCO") {
-					nuevaDv.Valor = dv[i].Valor
-				} else {
-					nuevaDv.Valor = desagregado[dv[i].Rubro].(float64)
-				}
+
+				nuevaDv.Valor = desagregado[dv[i].Rubro].(float64)
+
 				if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
 					panic("Registrando disponibilidad -> " + err6.Error())
 				}
