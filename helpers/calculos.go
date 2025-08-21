@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego/logs"
 	. "github.com/udistrital/golog"
@@ -123,6 +124,12 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 
 	vigencia := strconv.Itoa(d[0].Vigencia)
 
+	predicadosPrestaciones, err := obtenerReglasDesagregado()
+	if err != nil {
+		logs.Error(err)
+		panic(err)
+	}
+
 	_, puntoSalarial, err := CargarParametroPeriodo(vigencia, "PSAL")
 	if err != nil {
 		logs.Error(err)
@@ -154,6 +161,7 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 	}
 
 	predicadosBase := "valor_punto(" + fmt.Sprintf("%.f", puntoSalarial) + ", " + vigencia + ").\n"
+	predicadosBase = predicadosBase + predicadosPrestaciones
 	predicadosBase = predicadosBase + "valor_salario_minimo(" + fmt.Sprintf("%.f", salarioMinimo) + ", " + vigencia + ").\n"
 	predicadosBase = predicadosBase + "sueldo_basico(N,D,C,V,S):-(N==pregrado->valor_punto(X,V);valor_salario_minimo(X,V)),factor(N,D,C,Y,V),(D==tco->T is Y*(X/160);D==mto->T is Y*(X/80);T is X*Y),S is T.\n"
 	predicadosBase = predicadosBase + "subrubro_desagregado(N,D,C,V,CP,R):-sueldo_basico(N,D,C,V,S),porcentaje_devengo_v2(V,CP,X), T is S * X, R is (T rnd 0).\n"
@@ -296,4 +304,48 @@ func FormatoReglas(v []models.Predicado) (reglas string) {
 		reglas = reglas + arregloReglas[i] + "\n"
 	}
 	return
+}
+
+// Genera las reglas de porcentajes de desagregado
+func obtenerReglasDesagregado() (predicadosString string, outputError map[string]interface{}) {
+	// se debe obtener desde parametros los valores de porcentaje de prestaciones y cargar los predicados dinamicos
+	// obtener el periodo vigente para app de resoluciones
+	// contemplar agregar el aplicacion_id para crear periodos exclusivos para resoluciones
+	var predicados []models.Predicado
+	var periodo []models.Periodo
+	anoActual := time.Now().Year()
+	url1 := "/periodo?limit=-1&query=year:" + strconv.Itoa(anoActual) + ",codigo_abreviacion:PA,activo:true"
+	if err1 := GetRequestNew("UrlcrudParametros", url1, &periodo); err1 == nil {
+		var parametro []models.Parametro
+		url2 := "/parametro?limit=-1&query=codigo_abreviacion:PDVE,activo:true"
+		if err2 := GetRequestNew("UrlcrudParametros", url2, &parametro); err2 == nil {
+			var parametroPeriodo []models.ParametroPeriodo
+			url3 := "/parametro_periodo?limit=-1&query=parametro_id:" + strconv.Itoa(parametro[0].Id) + ",periodo_id:" + strconv.Itoa(periodo[0].Id) + ",activo:true"
+			if err3 := GetRequestNew("UrlcrudParametros", url3, &parametroPeriodo); err3 == nil {
+				for _, pp := range parametroPeriodo {
+					var valores map[string]map[string]float64
+					json.Unmarshal([]byte(pp.Valor), &valores)
+					for concepto, porcentajes := range valores {
+						if mayor, ok := porcentajes["porcentaje_mayor"]; ok {
+							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_mayor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", mayor) + ")."})
+						}
+						if menor, ok := porcentajes["porcentaje_menor"]; ok {
+							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_menor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", menor) + ")."})
+						}
+					}
+				}
+			} else {
+				outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err3.Error(), "status": "500"}
+				return predicadosString, outputError
+			}
+		} else {
+			outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err2.Error(), "status": "500"}
+			return predicadosString, outputError
+		}
+	} else {
+		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err1.Error(), "status": "500"}
+		return predicadosString, outputError
+	}
+	predicadosString = FormatoReglas(predicados)
+	return predicadosString, outputError
 }
