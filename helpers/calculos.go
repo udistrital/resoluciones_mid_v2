@@ -320,11 +320,10 @@ func FormatoReglas(v []models.Predicado) (reglas string) {
 func obtenerReglasDesagregado() (predicadosString string, outputError map[string]interface{}) {
 	// se debe obtener desde parametros los valores de porcentaje de prestaciones y cargar los predicados dinamicos
 	// obtener el periodo vigente para app de resoluciones
-	// contemplar agregar el aplicacion_id para crear periodos exclusivos para resoluciones
 	var predicados []models.Predicado
 	var periodo []models.Periodo
 	anoActual := time.Now().Year()
-	url1 := "/periodo?limit=-1&query=year:" + strconv.Itoa(anoActual) + ",codigo_abreviacion:PA,activo:true"
+	url1 := "/periodo?limit=-1&query=year:" + strconv.Itoa(anoActual) + ",codigo_abreviacion:PA,activo:true,aplicacion_id:30"
 	if err1 := GetRequestNew("UrlcrudParametros", url1, &periodo); err1 == nil {
 		var parametro []models.Parametro
 		url2 := "/parametro?limit=-1&query=codigo_abreviacion:PDVE,activo:true"
