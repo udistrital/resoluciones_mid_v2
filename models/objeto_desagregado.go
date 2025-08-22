@@ -6,4 +6,5 @@ type ObjetoDesagregado struct {
 	Categoria      string
 	NivelAcademico string
 	EsDePlanta     bool
+	Semanas        int
 }
