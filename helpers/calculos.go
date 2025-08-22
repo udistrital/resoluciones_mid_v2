@@ -164,7 +164,8 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 	predicadosBase = predicadosBase + predicadosPrestaciones
 	predicadosBase = predicadosBase + "valor_salario_minimo(" + fmt.Sprintf("%.f", salarioMinimo) + ", " + vigencia + ").\n"
 	predicadosBase = predicadosBase + "sueldo_basico(N,D,C,V,S):-(N==pregrado->valor_punto(X,V);valor_salario_minimo(X,V)),factor(N,D,C,Y,V),(D==tco->T is Y*(X/160);D==mto->T is Y*(X/80);T is X*Y),S is T.\n"
-	predicadosBase = predicadosBase + "subrubro_desagregado(N,D,C,V,CP,R):-sueldo_basico(N,D,C,V,S),porcentaje_devengo_v2(V,CP,X), T is S * X, R is (T rnd 0).\n"
+	predicadosBase = predicadosBase + "porcentaje_concepto_v2(P, CO, T, UT, R) :- (UT = semanas -> (T @>= 24.0 -> porcentaje_devengo_v2_mayor(P, CO, V) ; porcentaje_devengo_v2_menor(P, CO, V)) ; UT = meses -> (T @>= 6.0 -> porcentaje_devengo_v2_mayor(P, CO, V) ; porcentaje_devengo_v2_menor(P, CO, V))), R is V.\n"
+	predicadosBase = predicadosBase + "subrubro_desagregado(N,D,C,V,T,CP,R):-sueldo_basico(N,D,C,V,S),porcentaje_concepto_v2(V, CP, T, semanas, X), CO is S * X, R is (CO rnd 0).\n"
 	predicadosBase = predicadosBase + "subrubro_desagregado2(N,D,C,V,CP,R):-sueldo_basico(N,D,C,V,S),concepto_aporte(CP,X,planta,2388),T is S * X, R is (T rnd 0).\n"
 	predicadosBase = predicadosBase + "subrubro_salud(N,D,C,V,R):-sueldo_basico(N,D,C,V,S),salud(V,X),T is S * (X/100), R is (T rnd 0).\n"
 
@@ -202,12 +203,21 @@ func CalcularComponentesSalario(d []models.ObjetoDesagregado) (d2 []map[string]i
 			strings.ToLower(obj.NivelAcademico) + "," +
 			strings.ToLower(obj.Dedicacion) + "," +
 			strings.ToLower(obj.Categoria) + "," +
-			vigencia + ",CP,R).")
+			vigencia + "," +
+			strconv.Itoa(int(obj.Semanas)) +
+			",CP,R).")
 
 		for _, res := range prestaciones {
 			nombre := fmt.Sprintf("%s", res.ByName_("CP"))
+			parts := strings.Split(nombre, "_")
+			for i := 1; i < len(parts); i++ {
+				if len(parts[i]) > 0 {
+					parts[i] = strings.Title(parts[i])
+				}
+			}
+			n := strings.Join(parts, "")
 			valor, _ := strconv.ParseFloat(fmt.Sprintf("%s", res.ByName_("R")), 64)
-			resultado[nombre] = valor
+			resultado[n] = valor
 		}
 
 		aportes := m.ProveAll("subrubro_desagregado2(" +
@@ -327,10 +337,10 @@ func obtenerReglasDesagregado() (predicadosString string, outputError map[string
 					json.Unmarshal([]byte(pp.Valor), &valores)
 					for concepto, porcentajes := range valores {
 						if mayor, ok := porcentajes["porcentaje_mayor"]; ok {
-							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_mayor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", mayor) + ")."})
+							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_devengo_v2_mayor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", mayor) + ")."})
 						}
 						if menor, ok := porcentajes["porcentaje_menor"]; ok {
-							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_menor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", menor) + ")."})
+							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_devengo_v2_menor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", menor) + ")."})
 						}
 					}
 				}
