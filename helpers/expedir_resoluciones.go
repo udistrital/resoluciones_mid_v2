@@ -228,7 +228,8 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 									ai.Descripcion = acta.Descripcion
 									ai.FechaInicio = acta.FechaInicio
 									ai.FechaFin = acta.FechaFin
-									ai.FechaFin = CalcularFechaFin(acta.FechaInicio, v.NumeroSemanas)
+									fechasContrato := CalcularFechasContrato(acta.FechaInicio, v.NumeroSemanas)
+									ai.FechaFin = fechasContrato.FechaFinPago
 									ai.FechaRegistro = time.Now()
 									ai.Usuario = usuario["documento_compuesto"].(string)
 									var response3 models.ActaInicio
@@ -835,7 +836,8 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										ai.Vigencia = vigencia
 										ai.Descripcion = acta.Descripcion
 										ai.FechaInicio = modificacion.FechaInicio
-										ai.FechaFin = CalcularFechaFin(modificacion.FechaInicio, modificacion.NumeroSemanas-1)
+										fechasContrato := CalcularFechasContrato(modificacion.FechaInicio, modificacion.NumeroSemanas)
+										ai.FechaFin = fechasContrato.FechaFinPago
 										ai.Usuario = usuario["documento_compuesto"].(string)
 										ai.FechaRegistro = time.Now()
 										if err := SendRequestLegacy("UrlcrudAgora", "acta_inicio", "POST", &response, &ai); err == nil { // If 1.10 - acta_inicio (POST)

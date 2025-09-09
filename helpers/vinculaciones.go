@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -717,7 +716,8 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 		if parametro.CodigoAbreviacion == "RADD" || parametro.CodigoAbreviacion == "RRED" {
 			semanasFinales -= 1
 		}
-		p.CambiosVinculacion[i].FechaInicio = CalcularFechaFin(actaInicio[0].FechaInicio, semanasFinales)
+		fechasContrato := CalcularFechasContrato(actaInicio[0].FechaInicio, semanasFinales)
+		p.CambiosVinculacion[i].FechaInicio = fechasContrato.FechaFinPago
 		cancelacion := models.ObjetoModificaciones{
 			CambiosVinculacion:       &p.CambiosVinculacion[i],
 			ResolucionNuevaId:        p.ResolucionNuevaId,
@@ -813,8 +813,7 @@ func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigenci
 		return numeroSemanas, err
 	}
 	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
-	dif := diferencia.Hours() / (24 * 7)
-	numeroSemanas = int(math.Ceil(dif))
+	numeroSemanas = int(diferencia.Hours()/24/7) + 1
 	return
 }
 
