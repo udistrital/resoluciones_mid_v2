@@ -254,6 +254,9 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 												v.NumeroContrato = &aux1
 												v.Vigencia = aux2
 												v.FechaInicio = acta.FechaInicio
+												if fecha := NormalizarFechaTimezone(&v.FechaInicio); fecha != nil {
+													v.FechaInicio = *fecha
+												}
 												url = VinculacionEndpoint + strconv.Itoa(v.Id)
 												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &v); err != nil { // If 1.1.10 - vinculacion_docente
 													fmt.Println("Error en If 1.1.10 - vinculacion_docente!")
@@ -309,6 +312,7 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 		if err := GetRequestNew("UrlCrudResoluciones", url, &r); err == nil { // 1.2 - resolucion/
 			if err := CambiarEstadoResolucion(r.Id, "REXP", m.Usuario); err == nil {
 				r.FechaExpedicion = m.FechaExpedicion
+				r.FechaInicio, r.FechaFin = NormalizarFechasResolucion(r.FechaInicio, r.FechaFin)
 				url = ResolucionEndpoint + strconv.Itoa(r.Id)
 				if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 1.2.1
 					fmt.Println("Error en If 1.2.1 - resolucion/ (PUT)!")
@@ -328,12 +332,12 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						panic(err.Error())
 					}
 				}
-				go func() {
-					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-						fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
-						logs.Error(err)
-					}
-				}()
+				// go func() {
+				// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+				// 		fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+				// 		logs.Error(err)
+				// 	}
+				// }()
 			} else { // If 1.2.1
 				fmt.Println("Error en If 1.2.1 - Cambiar estado/ (POST)!")
 				logs.Error(response)
@@ -859,6 +863,9 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 													fmt.Println(&numContrato)
 													fmt.Println("modificacion ", modificacion)
 													url = VinculacionEndpoint + strconv.Itoa(modificacion.Id)
+													if fecha := NormalizarFechaTimezone(&modificacion.FechaInicio); fecha != nil {
+														modificacion.FechaInicio = *fecha
+													}
 													if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &modificacion); err != nil {
 														fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
 														logs.Error(response)
@@ -1074,6 +1081,9 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 									datosCorreo = append(datosCorreo, datoMensaje)
 									if err := CambiarEstadoResolucion(r.Id, "REXP", can.ContratoCancelado.Usuario); err == nil {
 										r.FechaExpedicion = m.FechaExpedicion
+										if fecha := NormalizarFechaTimezone(r.FechaInicio); fecha != nil {
+											r.FechaInicio = fecha
+										}
 										if err := SendRequestNew("UrlCrudResoluciones", urlRes, "PUT", &response, &r); err == nil {
 											if documento, err := AlmacenarResolucionGestorDocumental(r.Id); err == nil {
 												r.NuxeoUid = documento.Enlace

@@ -524,6 +524,10 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		Activo:                         true,
 	}
 
+	if fecha := NormalizarFechaTimezone(&nuevaVinculacion.FechaInicio); fecha != nil {
+		nuevaVinculacion.FechaInicio = *fecha
+	}
+
 	vin = append(vin, nuevaVinculacion)
 	//fmt.Println("VIN ", vin)
 	// calculo del valor del contrato para la nueva vinculación
@@ -813,7 +817,11 @@ func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigenci
 		return numeroSemanas, err
 	}
 	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
-	numeroSemanas = int(diferencia.Hours()/24/7) + 1
+	if diferencia < 1 {
+		numeroSemanas = 0
+	} else {
+		numeroSemanas = int(diferencia.Hours()/24/7) + 1
+	}
 	return
 }
 
