@@ -1983,6 +1983,10 @@
                 "NivelAcademico": {
                     "type": "string"
                 },
+                "Semanas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "Vigencia": {
                     "type": "integer",
                     "format": "int64"
