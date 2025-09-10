@@ -185,9 +185,9 @@ func (c *GestionPlantillasController) CalculoFechaFin() {
 	var m models.FechaFin
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if fechaFin := helpers.CalcularFechaFin(m.FechaInicio, m.NumeroSemanas); err == nil {
+		if fechaFin := helpers.CalcularFechasContrato(m.FechaInicio, m.NumeroSemanas); err == nil {
 			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Plantilla insertada con exito", "Data": fechaFin}
+			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Fechas Calculadas con Exito", "Data": fechaFin}
 		} else {
 			panic(err)
 		}

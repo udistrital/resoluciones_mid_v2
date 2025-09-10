@@ -34,55 +34,86 @@ func SupervisorActual(dependenciaId int) (supervisorActual models.SupervisorCont
 
 }
 
-// Calcula la fecha de fin de un contrato a partir de la fecha de inicio y el numero de semanas
-func CalcularFechaFin(fechaInicio time.Time, numeroSemanas int) (fechaFin time.Time) {
+func calcularSemanasContratoDVE(FechaInicio time.Time, FechaFin time.Time) (semanas float64) {
+	var a, m, d int
+	var mesesContrato float64
+	if FechaFin.IsZero() {
+		FechaFin2 := time.Now()
+		a, m, d = diff(FechaInicio, FechaFin2)
+		mesesContrato = (float64(a * 12)) + float64(m) + (float64(d) / 30)
 
-	// Versión original con meses de 4 semanas
-	// meses = float32(numeroSemanas) / 4
-	// entero = int(meses)
-	// decimal = meses - float32(entero)
-	// numero_dias := ((decimal * 4) * 7)
-	// f := fecha_inicio
-	// after := f.AddDate(0, entero, int(numero_dias))
-
-	// Primera modificación con meses de 30 dias estrictos
-	// var mesEntero, dias int
-	// var decimal, meses float32
-	// dias = numeroSemanas * 7
-	// meses = float32(dias) / 30
-	// mesEntero = int(meses)
-	// decimal = meses - float32(mesEntero)
-	// numeroDias := decimal * 30
-	// after := fechaInicio.AddDate(0, mesEntero, int(numeroDias)-1)
-
-	// Segunda modificación, estrictamente por dias o semanas de 7 dias ajustando
-	// los dias sobrantes cuando el calendario academico inicia a mitad de semana
-	// de manera que la fecha de fin resultante sea a final de semana
-	// ahora, se debe tener en cuenta las fechas de liquidacion en titan,
-	// donde fecha fin debe ser siempre el 30 de cada mes
-	dias := numeroSemanas * 7
-	if fechaInicio.Weekday() >= 1 && numeroSemanas != 0 {
-		dias += (7 - int(fechaInicio.Weekday()))
-	} /*else {
-		dias -= int(fechaInicio.Weekday())
-	}*/
-	var after time.Time
-	if numeroSemanas != 0 {
-		after = fechaInicio.AddDate(0, 0, dias-1)
 	} else {
-		after = fechaInicio
+		a, m, d = diff(FechaInicio, FechaFin)
+		fmt.Println("a ", a)
+		fmt.Println("m ", m)
+		// dia inclusivo
+		d += 1
+		fmt.Println("d ", d)
+		if d == 22 {
+			d += 1
+		}
+		mesesContrato = (float64(a * 12)) + float64(m) + (float64(d) / 30)
+	}
+	fmt.Println(float64(int(mesesContrato)))
+	if mesesContrato/float64(int(mesesContrato)) != 1 {
+		return (mesesContrato * 4) + 1
+	} else {
+		return (mesesContrato * 4)
+	}
+}
+
+// CalcularFechasContrato calcula la fecha de fin de un contrato a partir de la fecha de inicio y el numero de semanas
+// Calcula las fechas reales del contrato y las fechas ajustadas para TITAN
+// Ajusta la fecha inicio y fin para que inicie un lunes
+func CalcularFechasContrato(fechaInicio time.Time, numeroSemanas int) models.FechasContrato {
+	var resultado models.FechasContrato
+
+	// Guardar fechas reales (calendario normal)
+	resultado.FechaInicioReal = fechaInicio
+	dias := numeroSemanas * 7
+	resultado.FechaFinReal = fechaInicio.AddDate(0, 0, dias)
+	resultado.SemanasReales = float64(dias) / 7
+
+	// Inicializar fechas de pago
+	resultado.FechaInicioPago = fechaInicio
+
+	// Si la fecha no es lunes, ajustar al próximo lunes
+	if resultado.FechaInicioPago.Weekday() != time.Monday {
+		// Calcular días hasta el próximo lunes
+		diasHastaLunes := int(time.Monday - resultado.FechaInicioPago.Weekday())
+		if diasHastaLunes <= 0 {
+			diasHastaLunes += 7
+		}
+		resultado.FechaInicioPago = resultado.FechaInicioPago.AddDate(0, 0, diasHastaLunes)
 	}
 
-	//Se valida que la fecha fin no sea un dia 31 para que titan no genere errores
-	if after.Day() == 31 {
-		after = after.AddDate(0, 0, -1)
+	// Ajustar fecha inicio si cae en 31
+	// if resultado.FechaInicioPago.Day() == 31 {
+	// 	resultado.FechaInicioPago = resultado.FechaInicioPago.AddDate(0, 0, 1)
+	// }
+
+	// Calcular la fecha fin de pago basada en el número exacto de semanas
+	diasPago := numeroSemanas * 7
+	resultado.FechaFinPago = resultado.FechaInicioPago.AddDate(0, 0, diasPago-1) // -1 porque el día inicial cuenta
+
+	// Si cae en 31, ajustar al 30
+	if resultado.FechaFinPago.Day() == 31 {
+		resultado.FechaFinPago = resultado.FechaFinPago.AddDate(0, 0, -1)
 	}
-	return after
+
+	// Calcular las semanas reales (que serán iguales al número de semanas solicitado)
+	diasDiferencia := resultado.FechaFinPago.Sub(resultado.FechaInicioPago).Hours() / 24
+	resultado.SemanasPagoReales = (diasDiferencia + 1) / 7 // +1 para incluir el día inicial
+
+	// Las semanas DVE serán iguales a las reales porque las fechas están alineadas
+	resultado.SemanasPagoDve = calcularSemanasContratoDVE(resultado.FechaInicioPago, resultado.FechaFinPago)
+
+	return resultado
 }
 
 func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (outputError map[string]interface{}) {
 
-	var emailRes models.EmailResponse
+	// var emailRes models.EmailResponse
 
 	if updatedDatosCorreos, err := ObtenerCorreoDocentes(datosCorreo); err != nil {
 		fmt.Println("No se ha podido obtener los correos de los docentes", err)
@@ -125,11 +156,11 @@ func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (o
 		} else if tipoResolucion == "RADD" {
 			emailBody.Template = "RESOLUCIONES_ADICION_PLANTILLA"
 		}
-		url := "email/enviar_templated_email"
-		if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, emailBody); err != nil {
-			fmt.Println("No se ha podido enviar el correo a los docentes ", err)
-			outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
-		}
+		// url := "email/enviar_templated_email"
+		// if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, emailBody); err != nil {
+		// 	fmt.Println("No se ha podido enviar el correo a los docentes ", err)
+		// 	outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
+		// }
 	}
 	fmt.Println("outputError", outputError)
 	return outputError

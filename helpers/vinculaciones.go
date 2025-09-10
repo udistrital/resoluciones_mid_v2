@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -525,6 +524,10 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 		Activo:                         true,
 	}
 
+	if fecha := NormalizarFechaTimezone(&nuevaVinculacion.FechaInicio); fecha != nil {
+		nuevaVinculacion.FechaInicio = *fecha
+	}
+
 	vin = append(vin, nuevaVinculacion)
 	//fmt.Println("VIN ", vin)
 	// calculo del valor del contrato para la nueva vinculación
@@ -578,7 +581,18 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	}
 
 	if obj.ResolucionNuevaId.Dedicacion != "HCH" {
-		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico, tipoResolucion.CodigoAbreviacion)
+		var objetoNovedad models.ObjetoNovedad
+		objetoNovedad.TipoResolucion = tipoResolucion.CodigoAbreviacion
+		/* se necesita obtener la diferencia del desagregado a restar a la vinculacion original pero la aplicacion de porcentajes depende de cuantas semanas quedara
+		durando el contrato despues de la cancelacion*/
+		if obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas-obj.CambiosVinculacion.NumeroSemanas < 0 {
+			objetoNovedad.SemanasNuevas = 0
+		} else {
+			objetoNovedad.SemanasNuevas = obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas - obj.CambiosVinculacion.NumeroSemanas
+		}
+		objetoNovedad.VinculacionOriginal = obj.CambiosVinculacion.VinculacionOriginal.NumeroContrato
+		objetoNovedad.VigenciaVinculacionOriginal = obj.CambiosVinculacion.VinculacionOriginal.Vigencia
+		desagregado, err = CalcularDesagregadoTitan(*vinc, obj.ResolucionNuevaId.Dedicacion, obj.ResolucionNuevaId.NivelAcademico, &objetoNovedad)
 		if err != nil {
 			panic(err)
 		}
@@ -602,13 +616,9 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 					Activo:               true,
 					Valor:                0,
 				}
-				// Se coloca la validacion de prima de servicios para la reduccion del contrato de un TCO a
-				// Menos de 24 semanas
-				if (dv[i].Rubro == "PrimaServicios") && ((obj.CambiosVinculacion.VinculacionOriginal.NumeroSemanas-obj.CambiosVinculacion.NumeroSemanas < 24) && obj.CambiosVinculacion.VinculacionOriginal.Dedicacion == "TCO") {
-					nuevaDv.Valor = dv[i].Valor
-				} else {
-					nuevaDv.Valor = desagregado[dv[i].Rubro].(float64)
-				}
+
+				nuevaDv.Valor = desagregado[dv[i].Rubro].(float64)
+
 				if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
 					panic("Registrando disponibilidad -> " + err6.Error())
 				}
@@ -710,7 +720,8 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 		if parametro.CodigoAbreviacion == "RADD" || parametro.CodigoAbreviacion == "RRED" {
 			semanasFinales -= 1
 		}
-		p.CambiosVinculacion[i].FechaInicio = CalcularFechaFin(actaInicio[0].FechaInicio, semanasFinales)
+		fechasContrato := CalcularFechasContrato(actaInicio[0].FechaInicio, semanasFinales)
+		p.CambiosVinculacion[i].FechaInicio = fechasContrato.FechaFinPago
 		cancelacion := models.ObjetoModificaciones{
 			CambiosVinculacion:       &p.CambiosVinculacion[i],
 			ResolucionNuevaId:        p.ResolucionNuevaId,
@@ -806,8 +817,11 @@ func CalcularNumeroSemanas(fechaInicio time.Time, NumeroContrato string, Vigenci
 		return numeroSemanas, err
 	}
 	diferencia := actaInicio[0].FechaFin.Sub(fechaInicio)
-	dif := diferencia.Hours() / (24 * 7)
-	numeroSemanas = int(math.Ceil(dif))
+	if diferencia < 1 {
+		numeroSemanas = 0
+	} else {
+		numeroSemanas = int(diferencia.Hours()/24/7) + 1
+	}
 	return
 }
 
