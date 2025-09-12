@@ -94,7 +94,11 @@ func CalcularFechasContrato(fechaInicio time.Time, numeroSemanas int) models.Fec
 
 	// Calcular la fecha fin de pago basada en el número exacto de semanas
 	diasPago := numeroSemanas * 7
-	resultado.FechaFinPago = resultado.FechaInicioPago.AddDate(0, 0, diasPago-1) // -1 porque el día inicial cuenta
+	if diasPago == 0 {
+		resultado.FechaFinPago = resultado.FechaInicioPago
+	} else {
+		resultado.FechaFinPago = resultado.FechaInicioPago.AddDate(0, 0, diasPago-1) // -1 porque el día inicial cuenta
+	}
 
 	// Si cae en 31, ajustar al 30
 	if resultado.FechaFinPago.Day() == 31 {
