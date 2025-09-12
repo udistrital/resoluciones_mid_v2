@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/astaxie/beego/logs"
@@ -81,7 +82,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 
 	desagregadoMap := map[string]float64{}
 	if v.ResolucionVinculacionDocenteId.Dedicacion == "HCH" {
-		preliquidacion.ValorContrato = v.ValorContrato
+		preliquidacion.ValorContrato = math.Floor(v.ValorContrato)
 		preliquidacion.TipoNominaId = 409
 	} else {
 		for _, d := range desagregado {
