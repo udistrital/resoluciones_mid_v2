@@ -521,7 +521,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 					contrato.TipologiaContrato = 46
 					contrato.FechaRegistro = time.Now()
 					contrato.UnidadEjecutora = 1
-					contrato.ValorContrato = modificacion.ValorContrato
+					contrato.ValorContrato = math.Floor(modificacion.ValorContrato)
 					contrato.OrdenadorGasto = ordenadorGasto.Id
 					sup, err := SupervisorActual(resolucion.DependenciaId)
 					if err != nil {
@@ -791,7 +791,7 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												valorPagado := valorDiario * diasTranscurridos
 												salario = salario - valorPagado
 											}*/
-											contrato.ValorContrato = salario
+											contrato.ValorContrato = math.Floor(salario)
 											beego.Info(contrato.ValorContrato)
 											// el subcontrato actual es reducido parcialmente y los siguientes no deben ser afectados
 											var desagregadoNuevo, err2 map[string]interface{}
