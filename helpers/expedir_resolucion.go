@@ -117,7 +117,7 @@ func CalcularFechasContrato(fechaInicio time.Time, numeroSemanas int) models.Fec
 
 func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (outputError map[string]interface{}) {
 
-	// var emailRes models.EmailResponse
+	var emailRes models.EmailResponse
 
 	if updatedDatosCorreos, err := ObtenerCorreoDocentes(datosCorreo); err != nil {
 		fmt.Println("No se ha podido obtener los correos de los docentes", err)
@@ -160,11 +160,11 @@ func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (o
 		} else if tipoResolucion == "RADD" {
 			emailBody.Template = "RESOLUCIONES_ADICION_PLANTILLA"
 		}
-		// url := "email/enviar_templated_email"
-		// if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, emailBody); err != nil {
-		// 	fmt.Println("No se ha podido enviar el correo a los docentes ", err)
-		// 	outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
-		// }
+		url := "email/enviar_templated_email"
+		if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, emailBody); err != nil {
+			fmt.Println("No se ha podido enviar el correo a los docentes ", err)
+			outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
+		}
 	}
 	fmt.Println("outputError", outputError)
 	return outputError
