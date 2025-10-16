@@ -332,12 +332,12 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						panic(err.Error())
 					}
 				}
-				// go func() {
-				// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-				// 		fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
-				// 		logs.Error(err)
-				// 	}
-				// }()
+				go func() {
+					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+						fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
+						logs.Error(err)
+					}
+				}()
 			} else { // If 1.2.1
 				fmt.Println("Error en If 1.2.1 - Cambiar estado/ (POST)!")
 				logs.Error(response)

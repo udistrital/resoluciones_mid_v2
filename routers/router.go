@@ -39,6 +39,13 @@ func init() {
 				&controllers.ExpedirResolucionController{},
 			),
 		),
+		beego.NSNamespace("/gestion_vinculaciones",
+			beego.NSInclude(
+				&controllers.GestionVinculacionesController{},
+			),
+			beego.NSRouter("/progreso/:jobId", &controllers.GestionVinculacionesController{}, "get:ObtenerProgreso"),
+		),
+
 		beego.NSNamespace("/reporte_financiera",
 			beego.NSInclude(
 				&controllers.ReporteFinancieraController{},
