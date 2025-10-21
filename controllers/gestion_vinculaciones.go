@@ -413,7 +413,7 @@ func (c *GestionVinculacionesController) ConsultarSemanasRestantes() {
 // @Title RegistrarRps
 // @Description registra los numeros de RP en las respectivas vinculaciones y dispara el proceso de preliquidación
 // @Param	body	body 	[]models.RpSeleccionado	true		"body for vinculaciones content"
-// @Success 202 {object} string Proceso iniciado
+// @Success 200 {object} string Proceso iniciado
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /rp_vinculaciones [post]
@@ -428,10 +428,10 @@ func (c *GestionVinculacionesController) RegistrarRps() {
 	jobID := helpers.CrearJob(len(rps))
 	go helpers.ProcesarPreliquidaciones(jobID, rps)
 
-	c.Ctx.Output.SetStatus(202)
+	c.Ctx.Output.SetStatus(200)
 	c.Data["json"] = map[string]interface{}{
 		"Success": true,
-		"Status":  202,
+		"Status":  200,
 		"Message": "Proceso de registro de RPs iniciado correctamente",
 		"JobId":   jobID,
 		"Total":   len(rps),
