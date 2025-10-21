@@ -72,14 +72,14 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string
 			if data, ok := m["Data"].([]interface{}); ok && len(data) > 0 {
 				return map[string]interface{}{
 					"status":  "omitido",
-					"message": fmt.Sprintf("Contrato %s (vigencia %d) ya existe en Titan CRUD", *v.NumeroContrato, v.Vigencia),
+					"message": fmt.Sprintf("Contrato %s (vigencia %d) ya existe en Titan", *v.NumeroContrato, v.Vigencia),
 				}
 			}
 		}
 		if arr, ok := raw.([]interface{}); ok && len(arr) > 0 {
 			return map[string]interface{}{
 				"status":  "omitido",
-				"message": fmt.Sprintf("Contrato %s (vigencia %d) ya existe en Titan CRUD", *v.NumeroContrato, v.Vigencia),
+				"message": fmt.Sprintf("Contrato %s (vigencia %d) ya existe en Titan", *v.NumeroContrato, v.Vigencia),
 			}
 		}
 	}
@@ -144,12 +144,12 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string
 	preliquidacion.Resolucion = resolucion.NumeroResolucion
 
 	if err := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &c, &preliquidacion); err != nil {
-		panic("Error enviando preliquidación a Titan MID: " + err.Error())
+		panic("Error enviando preliquidación a Titan: " + err.Error())
 	}
 
 	return map[string]interface{}{
 		"status": "ok",
-		"message": fmt.Sprintf("Preliquidación enviada correctamente a Titan MID para contrato %s (vigencia %d, RP %d)",
+		"message": fmt.Sprintf("Preliquidación enviada correctamente a Titan para contrato %s (vigencia %d, RP %d)",
 			*v.NumeroContrato, v.Vigencia, int(v.NumeroRp)),
 	}
 }
