@@ -411,30 +411,56 @@ func (c *GestionVinculacionesController) ConsultarSemanasRestantes() {
 
 // RegistrarRps ...
 // @Title RegistrarRps
-// @Description registra los numeros de RP en las respectivas vinculaciones
-// @Param	body		body 	[]models.RpSeleccionado	true		"body for vinculaciones content"
-// @Success 201 {object} string OK
+// @Description registra los numeros de RP en las respectivas vinculaciones y dispara el proceso de preliquidación
+// @Param	body	body 	[]models.RpSeleccionado	true		"body for vinculaciones content"
+// @Success 200 {object} string Proceso iniciado
 // @Failure 400 bad request
 // @Failure 500 Internal server error
 // @router /rp_vinculaciones [post]
 func (c *GestionVinculacionesController) RegistrarRps() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if b, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !b || e != nil {
-		panic(map[string]interface{}{"funcion": "RegistrarRp", "err": helpers.ErrorBody, "status": "400"})
+	var rps []models.RpSeleccionado
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &rps); err != nil {
+		panic(map[string]interface{}{"funcion": "RegistrarRps", "err": err.Error(), "status": "400"})
 	}
 
-	var rps []models.RpSeleccionado
+	jobID := helpers.CrearJob(len(rps))
+	go helpers.ProcesarPreliquidaciones(jobID, rps)
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &rps); err == nil {
-		if err2 := helpers.RegistrarVinculacionesRp(rps); err2 == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Registros actualizados con exito", "Data": "OK"}
-		} else {
-			panic(err2)
-		}
-	} else {
-		panic(map[string]interface{}{"funcion": "RegistrarRp", "err": err.Error(), "status": "400"})
+	c.Ctx.Output.SetStatus(200)
+	c.Data["json"] = map[string]interface{}{
+		"Success": true,
+		"Status":  200,
+		"Message": "Proceso de registro de RPs iniciado correctamente",
+		"JobId":   jobID,
+		"Total":   len(rps),
 	}
 	c.ServeJSON()
+}
+
+// ObtenerProgreso ...
+// @Title ObtenerProgreso
+// @Description Consulta el estado y progreso de un job en ejecución
+// @Param	jobId	path	string	true	"ID del job"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 Job no encontrado
+// @router /progreso/:jobId [get]
+func (c *GestionVinculacionesController) ObtenerProgreso() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	jobID := c.Ctx.Input.Param(":jobId")
+	if jobID == "" {
+		panic(map[string]interface{}{"funcion": "ObtenerProgreso", "err": "Job ID requerido", "status": "400"})
+	}
+
+	result := helpers.ObtenerJob(jobID)
+	if result["Success"].(bool) {
+		c.Data["json"] = result
+		c.ServeJSON()
+	} else {
+		c.Ctx.Output.SetStatus(404)
+		c.Data["json"] = result
+		c.ServeJSON()
+	}
 }

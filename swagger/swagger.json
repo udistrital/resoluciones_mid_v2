@@ -1100,6 +1100,35 @@
                 }
             }
         },
+        "/gestion_vinculaciones/progreso/{jobId}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el estado y progreso de un job en ejecución",
+                "operationId": "GestionVinculacionesController.ObtenerProgreso",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "jobId",
+                        "description": "ID del job",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/map[string]interface{}"
+                        }
+                    },
+                    "404": {
+                        "description": "Job no encontrado"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/rp/{resolucion_id}": {
             "get": {
                 "tags": [
@@ -1140,7 +1169,7 @@
                 "tags": [
                     "gestion_vinculaciones"
                 ],
-                "description": "registra los numeros de RP en las respectivas vinculaciones",
+                "description": "registra los numeros de RP en las respectivas vinculaciones y dispara el proceso de preliquidación",
                 "operationId": "GestionVinculacionesController.RegistrarRps",
                 "parameters": [
                     {
@@ -1157,8 +1186,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Proceso iniciado",
                         "schema": {
                             "type": "string"
                         }
@@ -1280,6 +1309,10 @@
         }
     },
     "definitions": {
+        "map[string]interface{}": {
+            "title": "map[string]interface{}",
+            "type": "object"
+        },
         "models.ActaInicio": {
             "title": "ActaInicio",
             "type": "object",
@@ -2591,6 +2624,10 @@
         {
             "name": "expedir_resolucion",
             "description": "ExpedirResolucionController operations for ExpedirResolucion\n"
+        },
+        {
+            "name": "gestion_vinculaciones",
+            "description": "Gestion_vinculacionesController operations for Gestion_vinculaciones\n"
         },
         {
             "name": "reporte_financiera",

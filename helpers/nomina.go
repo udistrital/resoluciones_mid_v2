@@ -9,7 +9,6 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
-// Envia a Titan la información necesaria para calcular el valor de un contrato desagregado por rubros
 func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcademico string, objetoNovedad ...*models.ObjetoNovedad) (d map[string]interface{}, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -18,7 +17,6 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 		}
 	}()
 	fmt.Println("VALOR CONTRATO DES", v.ValorContrato)
-	// var desagregado models.DesagregadoContrato
 	var desagregado map[string]interface{}
 	datos := &models.DatosVinculacion{
 		NumeroContrato: "",
@@ -48,22 +46,49 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 	return desagregado, outputError
 }
 
-// Envía a Titan la información para la preliquidación de nómina para los docentes recien contratados con RP actualizado
-func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[string]interface{}) {
+func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "EjecutarPreliquidacionTitan", "err": err, "status": "500"}
-			panic(outputError)
+			output = map[string]interface{}{
+				"funcion": "EjecutarPreliquidacionTitan",
+				"err":     fmt.Sprintf("%v", err),
+				"status":  "500",
+			}
+			panic(output)
 		}
 	}()
+
+	if v.NumeroContrato == nil || *v.NumeroContrato == "" {
+		return map[string]interface{}{
+			"status":  "error",
+			"message": fmt.Sprintf("La vinculación %d no tiene número de contrato asignado", v.Id),
+		}
+	}
+
+	queryContrato := fmt.Sprintf("NumeroContrato:%s,Vigencia:%d,Activo:true", *v.NumeroContrato, v.Vigencia)
+	var raw interface{}
+	if err := GetRequestNew("TitanCrudService", "contrato?query="+queryContrato, &raw); err == nil {
+		if m, ok := raw.(map[string]interface{}); ok {
+			if data, ok := m["Data"].([]interface{}); ok && len(data) > 0 {
+				return map[string]interface{}{
+					"status":  "omitido",
+					"message": fmt.Sprintf("Contrato %s (vigencia %d) ya existe en Titan", *v.NumeroContrato, v.Vigencia),
+				}
+			}
+		}
+		if arr, ok := raw.([]interface{}); ok && len(arr) > 0 {
+			return map[string]interface{}{
+				"status":  "omitido",
+				"message": fmt.Sprintf("Contrato %s (vigencia %d) ya existe en Titan", *v.NumeroContrato, v.Vigencia),
+			}
+		}
+	}
 
 	var c models.ContratoPreliquidacion
 	var desagregado []models.DisponibilidadVinculacion
 	var docente []models.InformacionProveedor
 	var actaInicio []models.ActaInicio
-	var resolucion models.Resolucion
-
-	resolucion = GetResolucion(v.ResolucionVinculacionDocenteId.Id)
+	resolucion := GetResolucion(v.ResolucionVinculacionDocenteId.Id)
 
 	preliquidacion := &models.ContratoPreliquidacion{
 		NumeroContrato: *v.NumeroContrato,
@@ -77,7 +102,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 
 	url := "disponibilidad_vinculacion?query=Activo:true,VinculacionDocenteId.Id:" + strconv.Itoa(v.Id)
 	if err := GetRequestNew("UrlcrudResoluciones", url, &desagregado); err != nil {
-		panic("Cargando desagregado-preliq -> " + err.Error())
+		panic("Error al cargar desagregado-preliquidación: " + err.Error())
 	}
 
 	desagregadoMap := map[string]float64{}
@@ -96,17 +121,17 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	}
 
 	url2 := "informacion_proveedor?query=NumDocumento:" + preliquidacion.Documento
-	if err2 := GetRequestLegacy("UrlcrudAgora", url2, &docente); err2 != nil {
-		panic("Info docente -> " + err2.Error())
+	if err := GetRequestLegacy("UrlcrudAgora", url2, &docente); err != nil {
+		panic("Error consultando docente en Ágora: " + err.Error())
 	} else if len(docente) == 0 {
-		panic("Info docente -> No se encontró información del docente en Agora!!")
+		panic("No se encontró información del docente en Ágora")
 	}
 
 	url3 := "acta_inicio?query=NumeroContrato:" + *v.NumeroContrato + ",Vigencia:" + strconv.Itoa(v.Vigencia)
-	if err3 := GetRequestLegacy("UrlcrudAgora", url3, &actaInicio); err3 != nil {
-		panic("Acta inicio -> " + err3.Error())
+	if err := GetRequestLegacy("UrlcrudAgora", url3, &actaInicio); err != nil {
+		panic("Error consultando acta de inicio: " + err.Error())
 	} else if len(actaInicio) == 0 {
-		panic("Acta inicio -> No se pudo encontrar el acta de inicio")
+		panic("No se encontró acta de inicio asociada")
 	}
 
 	preliquidacion.FechaInicio = actaInicio[0].FechaInicio
@@ -118,14 +143,17 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (outputError map[s
 	preliquidacion.ResolucionId = v.ResolucionVinculacionDocenteId.Id
 	preliquidacion.Resolucion = resolucion.NumeroResolucion
 
-	if err2 := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &c, &preliquidacion); err2 != nil {
-		panic("Preliquidando -> " + err2.Error())
+	if err := SendRequestNew("UrlmidTitan", "preliquidacion", "POST", &c, &preliquidacion); err != nil {
+		panic("Error enviando preliquidación a Titan: " + err.Error())
 	}
 
-	return
+	return map[string]interface{}{
+		"status": "ok",
+		"message": fmt.Sprintf("Preliquidación enviada correctamente a Titan para contrato %s (vigencia %d, RP %d)",
+			*v.NumeroContrato, v.Vigencia, int(v.NumeroRp)),
+	}
 }
 
-// Al cancelar una vinculación se debe ajustar la liquidación del contrato en Titan
 func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelado models.VinculacionDocente) (outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -142,18 +170,16 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		NumeroContrato: *cancelado.NumeroContrato,
 		Vigencia:       cancelado.Vigencia,
 		Semanas:        cancelado.NumeroSemanas - cancelacion.NumeroSemanas,
-		//ValorContrato:  cancelado.ValorContrato - cancelacion.ValorContrato,
 		FechaAnulacion: cancelacion.FechaInicio,
 		Documento:      strconv.Itoa(int(cancelacion.PersonaId)),
 	}
 
-	// calcular el desagregado de la cancelación individual
 	if cancelado.ResolucionVinculacionDocenteId.Dedicacion != "HCH" {
-		cancelado.NumeroSemanas = cancelado.NumeroSemanas - cancelacion.NumeroSemanas
+		cancelado.NumeroSemanas -= cancelacion.NumeroSemanas
 		dedicacion := cancelado.ResolucionVinculacionDocenteId.Dedicacion
 		nivel := cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 		if nivel == "POSGRADO" {
-			cancelado.NumeroHorasSemanales = cancelado.NumeroHorasSemanales - cancelacion.NumeroHorasSemanales
+			cancelado.NumeroHorasSemanales -= cancelacion.NumeroHorasSemanales
 		} else {
 			cancelado.NumeroHorasSemanales = cancelacion.NumeroHorasSemanales
 		}
@@ -171,11 +197,8 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		}
 		contratoReliquidar.ValorContrato = sueldoBasico
 		contratoReliquidar.Desagregado = &valores
-
 	}
 	contratoReliquidar.NivelAcademico = cancelado.ResolucionVinculacionDocenteId.NivelAcademico
-	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar)
-	fmt.Println("APLICAR ANULACIÓN ", contratoReliquidar.Desagregado)
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
 	}
@@ -183,7 +206,6 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 	return
 }
 
-// Envía a Titan la información de lso contratos afectados en una reducción
 func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.VinculacionDocente, valorReduccion float64) (outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -193,13 +215,8 @@ func ReducirContratosTitan(reduccion *models.Reduccion, modificacion *models.Vin
 	}()
 	var c models.ContratoPreliquidacion
 
-	JsonDebug(reduccion)
 	if reduccion.ContratoNuevo != nil && reduccion.ContratoNuevo.ValorContratoReduccion == 0 {
 		reduccion.ContratoNuevo.ValorContratoReduccion = valorReduccion
-	}
-	fmt.Println("APLICAR REDUCCIÓN ", reduccion)
-	if reduccion.ContratoNuevo != nil {
-		fmt.Println("APLICAR REDUCCIÓN ", reduccion.ContratoNuevo.DesagregadoReduccion)
 	}
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_reduccion", "POST", &c, &reduccion); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
