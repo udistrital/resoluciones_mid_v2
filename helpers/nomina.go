@@ -94,7 +94,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string
 		NumeroContrato: *v.NumeroContrato,
 		Vigencia:       v.Vigencia,
 		Documento:      fmt.Sprintf("%.f", v.PersonaId),
-		DependenciaId:  v.ResolucionVinculacionDocenteId.FacultadId,
+		DependenciaId:  resolucion.DependenciaId,
 		Rp:             int(v.NumeroRp),
 		TipoNominaId:   410,
 		Activo:         true,
