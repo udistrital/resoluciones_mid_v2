@@ -89,6 +89,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string
 	var docente []models.InformacionProveedor
 	var actaInicio []models.ActaInicio
 	resolucion := GetResolucion(v.ResolucionVinculacionDocenteId.Id)
+	resVin := GetResolucionVinculacionDocente(v.ResolucionVinculacionDocenteId.Id)
 
 	preliquidacion := &models.ContratoPreliquidacion{
 		NumeroContrato: *v.NumeroContrato,
@@ -106,7 +107,7 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string
 	}
 
 	desagregadoMap := map[string]float64{}
-	if v.ResolucionVinculacionDocenteId.Dedicacion == "HCH" {
+	if resVin.Dedicacion == "HCH" {
 		preliquidacion.ValorContrato = math.Floor(v.ValorContrato)
 		preliquidacion.TipoNominaId = 409
 	} else {
