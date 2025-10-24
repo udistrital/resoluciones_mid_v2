@@ -470,6 +470,14 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	return listaRes, total, outputError
 }
 
+func GetResolucionVinculacionDocente(id int) (rv models.ResolucionVinculacionDocente) {
+	url := ResVinEndpoint + strconv.Itoa(id)
+	if err := GetRequestNew("UrlCrudResoluciones", url, &rv); err != nil {
+		panic("Error consultando resolucion_vinculacion_docente -> " + err.Error())
+	}
+	return
+}
+
 // Recupera toda la información de una resolución a partir de su Id
 func CargarResolucionCompleta(ResolucionId int) (resolucion models.ContenidoResolucion, outputError map[string]interface{}) {
 	defer func() {
