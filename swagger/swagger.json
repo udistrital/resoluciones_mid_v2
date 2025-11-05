@@ -1186,7 +1186,7 @@
                     }
                 ],
                 "responses": {
-                    "202": {
+                    "200": {
                         "description": "Proceso iniciado",
                         "schema": {
                             "type": "string"
@@ -1303,6 +1303,43 @@
                     },
                     "500": {
                         "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/vinculacion_rp/": {
+            "post": {
+                "tags": [
+                    "vinculacion_rp"
+                ],
+                "description": "Procesa un archivo Excel con CRP y actualiza vinculaciones docentes",
+                "operationId": "VincularRpController.Procesar archivo RP",
+                "parameters": [
+                    {
+                        "in": "formData",
+                        "name": "file",
+                        "description": "Archivo Excel (.xlsx)",
+                        "required": true,
+                        "type": "file"
+                    },
+                    {
+                        "in": "formData",
+                        "name": "vigenciaRp",
+                        "description": "Año de vigencia del RP",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/map[string]interface{}"
+                        }
+                    },
+                    "400": {
+                        "description": "archivo inválido o error al procesar"
                     }
                 }
             }
@@ -2624,10 +2661,6 @@
         {
             "name": "expedir_resolucion",
             "description": "ExpedirResolucionController operations for ExpedirResolucion\n"
-        },
-        {
-            "name": "gestion_vinculaciones",
-            "description": "Gestion_vinculacionesController operations for Gestion_vinculaciones\n"
         },
         {
             "name": "reporte_financiera",
