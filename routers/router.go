@@ -24,10 +24,16 @@ func init() {
 				&controllers.GestionResolucionesController{},
 			),
 		),
+		beego.NSNamespace("/vinculacion_rp",
+			beego.NSInclude(
+				&controllers.VincularRpController{},
+			),
+		),
 		beego.NSNamespace("/gestion_vinculaciones",
 			beego.NSInclude(
 				&controllers.GestionVinculacionesController{},
 			),
+			beego.NSRouter("/progreso/:jobId", &controllers.GestionVinculacionesController{}, "get:ObtenerProgreso"),
 		),
 		beego.NSNamespace("/services",
 			beego.NSInclude(
@@ -38,12 +44,6 @@ func init() {
 			beego.NSInclude(
 				&controllers.ExpedirResolucionController{},
 			),
-		),
-		beego.NSNamespace("/gestion_vinculaciones",
-			beego.NSInclude(
-				&controllers.GestionVinculacionesController{},
-			),
-			beego.NSRouter("/progreso/:jobId", &controllers.GestionVinculacionesController{}, "get:ObtenerProgreso"),
 		),
 
 		beego.NSNamespace("/reporte_financiera",
