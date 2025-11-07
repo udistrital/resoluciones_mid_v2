@@ -91,6 +91,19 @@ func normalizeHeader(h string) string {
 	return h
 }
 
+// ✅ Nueva función: verifica si existe una vinculación con el mismo RP y vigencia
+func validarExistenciaVinculacion(crp string, vigenciaRp int) (bool, error) {
+	var vincs []map[string]interface{}
+	query := fmt.Sprintf("NumeroRp:%s,VigenciaRp:%d,Activo:true", crp, vigenciaRp)
+	url := "vinculacion_docente?query=" + query
+
+	if err := helpers.GetRequestNew("UrlCrudResoluciones", url, &vincs); err != nil {
+		return false, err
+	}
+
+	return len(vincs) > 0, nil
+}
+
 func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader, vigenciaRp int) ([]models.VinculacionRpResultado, error) {
 	var resultados []models.VinculacionRpResultado
 
@@ -222,9 +235,23 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		if val, ok := vincActual["ResolucionVinculacionDocenteId"].(float64); ok {
 			vincActual["ResolucionVinculacionDocenteId"] = map[string]interface{}{"Id": int(val)}
 		}
+
 		vincActual["NumeroRp"] = coerceInt(res.CRP)
 		vincActual["VigenciaRp"] = vigenciaRp
 		vincActual["Activo"] = true
+
+		// ✅ Validación de duplicados antes de PUT
+		exists, err := validarExistenciaVinculacion(res.CRP, vigenciaRp)
+		if err != nil {
+			res.PutStatus = fmt.Sprintf("Error validando duplicado: %v", err)
+			resultados = append(resultados, res)
+			continue
+		}
+		if exists {
+			res.PutStatus = fmt.Sprintf("RP duplicado (ya existe en base de datos): CRP %s - Vigencia %d", res.CRP, vigenciaRp)
+			resultados = append(resultados, res)
+			continue
+		}
 
 		vincActual = stripBadTZ(vincActual)
 		vincActual = sanitizePayload(vincActual)

@@ -37,6 +37,7 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 	if nivelAcademico == "POSGRADO" {
 		datos.NumeroSemanas = 1
 	}
+
 	fmt.Println("DESAGREGADO HCS ", datos)
 	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
 		logs.Error(err.Error())
@@ -84,10 +85,32 @@ func EjecutarPreliquidacionTitan(v models.VinculacionDocente) (output map[string
 		}
 	}
 
+	if v.NumeroRp != 0 {
+		queryRp := fmt.Sprintf("Rp:%d,Vigencia:%d,Activo:true", int(v.NumeroRp), v.Vigencia)
+		var rawRp interface{}
+		if err := GetRequestNew("TitanCrudService", "contrato?query="+queryRp, &rawRp); err == nil {
+			if m, ok := rawRp.(map[string]interface{}); ok {
+				if data, ok := m["Data"].([]interface{}); ok && len(data) > 0 {
+					return map[string]interface{}{
+						"status":  "omitido",
+						"message": fmt.Sprintf("Contrato omitido: RP %d (vigencia %d) ya existe en Titan", int(v.NumeroRp), v.Vigencia),
+					}
+				}
+			}
+			if arr, ok := rawRp.([]interface{}); ok && len(arr) > 0 {
+				return map[string]interface{}{
+					"status":  "omitido",
+					"message": fmt.Sprintf("Contrato omitido: RP %d (vigencia %d) ya existe en Titan", int(v.NumeroRp), v.Vigencia),
+				}
+			}
+		}
+	}
+
 	var c models.ContratoPreliquidacion
 	var desagregado []models.DisponibilidadVinculacion
 	var docente []models.InformacionProveedor
 	var actaInicio []models.ActaInicio
+
 	resolucion := GetResolucion(v.ResolucionVinculacionDocenteId.Id)
 	resVin := GetResolucionVinculacionDocente(v.ResolucionVinculacionDocenteId.Id)
 
@@ -199,6 +222,7 @@ func ReliquidarContratoCancelado(cancelacion models.VinculacionDocente, cancelad
 		contratoReliquidar.ValorContrato = sueldoBasico
 		contratoReliquidar.Desagregado = &valores
 	}
+
 	contratoReliquidar.NivelAcademico = cancelado.ResolucionVinculacionDocenteId.NivelAcademico
 	if err2 := SendRequestNew("UrlmidTitan", "novedadVE/aplicar_anulacion", "POST", &c, &contratoReliquidar); err2 != nil {
 		panic("Reliquidando -> " + err2.Error())
