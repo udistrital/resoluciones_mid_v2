@@ -50,6 +50,44 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 	return err
 }
 
+func SendRequestFull(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
+	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+
+	var b bytes.Buffer
+	if datajson != nil {
+		if err := json.NewEncoder(&b).Encode(datajson); err != nil {
+			return fmt.Errorf("error codificando JSON: %v", err)
+		}
+	}
+
+	client := &http.Client{Timeout: 60 * time.Second}
+	req, err := http.NewRequest(trequest, url, &b)
+	if err != nil {
+		return fmt.Errorf("error creando request: %v", err)
+	}
+	req.Header.Set("Accept", AppJson)
+	req.Header.Add("Content-Type", AppJson)
+
+	seg := xray.BeginSegmentSec(req)
+	resp, err := client.Do(req)
+	xray.UpdateSegment(resp, err, seg)
+	if err != nil {
+		return fmt.Errorf("error ejecutando request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes := new(bytes.Buffer)
+	if _, err := bodyBytes.ReadFrom(resp.Body); err != nil {
+		return fmt.Errorf("error leyendo respuesta: %v", err)
+	}
+
+	if err := json.Unmarshal(bodyBytes.Bytes(), target); err != nil {
+		return fmt.Errorf("respuesta no estándar o error de parseo: %v", err)
+	}
+
+	return nil
+}
+
 // Envia una petición con datos a endponts que responden con el body sin encapsular
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
