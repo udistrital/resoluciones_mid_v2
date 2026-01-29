@@ -53,7 +53,6 @@ func BuscarDatosPersonalesDocente(personaId float64) (p models.InformacionPerson
 	if err := GetRequestLegacy("UrlcrudAgora", url, &personas); err != nil {
 		panic(err.Error())
 	} else if len(personas) == 0 {
-		fmt.Println("No se ha encontrado información del docente en Agora!!!")
 		panic("No se ha encontrado información del docente en Agora!!!")
 	}
 	persona := personas[0]

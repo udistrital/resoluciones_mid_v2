@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -19,15 +18,12 @@ func SupervisorActual(dependenciaId int) (supervisorActual models.SupervisorCont
 		//If Supervisor (GET)
 		url = "supervisor_contrato?order=desc&sortby=Id&query=Documento:" + strconv.Itoa(j[0].TerceroId) + ",FechaFin__gte:" + fecha + ",FechaInicio__lte:" + fecha + "&CargoId.Cargo__startswith:DECANO|VICE"
 		if err := GetRequestLegacy("UrlcrudAgora", url, &s); err == nil && len(s) > 0 {
-			fmt.Println(s)
 			return s[0], nil
 		} else { //If Jefe_dependencia (GET)
-			fmt.Println("No se ha encontrado supervisor activo en la fecha actual!!!", err)
 			outputError = map[string]interface{}{"funcion": "/SupervisorActual3", "err": err.Error(), "status": "404"}
 			return supervisorActual, outputError
 		}
 	} else { //If Jefe_dependencia (GET)
-		fmt.Println("No se ha encontrado jefe de dependencia activo en la fecha actual!!! ", err)
 		outputError = map[string]interface{}{"funcion": "/SupervisorActual2", "err": err.Error(), "status": "404"}
 		return supervisorActual, outputError
 	}
@@ -44,17 +40,13 @@ func calcularSemanasContratoDVE(FechaInicio time.Time, FechaFin time.Time) (sema
 
 	} else {
 		a, m, d = diff(FechaInicio, FechaFin)
-		fmt.Println("a ", a)
-		fmt.Println("m ", m)
 		// dia inclusivo
 		d += 1
-		fmt.Println("d ", d)
 		if d == 22 {
 			d += 1
 		}
 		mesesContrato = (float64(a * 12)) + float64(m) + (float64(d) / 30)
 	}
-	fmt.Println(float64(int(mesesContrato)))
 	if mesesContrato/float64(int(mesesContrato)) != 1 {
 		return (mesesContrato * 4) + 1
 	} else {
@@ -120,7 +112,6 @@ func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (o
 	var emailRes models.EmailResponse
 
 	if updatedDatosCorreos, err := ObtenerCorreoDocentes(datosCorreo); err != nil {
-		fmt.Println("No se ha podido obtener los correos de los docentes", err)
 		outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err, "status": "400"}
 		return outputError
 	} else {
@@ -162,11 +153,9 @@ func NotificarDocentes(datosCorreo []models.EmailData, tipoResolucion string) (o
 		}
 		url := "email/enviar_templated_email"
 		if err := SendRequestNew("UrlMidNotificaciones", url, "POST", &emailRes, emailBody); err != nil {
-			fmt.Println("No se ha podido enviar el correo a los docentes ", err)
 			outputError = map[string]interface{}{"funcion": "/NotificarDocentes", "err": err.Error(), "status": "400"}
 		}
 	}
-	fmt.Println("outputError", outputError)
 	return outputError
 }
 
@@ -186,7 +175,6 @@ func ObtenerCorreoDocentes(datosCorreo []models.EmailData) (updatedDatosCorreo [
 				datosCorreo[i].Correo = response.Email
 			}
 		} else {
-			fmt.Println("No se ha encontrado información del usuario", err)
 			outputError = map[string]interface{}{"funcion": "/ObtenerCorreoDocentes", "err": err.Error(), "status": "404"}
 		}
 	}

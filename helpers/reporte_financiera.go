@@ -22,7 +22,6 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 	var proyectoCurricular models.Dependencia
 
 	url := "dependencia/" + strconv.Itoa(reporte.Facultad)
-	fmt.Println("RUL ", url)
 	if err2 := GetRequestLegacy("UrlcrudOikos", url, &facultad); err2 != nil {
 		outputError = map[string]interface{}{"funcion": "/Obtención proyecto curricular reporte", "err": err2.Error(), "status": "500"}
 		panic(outputError)
@@ -33,7 +32,6 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		panic("reporte_financiera -> " + err.Error())
 	}
 
-	fmt.Println("RESP ", resp)
 	for i := 0; i < len(resp); i++ {
 		var infoDocente models.ObjetoDocenteTg
 		//var aux interface{}
@@ -45,7 +43,6 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		}
 
 		url = fmt.Sprintf("docente/%d", resp[i].DocumentoDocente)
-		fmt.Println("URL ", url)
 		if err2 := GetRequestWSO2("NscrudAcademica", url, &infoDocente); err2 != nil {
 			panic(err2.Error())
 		}
