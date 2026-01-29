@@ -82,7 +82,6 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 	url = "contrato_general/maximo_dve"
 	if err := GetRequestLegacy("UrlcrudAgora", url, &cdve); err == nil { // If 1 - consecutivo contrato_general
 		numeroContratos := cdve
-		fmt.Println("numeroContratos:", numeroContratos)
 		for _, vinculacion := range vin { // For vinculaciones
 			numeroContratos = numeroContratos + 1
 			var v models.VinculacionDocente
@@ -118,7 +117,6 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 					contrato.OrdenadorGasto = ordenadorGasto.Id
 					sup, err := SupervisorActual(r.DependenciaId)
 					if err != nil { // If 1.1.2 - supervisorActual
-						fmt.Println("Error en If 1.1.2 - supervisorActual!")
 						logs.Error(err)
 						panic(err)
 					}
@@ -237,7 +235,6 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 									if err := SendRequestLegacy("UrlcrudAgora", url, "POST", &response3, &ai); err == nil { // If 1.1.7 acta_inicio
 										var cd models.ContratoDisponibilidad
 										cd.NumeroContrato = aux1
-										fmt.Println("aux1 ", aux1)
 										cd.Vigencia = aux2
 										cd.Estado = true
 										cd.FechaRegistro = time.Now()
@@ -259,50 +256,40 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 												}
 												url = VinculacionEndpoint + strconv.Itoa(v.Id)
 												if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &v); err != nil { // If 1.1.10 - vinculacion_docente
-													fmt.Println("Error en If 1.1.10 - vinculacion_docente!")
 													logs.Error(err)
 													panic(err.Error())
 												}
 											} else { // If 1.1.9 -contrato_disponibilidad
-												fmt.Println("Error en If 1.1.9 - contrato_disponibilidad!")
 												logs.Error(err)
 												panic(err.Error())
 											}
 										} else { // If 1.1.8 - disponibilidad_vinculacion
-											fmt.Println("Error en If 1.1.8 - disponibilidad_vinculacion!")
 											logs.Error(err)
 											panic(err.Error())
 										}
 									} else { // If 1.1.7 acta_inicio
-										fmt.Println("Error en If 1.1.7 - acta_inicio!")
 										logs.Error(err)
 										panic(err.Error())
 									}
 								} else { // If 1.1.6
-									fmt.Println("Error en If 1.1.6 - contrato_estado!")
 									logs.Error(err)
 									panic(err.Error())
 								}
 							} else { // If 1.1.5
-								fmt.Println("Error en If 1.1.5 - contrato_general (POST)!")
 								logs.Error(response)
 								panic(err.Error())
 							}
 						} else { // If 1.1.4 proveedor
-							fmt.Println("Error en If 1.1.4 - proveedor vacío!")
 						}
 					} else { // If 1.1.3
-						fmt.Println("Error en If 1.1.3 - informacion_proveedor!")
 						logs.Error(proveedor)
 						panic(err.Error())
 					}
 				} else { // If 1.1.1
-					fmt.Println("Error en If 1.1.1 - tipoContrato!")
 					logs.Error(tipoCon)
 					panic(err.Error())
 				}
 			} else { // If 1.1
-				fmt.Println("Error en If 1.1 - vinculacion_docente!")
 				logs.Error(v)
 				panic(err.Error())
 			}
@@ -315,41 +302,34 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 				r.FechaInicio, r.FechaFin = NormalizarFechasResolucion(r.FechaInicio, r.FechaFin)
 				url = ResolucionEndpoint + strconv.Itoa(r.Id)
 				if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 1.2.1
-					fmt.Println("Error en If 1.2.1 - resolucion/ (PUT)!")
 					logs.Error(response)
 					panic(err.Error())
 				}
 				if documento, err := AlmacenarResolucionGestorDocumental(r.Id); err != nil {
-					fmt.Println("Error en If 1.2.3 - AlmacenarResolucionGestorDocumental/ (POST)!")
 					logs.Error(response)
 					panic(err)
 				} else {
 					r.NuxeoUid = documento.Enlace
 					url = ResolucionEndpoint + strconv.Itoa(r.Id)
 					if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 1.2.1
-						fmt.Println("Error en If 1.2.1 - resolucion/ (PUT)!")
 						logs.Error(response)
 						panic(err.Error())
 					}
 				}
 				go func() {
 					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-						fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
 						logs.Error(err)
 					}
 				}()
 			} else { // If 1.2.1
-				fmt.Println("Error en If 1.2.1 - Cambiar estado/ (POST)!")
 				logs.Error(response)
 				panic(err.Error())
 			}
 		} else { // If 1.2
-			fmt.Println("Error en If 1.2 - resolucion/!")
 			logs.Error(r)
 			panic(err.Error())
 		}
 	} else { // If 1
-		fmt.Println("Error en If 1 - consecutivo contrato_general!")
 		logs.Error(cdve)
 		panic(err.Error())
 	}
@@ -525,7 +505,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 					contrato.OrdenadorGasto = ordenadorGasto.Id
 					sup, err := SupervisorActual(resolucion.DependenciaId)
 					if err != nil {
-						fmt.Println("Error en If 1.1.2 - supervisorActual!")
 						logs.Error(err)
 						panic(err)
 					}
@@ -624,12 +603,10 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 
 								contratosAnteriores := new([]models.VinculacionDocente)
 								if err := BuscarContratosModificar(modificacion.Id, contratosAnteriores); err != nil {
-									fmt.Println("Error en if - Buscar contratos!", err)
 									panic(err.Error())
 								}
 								var respActaInicioAnterior []models.ActaInicio
 								var actaInicioAnterior models.ActaInicio
-								fmt.Println("CONTRATOS ANTERIORES ", contratosAnteriores)
 								var resolucion models.Resolucion
 								var parametro models.Parametro
 								var ultimaVinculacon models.VinculacionDocente
@@ -637,7 +614,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 								//horasAnterior := 0
 								horasNuevo := 0
 								for _, subcontratoAux := range *contratosAnteriores {
-									fmt.Println("LLEGA")
 									if aux == 0 {
 										ultimaVinculacon = subcontratoAux
 									}
@@ -651,37 +627,22 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										logs.Error(err)
 										panic("Cargando tipo_resolucion -> " + err.Error())
 									}
-									fmt.Println("PARAMETRO ", parametro)
 									if parametro.CodigoAbreviacion == "RVIN" || parametro.CodigoAbreviacion == "RADD" {
 										horasNuevo += subcontratoAux.NumeroHorasSemanales
 									} else if parametro.CodigoAbreviacion == "RRED" {
 										horasNuevo -= subcontratoAux.NumeroHorasSemanales
 									}
 									aux += 1
-									fmt.Println("ULTIMA VINCULACION ", ultimaVinculacon)
 									reduccion.SemanasAnteriores = ultimaVinculacon.NumeroSemanas
 									url = fmt.Sprintf("acta_inicio?query=NumeroContrato:%s,Vigencia:%d", *ultimaVinculacon.NumeroContrato, ultimaVinculacon.Vigencia)
 									if err := GetRequestLegacy("UrlcrudAgora", url, &respActaInicioAnterior); err != nil {
-										fmt.Println("Error en if - Acta inicio "+*ultimaVinculacon.NumeroContrato, err)
 										panic(err.Error())
 									} else if len(respActaInicioAnterior) == 0 {
 										panic("Acta de inicio no encontrada")
 									}
 									horasNuevoAux := horasNuevo - horasReducir
-									fmt.Println("HORAS ANTERIORE ", subcontratoAux.NumeroHorasSemanales)
-									fmt.Println("HORAS DESPUES ", horasNuevoAux)
 									actaInicioAnterior = respActaInicioAnterior[0]
-									fmt.Println("fecha inicio modificacion ", modificacion.FechaInicio)
-									fmt.Println("fecha inicio modificacion ", modificacion.ResolucionVinculacionDocenteId.Dedicacion)
 									if actaInicioAnterior.FechaInicio.Before(modificacion.FechaInicio) || actaInicioAnterior.FechaInicio.Equal(modificacion.FechaInicio) {
-										fmt.Println("acta inicio anterior entra")
-										//horasReducir -= ultimaVinculacon.NumeroHorasSemanales
-										fmt.Println("horasreducir ", horasReducir)
-										/*if horasReducir < 0 {
-											horasFinales -= horasReducir
-											fmt.Println("horasfinales ", horasFinales)
-											horasReducir = 0
-										}*/
 										valores := make(map[string]float64)
 										contratoReducir := &models.ContratoReducir{
 											NumeroContratoOriginal: *subcontratoAux.NumeroContrato,
@@ -695,8 +656,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												horasAntesReduccion := horasXSemana * (subcontrato.NumeroSemanas - modificacion.NumeroSemanas)
 												subcontrato.NumeroHorasSemanales = horasAntesReduccion*/
 												subcontratoAux.NumeroHorasSemanales = modificacion.NumeroHorasTrabajadas
-												fmt.Println(subcontratoAux.NumeroHorasSemanales)
-												fmt.Println(modificacion.NumeroHorasTrabajadas)
 
 											} else {
 												//ultimaVinculacon.NumeroSemanas = ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas
@@ -706,7 +665,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											if desagregado, err = CalcularDesagregadoTitan(subcontratoAux, dedicacion, nivel); err != nil {
 												panic(err)
 											}
-											fmt.Println("DESAGRADO ", desagregado)
 											for concepto, valor := range desagregado {
 												if concepto != "NumeroContrato" && concepto != "Vigencia" {
 													if concepto == "SueldoBasico" {
@@ -754,11 +712,9 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 										actaInicioAnterior.Usuario = usuario["documento_compuesto"].(string)
 										url = "acta_inicio/" + strconv.Itoa(actaInicioAnterior.Id)
 										if err := SendRequestLegacy("UrlcrudAgora", url, "PUT", &response, &actaInicioAnterior); err != nil {
-											fmt.Println("Error en acta_inicio PUT ", err)
 											panic(err.Error())
 										}
 										if horasNuevoAux > 0 && horasNuevoAux != 0 {
-											fmt.Println("HORAS A REDUCIR DIFERENTE 0")
 											// Calcula el valor del nuevo contrato con base en las semanas desde la fecha inicio escogida hasta la nueva fecha fin y las nuevas horas
 											semanasTranscurridas := math.Ceil(modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours() / (24 * 7)) // cálculo con base en semanas
 											semanasRestantes := ultimaVinculacon.NumeroSemanas - modificacion.NumeroSemanas - int(semanasTranscurridas)
@@ -777,25 +733,13 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 											}
 											salario, err := CalcularValorContratoReduccion(vinc, semanasRestantes, ultimaVinculacon.NumeroHorasSemanales, nivel)
 											if err != nil {
-												fmt.Println("Error en cálculo del contrato reducción!", err)
 												panic(err)
 											}
-											fmt.Println("SALARIO ", salario)
-											// Si es de posgrado calcula el valor que se le ha pagado hasta la fecha de inicio y se resta del total que debe quedar con la reducción
-											/*if nivel == "POSGRADO" {
-												diasOriginales, _ := math.Modf((fechaFinOriginal.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-												fmt.Println("dias o ", diasOriginales)
-												diasTranscurridos, _ := math.Modf((modificacion.FechaInicio.Sub(actaInicioAnterior.FechaInicio).Hours()) / 24)
-												fmt.Println("dias t ", diasTranscurridos)
-												valorDiario := subcontrato.ValorContrato / diasOriginales
-												valorPagado := valorDiario * diasTranscurridos
-												salario = salario - valorPagado
-											}*/
+
 											contrato.ValorContrato = math.Floor(salario)
 											beego.Info(contrato.ValorContrato)
 											// el subcontrato actual es reducido parcialmente y los siguientes no deben ser afectados
 											var desagregadoNuevo, err2 map[string]interface{}
-											fmt.Println("VINCULAC ", vinc[0])
 											if desagregadoNuevo, err2 = CalcularDesagregadoTitan(vinc[0], dedicacion, nivel); err2 != nil {
 												panic(err)
 											}
@@ -818,9 +762,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 									}
 								}
 							}
-							fmt.Println("VALOR CONTRATO ", contrato.ValorContrato)
-							// fmt.Println("VALOR CONTRATO ", reduccion.ContratoNuevo)
-							fmt.Println("ERROR ", reduccion)
 							if contrato.ValorContrato > 0 {
 								contratoGeneral["ValorContrato"] = int(contrato.ValorContrato)
 								if err := SendRequestLegacy("UrlcrudAgora", "contrato_general", "POST", &response, &contratoGeneral); err == nil { // If 1.8 - contrato_general (POST)
@@ -860,48 +801,38 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 												if err := SendRequestLegacy("UrlcrudAgora", "contrato_disponibilidad", "POST", &response, &cd); err == nil { // If 1.12 - contrato_disponibilidad
 													modificacion.NumeroContrato = &numContrato
 													modificacion.Vigencia = vigencia
-													fmt.Println(&numContrato)
-													fmt.Println("modificacion ", modificacion)
 													url = VinculacionEndpoint + strconv.Itoa(modificacion.Id)
 													if fecha := NormalizarFechaTimezone(&modificacion.FechaInicio); fecha != nil {
 														modificacion.FechaInicio = *fecha
 													}
 													if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &modificacion); err != nil {
-														fmt.Println("Error en If 1.13 - vinculacion_docente! ", err)
 														logs.Error(response)
 														panic(err.Error())
 													}
 													if tipoRes.CodigoAbreviacion == "RRED" {
-														fmt.Println(numContrato)
 														if reduccion.ContratoNuevo != nil {
 															reduccion.ContratoNuevo.NumeroContratoReduccion = numContrato
 															reduccion.ContratoNuevo.NumeroResolucion = resolucion.NumeroResolucion
 															reduccion.ContratoNuevo.IdResolucion = resolucion.Id
-															fmt.Println("SALE")
 														}
 													}
 												} else {
-													fmt.Println("Error en If 1.12 - contrato_disponibilidad! ", err)
 													logs.Error(cd)
 													panic(err.Error())
 												}
 											} else {
-												fmt.Println("Error en If 1.11 - DisponibilidadVinculacion! ", err)
 												logs.Error(dv)
 												panic(err.Error())
 											}
 										} else { // If 1.10
-											fmt.Println("Error en If 1.10 - acta_inicio (POST)! ", err)
 											logs.Error(ai)
 											panic(err.Error())
 										}
 									} else { // If 1.9
-										fmt.Println("Error en If 1.9 - contrato_estado (POST)! ", err)
 										logs.Error(ce)
 										panic(err.Error())
 									}
 								} else { // if 1.8
-									fmt.Println("Error en If 1.8 - contrato_general (POST)! ", err)
 									logs.Error(contratoGeneral)
 									panic(err.Error())
 								}
@@ -910,14 +841,11 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 							}
 						}
 					} else { // If 1.2
-						fmt.Println("Error en If 1.2 - informacion_proveedor! ", err)
 						logs.Error(vi)
 						panic(err.Error())
 					}
 					if tipoRes.CodigoAbreviacion == "RRED" {
-						fmt.Println("ENTRA A REDUCCIÓN")
 						if err := ReducirContratosTitan(reduccion, &modificacion, contrato.ValorContrato); err != nil {
-							fmt.Println("Error en reliquidacion de reducciones Titan")
 							panic(err)
 						}
 					}
@@ -930,7 +858,6 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 					datosCorreo = append(datosCorreo, datoMensaje)
 				}
 			} else { // If 1.1
-				fmt.Println("Error en If 1.1 - vinculacion_docente! ", err)
 				logs.Error(vi)
 				panic(err.Error())
 			}
@@ -942,41 +869,34 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 				r.FechaExpedicion = m.FechaExpedicion
 				url = ResolucionEndpoint + strconv.Itoa(r.Id)
 				if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 2.2
-					fmt.Println("Error en If 2.2 - resolucion/ (PUT)!")
 					logs.Error(response)
 					panic(err.Error())
 				}
 				if documento, err := AlmacenarResolucionGestorDocumental(r.Id); err != nil {
-					fmt.Println("Error en If 2.3 - AlmacenarResolucionGestorDocumental/ (POST)!")
 					logs.Error(response)
 					panic(err)
 				} else {
 					r.NuxeoUid = documento.Enlace
 					url = ResolucionEndpoint + strconv.Itoa(r.Id)
 					if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &r); err != nil { // If 2.4
-						fmt.Println("Error en If 2.4 - resolucion/ (PUT)!")
 						logs.Error(response)
 						panic(err.Error())
 					}
 				}
 				go func() {
 					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-						fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
 						logs.Error(err)
 					}
 				}()
 			} else {
-				fmt.Println("Error en If 2.1 - Cambiar estado/ (POST)!")
 				logs.Error(response)
 				panic(err.Error())
 			}
 		} else { // if 2
-			fmt.Println("Error en If 2 - resolucion (GET) ! ", err)
 			logs.Error(r)
 			panic(err.Error())
 		}
 	} else {
-		fmt.Println("Error en If 1 - Consecutivo contrato_general! ", err)
 		logs.Error(cdve)
 		panic(err.Error())
 	}
@@ -1014,11 +934,9 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 			panic("Vinculacion (cancelacion) -> " + err.Error())
 		}
 		v = v2[0]
-		fmt.Println("V ", v)
 		contratos := new([]models.VinculacionDocente)
 		if err := BuscarContratosModificar(v.Id, contratos); err == nil { // If 1 - vinculacion_docente
 			for _, contrato := range *contratos {
-				fmt.Println("Contrato ", contrato)
 				url := "acta_inicio?query=NumeroContrato:" + *contrato.NumeroContrato + ",Vigencia:" + strconv.Itoa(contrato.Vigencia)
 				var ai []models.ActaInicio
 				if err := GetRequestLegacy("UrlcrudAgora", url, &ai); err != nil {
@@ -1027,7 +945,6 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 					panic("Acta de inicio no encontrada")
 				}
 				actaInicio := ai[0]
-				fmt.Println(actaInicio)
 				if actaInicio.FechaFin.After(v.FechaInicio) {
 					contratoCancelado := &models.ContratoCancelado{
 						NumeroContrato:    *contrato.NumeroContrato,
@@ -1092,56 +1009,46 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 														panic(err)
 													}
 												} else {
-													fmt.Println("Error en if 10 - Resolucion (PUT)#2!", err)
 													logs.Error(r)
 													panic(err.Error())
 												}
 											} else { // If 9
-												fmt.Println("Error en if 9 - GestorDocumental (POST)!", err)
 												logs.Error(documento)
 												panic(err)
 											}
 										} else { // If 8
-											fmt.Println("Error en if 8 - resolucion (PUT)!", err)
 											logs.Error(r)
 											panic(err.Error())
 										}
 									} else { // If 7
-										fmt.Println("Error en if 7 - CambiarEstadoResolucion (POST)!", err)
 										logs.Error(err)
 										panic(err.Error())
 									}
 								} else { // If 6
-									fmt.Println("Error en if 6 - resolucion (get)!", err)
 									logs.Error(r)
 									panic(err.Error())
 								}
 							} else { // If 5
-								fmt.Println("Error en if 5 - contrato_estado (post)!", err)
 								logs.Error(response)
 								panic(err.Error())
 							}
 						} else { // If 4
-							fmt.Println("Error en if 4 - acta_inicio (put)!", err)
 							logs.Error(response)
 							panic(err.Error())
 						}
 					} else { // if 2
-						fmt.Println("Error en if 2 - contrato_cancelado (post)!", err)
 						logs.Error(response)
 						panic(err.Error())
 					}
 				}
 			}
 		} else { // If 1
-			fmt.Println("Error en if 1 - vinculacion_docente (get)!", err)
 			logs.Error(v)
 			panic(err.Error())
 		}
 	}
 	go func() {
 		if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-			fmt.Println("Error en If 1.2.2 - NotificarDocentes/ (POST)!")
 			logs.Error(err)
 		}
 	}()

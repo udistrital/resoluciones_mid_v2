@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -26,14 +25,12 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 	var err2 map[string]interface{}
 
 	if rp {
-		fmt.Println("RPS ")
 		previnculaciones, outputError = PrevinculacionesRps(resolucionId)
 	} else {
 		previnculaciones, outputError = Previnculaciones(resolucionId)
 	}
 
 	for i := range previnculaciones {
-		fmt.Println("previnculacion ", previnculaciones[i].PersonaId)
 		persona, err2 = BuscarDatosPersonalesDocente(previnculaciones[i].PersonaId)
 		if err2 != nil {
 			panic(err2)
@@ -63,23 +60,6 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 		if previnculaciones[i].NumeroContrato == nil {
 			previnculaciones[i].NumeroContrato = new(string)
 		}
-		fmt.Println("previnculaciones ", previnculaciones[i])
-		fmt.Println(previnculaciones[i].ValorContrato)
-		/*fmt.Println("1 ", previnculaciones[i].Id)
-		fmt.Println("2 ", persona.NomProveedor)
-		fmt.Println("3 ", persona.TipoDocumento.ValorParametro)
-		fmt.Println("4 ", ciudad["Nombre"].(string))
-		fmt.Println("5 ", previnculaciones[i].PersonaId)
-		fmt.Println("6 ", previnculaciones[i].NumeroHorasSemanales)
-		fmt.Println("7 ", previnculaciones[i].NumeroSemanas)
-		fmt.Println("8 ", strings.Trim(previnculaciones[i].Categoria, " "))
-		fmt.Println("9 ", previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion)
-		fmt.Println("10 ", FormatMoney(int(previnculaciones[i].ValorContrato), 2))
-		fmt.Println("11 ", *previnculaciones[i].NumeroContrato)
-		fmt.Println("12 ", previnculaciones[i].Vigencia)
-		fmt.Println("13 ", previnculaciones[i].ProyectoCurricularId)
-		fmt.Println("14 ", disponibilidad[0].Disponibilidad)
-		fmt.Println("15 ", int(previnculaciones[i].NumeroRp))*/
 		vinculacion := &models.Vinculaciones{
 			Id:                       previnculaciones[i].Id,
 			Nombre:                   persona.NomProveedor,
@@ -277,7 +257,6 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 			//Se valida si es una resolucion de vinculacion
 			if tipoResolucion.CodigoAbreviacion == "RVIN" {
 				// Se aplica el valor del punto de parametros
-				fmt.Println("entra")
 				_, vP, err3 := CargarParametroPeriodo(vigencia, "PSAL")
 				if err3 != nil {
 					logs.Error(err3)
@@ -529,7 +508,6 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 	}
 
 	vin = append(vin, nuevaVinculacion)
-	//fmt.Println("VIN ", vin)
 	// calculo del valor del contrato para la nueva vinculación
 	if vin, err = CalcularSalarioPrecontratacion(vin); err != nil {
 		panic(err)
@@ -692,7 +670,6 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 	var resolucion models.Resolucion
 	var parametro models.Parametro
 	for i := range p.CambiosVinculacion {
-		fmt.Println("FEHCA INICIO ", p.CambiosVinculacion[i].FechaInicio)
 		vin := p.CambiosVinculacion[i].VinculacionOriginal
 		url := "acta_inicio?query=NumeroContrato:" + vin.NumeroContrato + ",Vigencia:" + strconv.Itoa(vin.Vigencia)
 		if err := GetRequestLegacy("UrlcrudAgora", url, &actaInicio); err != nil {
@@ -749,7 +726,6 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 		logs.Error(err.Error())
 		return err
 	}
-	fmt.Println("Modificaciones ", modificaciones)
 	// Caso de salida
 	if len(modificaciones) == 0 {
 		return nil
@@ -784,7 +760,6 @@ func CalcularTrazabilidad(vinculacionId string, valoresAntes *map[string]float64
 			(*valoresAntes)[disp.Rubro] = (*valoresAntes)[disp.Rubro] - disp.Valor
 		}
 	}
-	fmt.Println("Tipo de resolución ", tipoResolucion)
 	switch tipoResolucion.CodigoAbreviacion {
 	case "RCAN":
 		(*valoresAntes)["NumeroSemanas"] = float64(modVin.VinculacionDocenteCanceladaId.NumeroSemanas) - (*valoresAntes)["NumeroSemanas"]

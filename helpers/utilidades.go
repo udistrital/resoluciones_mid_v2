@@ -110,7 +110,6 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 // Envia una petición a endponts que responden con el body sin encapsular
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
-	fmt.Println("URL ", url)
 	if err := GetJson(url, target); err != nil {
 		return err
 	}
@@ -177,7 +176,6 @@ func ExtractData(respuesta map[string]interface{}, v interface{}, err2 error) er
 
 func JsonDebug(i interface{}) {
 	formatdata.JsonPrint(i)
-	fmt.Println()
 }
 
 func iguales(a interface{}, b interface{}) bool {
@@ -436,7 +434,6 @@ func ValidarBody(body []byte) (valid bool, err error) {
 		return false, err
 	} else {
 		content := fmt.Sprintf("%v", test)
-		fmt.Println(content)
 		switch content {
 		case "map[]", "[map[]]": // body vacio
 			return false, nil
