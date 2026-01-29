@@ -16,7 +16,6 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 			panic(outputError)
 		}
 	}()
-	fmt.Println("VALOR CONTRATO DES", v.ValorContrato)
 	var desagregado map[string]interface{}
 	datos := &models.DatosVinculacion{
 		NumeroContrato: "",
@@ -38,7 +37,6 @@ func CalcularDesagregadoTitan(v models.VinculacionDocente, dedicacion, nivelAcad
 		datos.NumeroSemanas = 1
 	}
 
-	fmt.Println("DESAGREGADO HCS ", datos)
 	if err := SendRequestNew("UrlmidTitan", "desagregado_hcs", "POST", &desagregado, &datos); err != nil {
 		logs.Error(err.Error())
 		panic("Consultando desagregado -> " + err.Error())

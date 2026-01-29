@@ -91,7 +91,6 @@ func normalizeHeader(h string) string {
 	return h
 }
 
-// ✅ Nueva función: verifica si existe una vinculación con el mismo RP y vigencia
 func validarExistenciaVinculacion(crp string, vigenciaRp int) (bool, error) {
 	var vincs []map[string]interface{}
 	query := fmt.Sprintf("NumeroRp:%s,VigenciaRp:%d,Activo:true", crp, vigenciaRp)

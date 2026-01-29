@@ -42,7 +42,6 @@ func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[str
 		if vinculaciones, err2 := ListarVinculaciones(strconv.Itoa(resolucionId), false); err2 != nil {
 			panic(err2)
 		} else {
-			fmt.Println("vinc ", vinculaciones)
 			if pdf, err3 = ConstruirDocumentoResolucion(contenidoResolucion, vinculaciones); err3 != nil {
 				panic(err3)
 			}
@@ -204,10 +203,8 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			logs.Error(err)
 			panic(err.Error())
 		}
-		fmt.Println("JEFE DEPENDENCIA ", jefeDependencia)
 		if len(jefeDependencia) > 0 {
 			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
-				fmt.Println("ORDENADOR ", ordenador)
 				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
 			} else {
 				logs.Error(err2)
@@ -252,9 +249,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		pdf.ImageOptions(filepath.Join(imgPath, "escudo.png"), 82, 8, 45, 45, false, gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: true}, 0, "")
 		pdf.SetY(55)
 		pdf.SetFont(MinionProBoldCn, "B", fontSize)
-		fmt.Println("LLEGA ", datos.Resolucion)
 		pdf.WriteAligned(0, lineHeight+1, "RESOLUCIÓN Nº "+datos.Resolucion.NumeroResolucion, "C")
-		fmt.Println("SALE ")
 		pdf.Ln(lineHeight)
 		pdf.WriteAligned(0, lineHeight+1, fechaParsed, "C")
 		pdf.Ln(lineHeight * 2)
@@ -300,8 +295,6 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		y := pdf.GetY()
 		_, h := pdf.GetPageSize()
 		_, _, _, b := pdf.GetMargins()
-		// p := pdf.PageNo()
-		// fmt.Println(p, y, h-b-lineHeight, h, b, (lineHeight * 2))
 		return y >= h-b-(lineHeight*2)
 	})
 
