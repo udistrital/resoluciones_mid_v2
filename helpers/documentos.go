@@ -79,7 +79,7 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 	}
 
 	if len(v) == 0 {
-		panic("No se encontró información de vinculación docente")
+		logs.Info("No se encontró información de vinculación docente")
 	}
 
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
@@ -219,7 +219,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 				panic(err2)
 			}
 		} else {
-			panic("No se encontró jefe para la dependencia en el periodo actual")
+			logs.Info("No se encontró jefe para la dependencia en el periodo actual")
 		}
 	}
 
@@ -248,7 +248,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 			panic(err.Error())
 		}
 		if len(resVinDocente) == 0 {
-			panic("No se encontró información de resolución vinculación docente anterior")
+			logs.Info("No se encontró información de resolución vinculación docente anterior")
 		}
 	}
 
