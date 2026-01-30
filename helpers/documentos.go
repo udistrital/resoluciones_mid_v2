@@ -68,10 +68,18 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 	var err map[string]interface{}
 	var v []models.VinculacionDocente
 
+	if len(vinculaciones) == 0 {
+		panic("No hay vinculaciones para generar el informe")
+	}
+
 	url := "vinculacion_docente?query=Id:" + strconv.Itoa(vinculaciones[0].Id)
 	if err := GetRequestNew("UrlcrudResoluciones", url, &v); err != nil {
 		logs.Error(err.Error())
 		panic(err.Error())
+	}
+
+	if len(v) == 0 {
+		logs.Info("No se encontró información de vinculación docente")
 	}
 
 	fontPath := filepath.Join(beego.AppConfig.String("StaticPath"), "fonts")
@@ -211,7 +219,7 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 				panic(err2)
 			}
 		} else {
-			panic("No se encontró jefe para la dependencia en el periodo actual")
+			logs.Info("No se encontró jefe para la dependencia en el periodo actual")
 		}
 	}
 
@@ -238,6 +246,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		}
 		if err := GetRequestNew("UrlCrudResoluciones", "resolucion_vinculacion_docente?query=id:"+strconv.Itoa(datos.ResolucionAnteriorId), &resVinDocente); err != nil {
 			panic(err.Error())
+		}
+		if len(resVinDocente) == 0 {
+			logs.Info("No se encontró información de resolución vinculación docente anterior")
 		}
 	}
 
