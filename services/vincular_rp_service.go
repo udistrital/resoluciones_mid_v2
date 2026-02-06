@@ -215,7 +215,21 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 			resultados = append(resultados, res)
 			continue
 		}
-		res.IdVinculacion = fmt.Sprintf("%.0f", vinculaciones[0]["Id"].(float64))
+		var elegida map[string]interface{}
+		for _, v := range vinculaciones {
+			if nc, ok := v["NumeroContrato"]; ok && nc != nil {
+				elegida = v
+				break
+			}
+		}
+
+		if elegida == nil {
+			res.PutStatus = "No hay vinculación con NumeroContrato != null (no se actualiza)"
+			resultados = append(resultados, res)
+			continue
+		}
+
+		res.IdVinculacion = fmt.Sprintf("%.0f", elegida["Id"].(float64))
 
 		var vincActual map[string]interface{}
 		if err := helpers.GetRequestNew("UrlCrudResoluciones", "vinculacion_docente/"+res.IdVinculacion, &vincActual); err != nil {
@@ -239,7 +253,6 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		vincActual["VigenciaRp"] = vigenciaRp
 		vincActual["Activo"] = true
 
-		// ✅ Validación de duplicados antes de PUT
 		exists, err := validarExistenciaVinculacion(res.CRP, vigenciaRp)
 		if err != nil {
 			res.PutStatus = fmt.Sprintf("Error validando duplicado: %v", err)
