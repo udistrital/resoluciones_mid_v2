@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -174,6 +175,37 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		registros = append(registros, reg)
 	}
 
+	type conflictoInfo struct {
+		CRPs  map[string]bool
+		Filas []int
+	}
+
+	conflictos := make(map[string]*conflictoInfo)
+
+	for _, r := range registros {
+		resNumKey := strings.Trim(strings.ReplaceAll(r.CodResolucion, "'", ""), " ")
+
+		keyBase := fmt.Sprintf("%s-%s-%s-%s",
+			resNumKey, r.CodFacultad, r.Documento, r.CodProyecto)
+
+		if _, ok := conflictos[keyBase]; !ok {
+			conflictos[keyBase] = &conflictoInfo{
+				CRPs:  make(map[string]bool),
+				Filas: []int{},
+			}
+		}
+
+		conflictos[keyBase].CRPs[r.CRP] = true
+		conflictos[keyBase].Filas = append(conflictos[keyBase].Filas, r.FilaExcel)
+	}
+
+	llavesInvalidas := make(map[string]*conflictoInfo)
+	for k, info := range conflictos {
+		if len(info.CRPs) > 1 {
+			llavesInvalidas[k] = info
+		}
+	}
+
 	visto := make(map[string]bool)
 	var registrosUnicos []models.VinculacionRpResultado
 	for _, r := range registros {
@@ -187,6 +219,28 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 
 	for _, res := range registrosUnicos {
 		resNum := strings.Trim(strings.ReplaceAll(res.CodResolucion, "'", ""), " ")
+
+		keyBase := fmt.Sprintf("%s-%s-%s-%s",
+			resNum, res.CodFacultad, res.Documento, res.CodProyecto)
+
+		if info, ok := llavesInvalidas[keyBase]; ok {
+			crps := make([]string, 0, len(info.CRPs))
+			for crp := range info.CRPs {
+				crps = append(crps, crp)
+			}
+			sort.Strings(crps)
+
+			filas := append([]int{}, info.Filas...)
+			sort.Ints(filas)
+
+			res.PutStatus = fmt.Sprintf(
+				"CONFLICTO: llave duplicada con CRPs diferentes. CRPs=%s. Filas=%v. No se actualiza ninguna fila de esta llave.",
+				strings.Join(crps, ","),
+				filas,
+			)
+			resultados = append(resultados, res)
+			continue
+		}
 
 		var resoluciones []map[string]interface{}
 		queryRes := fmt.Sprintf("NumeroResolucion:%s,Vigencia:%d,DependenciaId:%s", resNum, vigenciaRp, res.CodFacultad)
@@ -215,6 +269,7 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 			resultados = append(resultados, res)
 			continue
 		}
+
 		var elegida map[string]interface{}
 		for _, v := range vinculaciones {
 			if nc, ok := v["NumeroContrato"]; ok && nc != nil {
@@ -222,7 +277,6 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 				break
 			}
 		}
-
 		if elegida == nil {
 			res.PutStatus = "No hay vinculación con NumeroContrato != null (no se actualiza)"
 			resultados = append(resultados, res)
@@ -237,8 +291,33 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 			resultados = append(resultados, res)
 			continue
 		}
-		if data, ok := vincActual["Data"].([]interface{}); ok && len(data) > 0 {
-			vincActual = data[0].(map[string]interface{})
+		if raw, ok := vincActual["Data"]; ok {
+			if dataArr, ok := raw.([]interface{}); ok && len(dataArr) > 0 {
+				if m, ok := dataArr[0].(map[string]interface{}); ok {
+					vincActual = m
+				} else {
+					res.PutStatus = "Respuesta inválida: Data[0] no es objeto"
+					resultados = append(resultados, res)
+					continue
+				}
+			} else if dataMap, ok := raw.(map[string]interface{}); ok && dataMap != nil {
+				vincActual = dataMap
+			} else {
+				res.PutStatus = "Respuesta inválida: Data no tiene el formato esperado"
+				resultados = append(resultados, res)
+				continue
+			}
+		} else {
+			if _, ok := vincActual["Id"]; !ok {
+				keys := make([]string, 0, len(vincActual))
+				for k := range vincActual {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				res.PutStatus = fmt.Sprintf("Respuesta inválida: sin Data y sin Id. Keys=%v", keys)
+				resultados = append(resultados, res)
+				continue
+			}
 		}
 
 		for _, key := range []string{"Message", "Status", "Success"} {
@@ -253,7 +332,8 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		vincActual["VigenciaRp"] = vigenciaRp
 		vincActual["Activo"] = true
 
-		exists, err := validarExistenciaVinculacion(res.CRP, vigenciaRp)
+		crpNum := strconv.Itoa(coerceInt(res.CRP))
+		exists, err := validarExistenciaVinculacion(crpNum, vigenciaRp)
 		if err != nil {
 			res.PutStatus = fmt.Sprintf("Error validando duplicado: %v", err)
 			resultados = append(resultados, res)
