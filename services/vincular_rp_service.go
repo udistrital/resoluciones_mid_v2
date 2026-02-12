@@ -243,7 +243,7 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		}
 
 		var resoluciones []map[string]interface{}
-		queryRes := fmt.Sprintf("NumeroResolucion:%s,Vigencia:%d,DependenciaId:%s", resNum, vigenciaRp, res.CodFacultad)
+		queryRes := fmt.Sprintf("NumeroResolucion:%s,Vigencia:%d,DependenciaId:%s,Activo:true", resNum, vigenciaRp, res.CodFacultad)
 		if err := helpers.GetRequestNew("UrlCrudResoluciones", "resolucion?query="+queryRes, &resoluciones); err != nil {
 			res.PutStatus = fmt.Sprintf("Error consultando resolución: %v", err)
 			resultados = append(resultados, res)
@@ -257,7 +257,7 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		res.IdResolucion = fmt.Sprintf("%.0f", resoluciones[0]["Id"].(float64))
 
 		var vinculaciones []map[string]interface{}
-		queryVin := fmt.Sprintf("ResolucionVinculacionDocenteId:%s,PersonaId:%s,ProyectoCurricularId:%s",
+		queryVin := fmt.Sprintf("ResolucionVinculacionDocenteId:%s,PersonaId:%s,ProyectoCurricularId:%s,Activo:true",
 			res.IdResolucion, res.Documento, res.CodProyecto)
 		if err := helpers.GetRequestNew("UrlCrudResoluciones", "vinculacion_docente?query="+queryVin, &vinculaciones); err != nil {
 			res.PutStatus = fmt.Sprintf("Error consultando vinculación: %v", err)
