@@ -257,7 +257,7 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 		res.IdResolucion = fmt.Sprintf("%.0f", resoluciones[0]["Id"].(float64))
 
 		var vinculaciones []map[string]interface{}
-		queryVin := fmt.Sprintf("ResolucionVinculacionDocenteId:%s,PersonaId:%s,ProyectoCurricularId:%s,Activo:true",
+		queryVin := fmt.Sprintf("ResolucionVinculacionDocenteId:%s,PersonaId:%s,ProyectoCurricularId:%s",
 			res.IdResolucion, res.Documento, res.CodProyecto)
 		if err := helpers.GetRequestNew("UrlCrudResoluciones", "vinculacion_docente?query="+queryVin, &vinculaciones); err != nil {
 			res.PutStatus = fmt.Sprintf("Error consultando vinculación: %v", err)
@@ -330,7 +330,6 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 
 		vincActual["NumeroRp"] = coerceInt(res.CRP)
 		vincActual["VigenciaRp"] = vigenciaRp
-		vincActual["Activo"] = true
 
 		crpNum := strconv.Itoa(coerceInt(res.CRP))
 		exists, err := validarExistenciaVinculacion(crpNum, vigenciaRp)
