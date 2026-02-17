@@ -330,7 +330,6 @@ func ProcesarVinculaciones(file multipart.File, fileHeader *multipart.FileHeader
 
 		vincActual["NumeroRp"] = coerceInt(res.CRP)
 		vincActual["VigenciaRp"] = vigenciaRp
-		vincActual["Activo"] = true
 
 		crpNum := strconv.Itoa(coerceInt(res.CRP))
 		exists, err := validarExistenciaVinculacion(crpNum, vigenciaRp)
