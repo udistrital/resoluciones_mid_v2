@@ -316,11 +316,11 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						panic(err.Error())
 					}
 				}
-				// go func() {
-				// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-				// 		logs.Error(err)
-				// 	}
-				// }()
+				go func() {
+					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+						logs.Error(err)
+					}
+				}()
 			} else { // If 1.2.1
 				logs.Error(response)
 				panic(err.Error())
@@ -897,11 +897,11 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 						panic(err.Error())
 					}
 				}
-				// go func() {
-				// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-				// 		logs.Error(err)
-				// 	}
-				// }()
+				go func() {
+					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+						logs.Error(err)
+					}
+				}()
 			} else {
 				logs.Error(response)
 				panic(err.Error())
@@ -1085,11 +1085,11 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 			panic(err.Error())
 		}
 	}
-	// go func() {
-	// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-	// 		logs.Error(err)
-	// 	}
-	// }()
+	go func() {
+		if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+			logs.Error(err)
+		}
+	}()
 
 	return
 }
