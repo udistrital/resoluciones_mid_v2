@@ -470,14 +470,63 @@ func GetUsuario(usuario string) (nombreUsuario map[string]interface{}, err error
 func ErrorController(c beego.Controller, controller string) {
 	if err := recover(); err != nil {
 		logs.Error(err)
-		localError := err.(map[string]interface{})
-		c.Data["mesaage"] = (beego.AppConfig.String("appname") + "/" + controller + "/" + (localError["funcion"]).(string))
-		c.Data["data"] = (localError["err"])
-		xray.EndSegmentErr(http.StatusBadRequest, localError["err"])
-		if status, ok := localError["status"]; ok {
-			c.Abort(status.(string))
+
+		statusStr := "500"
+		message := "Error interno del servidor"
+		errorPath := beego.AppConfig.String("appname") + "/" + controller
+		var errorDetail interface{} = err
+		var errorMap map[string]interface{}
+
+		if localError, ok := err.(map[string]interface{}); ok {
+			errorMap = localError
+
+			if v, ok := localError["status"].(string); ok && v != "" {
+				statusStr = v
+			}
+
+			if v, ok := localError["err"]; ok {
+				message = fmt.Sprintf("%v", v)
+				errorDetail = v
+			}
+
+			if v, ok := localError["funcion"].(string); ok && v != "" {
+				errorPath = beego.AppConfig.String("appname") + "/" + controller + "/" + v
+			}
 		} else {
-			c.Abort("500")
+			message = fmt.Sprintf("%v", err)
 		}
+
+		statusCode, convErr := strconv.Atoi(statusStr)
+		if convErr != nil {
+			statusCode = http.StatusInternalServerError
+			statusStr = "500"
+		}
+
+		response := map[string]interface{}{
+			"Success": false,
+			"Status":  statusStr,
+			"Message": message,
+			"Error": map[string]interface{}{
+				"path":   errorPath,
+				"detail": errorDetail,
+			},
+		}
+
+		if errorMap != nil {
+			if code, ok := errorMap["code"]; ok {
+				response["Code"] = code
+			}
+			if data, ok := errorMap["data"]; ok {
+				response["Data"] = data
+			}
+			if detalle, ok := errorMap["detalle"]; ok {
+				response["Detalle"] = detalle
+			}
+		}
+
+		xray.EndSegmentErr(statusCode, message)
+		c.Ctx.Output.SetStatus(statusCode)
+		c.Data["json"] = response
+		c.ServeJSON()
 	}
 }
