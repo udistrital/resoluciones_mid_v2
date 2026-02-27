@@ -316,11 +316,11 @@ func ExpedirResolucion(m models.ExpedicionResolucion) (outputError map[string]in
 						panic(err.Error())
 					}
 				}
-				go func() {
-					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-						logs.Error(err)
-					}
-				}()
+				// go func() {
+				// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+				// 		logs.Error(err)
+				// 	}
+				// }()
 			} else { // If 1.2.1
 				logs.Error(response)
 				panic(err.Error())
@@ -394,7 +394,15 @@ func ValidarDatosExpedicion(m models.ExpedicionResolucion) (outputError map[stri
 func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "/ExpedirModificacion", "err": err, "status": "502"}
+			if errMap, ok := err.(map[string]interface{}); ok {
+				outputError = errMap
+			} else {
+				outputError = map[string]interface{}{
+					"funcion": "/ExpedirCancelacion",
+					"err":     err,
+					"status":  "502",
+				}
+			}
 			panic(outputError)
 		}
 	}()
@@ -439,6 +447,12 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(resolucion.TipoResolucionId), &tipoRes); err != nil {
 		logs.Error(err)
 		panic("Cargando tipo_resolucion -> " + err.Error())
+	}
+
+	if tipoRes.CodigoAbreviacion != "RVIN" {
+		if err := ValidarLiquidacionesTitan(vinc); err != nil {
+			panic(err)
+		}
 	}
 
 	// Cambiar en el futuro por terceros_mid/tipo/ordenadoresGasto y filtrar por dependenciaId
@@ -883,11 +897,11 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 						panic(err.Error())
 					}
 				}
-				go func() {
-					if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-						logs.Error(err)
-					}
-				}()
+				// go func() {
+				// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+				// 		logs.Error(err)
+				// 	}
+				// }()
 			} else {
 				logs.Error(response)
 				panic(err.Error())
@@ -906,12 +920,36 @@ func ExpedirModificacion(m models.ExpedicionResolucion) (outputError map[string]
 func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "/ExpedirCancelacion", "err": err, "status": "502"}
+			if errMap, ok := err.(map[string]interface{}); ok {
+				outputError = errMap
+			} else {
+				outputError = map[string]interface{}{
+					"funcion": "/ExpedirCancelacion",
+					"err":     err,
+					"status":  "502",
+				}
+			}
 			panic(outputError)
 		}
 	}()
 
 	cancelaciones := m.Vinculaciones
+
+	vinculacionIds := make([]int, 0, len(cancelaciones))
+	for _, can := range cancelaciones {
+		if can == nil {
+			panic(map[string]interface{}{
+				"funcion": "/ExpedirCancelacion",
+				"err":     "Se recibió una cancelación nula",
+				"status":  "400",
+			})
+		}
+		vinculacionIds = append(vinculacionIds, can.VinculacionDocente.Id)
+	}
+
+	if err := ValidarLiquidacionesTitanPorIds(vinculacionIds); err != nil {
+		panic(err)
+	}
 
 	var response interface{}
 	var usuario map[string]interface{}
@@ -1047,11 +1085,11 @@ func ExpedirCancelacion(m models.ExpedicionCancelacion) (outputError map[string]
 			panic(err.Error())
 		}
 	}
-	go func() {
-		if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
-			logs.Error(err)
-		}
-	}()
+	// go func() {
+	// 	if err := NotificarDocentes(datosCorreo, parametro.CodigoAbreviacion); err != nil {
+	// 		logs.Error(err)
+	// 	}
+	// }()
 
 	return
 }
