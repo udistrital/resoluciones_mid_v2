@@ -45,6 +45,9 @@ func init() {
 				&controllers.ExpedirResolucionController{},
 			),
 		),
+		beego.NSNamespace("/resoluciones_por_rol",
+			beego.NSRouter("", &controllers.ResolucionesPorRolController{}, "get:GetByRol"),
+		),
 
 		beego.NSNamespace("/reporte_financiera",
 			beego.NSInclude(
