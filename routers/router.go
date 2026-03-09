@@ -14,40 +14,47 @@ import (
 
 func init() {
 	ns := beego.NewNamespace("/v1",
+
 		beego.NSNamespace("/gestion_plantillas",
 			beego.NSInclude(
 				&controllers.GestionPlantillasController{},
 			),
 		),
+
 		beego.NSNamespace("/gestion_resoluciones",
 			beego.NSInclude(
 				&controllers.GestionResolucionesController{},
 			),
 		),
+
 		beego.NSNamespace("/vinculacion_rp",
 			beego.NSInclude(
 				&controllers.VincularRpController{},
 			),
 		),
+
 		beego.NSNamespace("/gestion_vinculaciones",
 			beego.NSInclude(
 				&controllers.GestionVinculacionesController{},
 			),
 			beego.NSRouter("/progreso/:jobId", &controllers.GestionVinculacionesController{}, "get:ObtenerProgreso"),
 		),
+
 		beego.NSNamespace("/services",
 			beego.NSInclude(
 				&controllers.ServicesController{},
 			),
 		),
+
 		beego.NSNamespace("/expedir_resolucion",
 			beego.NSInclude(
 				&controllers.ExpedirResolucionController{},
 			),
 		),
 		beego.NSNamespace("/resoluciones_por_rol",
-			beego.NSRouter("/dependencias", &controllers.ResolucionesPorRolController{}, "get:GetDependenciasByRol"),
-			beego.NSRouter("/consulta", &controllers.ResolucionesPorRolController{}, "get:GetResolucionesByDependencia"),
+			beego.NSInclude(
+				&controllers.ResolucionesPorRolController{},
+			),
 		),
 
 		beego.NSNamespace("/reporte_financiera",
@@ -56,5 +63,6 @@ func init() {
 			),
 		),
 	)
+
 	beego.AddNamespace(ns)
 }

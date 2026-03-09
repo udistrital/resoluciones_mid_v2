@@ -1270,6 +1270,86 @@
                 }
             }
         },
+        "/resoluciones_por_rol/consulta": {
+            "get": {
+                "tags": [
+                    "resoluciones_por_rol"
+                ],
+                "description": "Obtiene las resoluciones asociadas a una dependencia y vigencia",
+                "operationId": "ResolucionesPorRolController.GetResolucionesByDependencia",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "id_oikos",
+                        "description": "ID de la dependencia (OIKOS)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "Vigencia de las resoluciones",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/map[string]interface{}"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/resoluciones_por_rol/dependencias": {
+            "get": {
+                "tags": [
+                    "resoluciones_por_rol"
+                ],
+                "description": "Obtiene las dependencias asociadas a un usuario según su rol",
+                "operationId": "ResolucionesPorRolController.GetDependenciasByRol",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "numero_documento",
+                        "description": "Número de documento del usuario",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "rol",
+                        "description": "Rol del usuario (DECANO o ASISTENTE_DECANATURA)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/map[string]interface{}"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
         "/services/desagregado_planeacion": {
             "post": {
                 "tags": [
@@ -2661,6 +2741,10 @@
         {
             "name": "expedir_resolucion",
             "description": "ExpedirResolucionController operations for ExpedirResolucion\n"
+        },
+        {
+            "name": "resoluciones_por_rol",
+            "description": "ResolucionesPorRolController operations for ResolucionesPorRol\n"
         },
         {
             "name": "reporte_financiera",
