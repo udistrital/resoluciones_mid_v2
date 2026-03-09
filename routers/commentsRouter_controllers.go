@@ -306,8 +306,17 @@ func init() {
 
 	beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ResolucionesPorRolController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ResolucionesPorRolController"],
 		beego.ControllerComments{
-			Method:           "GetByRol",
-			Router:           "/",
+			Method:           "GetResolucionesByDependencia",
+			Router:           "/consulta",
+			AllowHTTPMethods: []string{"get"},
+			MethodParams:     param.Make(),
+			Filters:          nil,
+			Params:           nil})
+
+	beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ResolucionesPorRolController"] = append(beego.GlobalControllerRouter["github.com/udistrital/resoluciones_mid_v2/controllers:ResolucionesPorRolController"],
+		beego.ControllerComments{
+			Method:           "GetDependenciasByRol",
+			Router:           "/dependencias",
 			AllowHTTPMethods: []string{"get"},
 			MethodParams:     param.Make(),
 			Filters:          nil,

@@ -9,18 +9,26 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 )
 
+type DependenciaUsuario struct {
+	CodigoDependencia int    `json:"codigo_dependencia"`
+	IdOikos           int    `json:"id_oikos"`
+	Nombre            string `json:"nombre,omitempty"`
+	Rol               string `json:"rol,omitempty"`
+}
+
 type decanoFacultadXML struct {
-	Decano struct {
-		CodigoFacultad int `xml:"codigo_facultad"`
+	Decanos []struct {
+		CodigoFacultad int    `xml:"codigo_facultad"`
+		NombreFacultad string `xml:"facultad"`
 	} `xml:"decano"`
 }
 
 type asistenteFacultadXML struct {
-	Facultad struct {
-		CodigoDependencia int `xml:"codigo_dependecia"`
+	Facultades []struct {
+		CodigoDependencia int    `xml:"codigo_dependecia"`
+		NombreDependencia string `xml:"nombre_dependencia"`
 	} `xml:"facultad"`
 }
-
 type homologacionFacultadXML struct {
 	IdOikos int `xml:"id_oikos"`
 	IdGedep int `xml:"id_gedep"`
@@ -40,7 +48,22 @@ func joinWSO2URL(protocol, base, ns, path string) string {
 	return fmt.Sprintf("%s://%s/%s/%s", protocol, base, ns, path)
 }
 
-func resolveCodigoDependencia(numeroDocumento, rol string) (int, map[string]interface{}) {
+func deduplicateDependencias(items []DependenciaUsuario) []DependenciaUsuario {
+	seen := make(map[string]bool)
+	result := make([]DependenciaUsuario, 0)
+
+	for _, item := range items {
+		key := fmt.Sprintf("%d-%d", item.CodigoDependencia, item.IdOikos)
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]DependenciaUsuario, map[string]interface{}) {
 	protocol := beego.AppConfig.String("ProtocolAdmin")
 	baseWSO2 := beego.AppConfig.String("UrlcrudWSO2")
 	nsAcademica := beego.AppConfig.String("NscrudAcademica")
@@ -48,53 +71,92 @@ func resolveCodigoDependencia(numeroDocumento, rol string) (int, map[string]inte
 	rol = strings.ToUpper(strings.TrimSpace(rol))
 
 	switch rol {
+
 	case "DECANO":
 		var dec decanoFacultadXML
 		url := joinWSO2URL(protocol, baseWSO2, nsAcademica, "decano/"+numeroDocumento)
 
 		if err := helpers.GetXml(url, &dec); err != nil {
-			return 0, map[string]interface{}{
-				"funcion": "resolveCodigoDependencia:decano",
+			return nil, map[string]interface{}{
+				"funcion": "resolveDependenciasFromSGA:decano",
 				"err":     err.Error(),
 				"status":  "502",
 			}
 		}
 
-		if dec.Decano.CodigoFacultad == 0 {
-			return 0, map[string]interface{}{
-				"funcion": "resolveCodigoDependencia:decano",
+		if len(dec.Decanos) == 0 {
+			return nil, map[string]interface{}{
+				"funcion": "resolveDependenciasFromSGA:decano",
 				"err":     "no se encontró una facultad activa para el usuario en el SGA",
 				"status":  "404",
 			}
 		}
 
-		return dec.Decano.CodigoFacultad, nil
+		dependencias := make([]DependenciaUsuario, 0)
+		for _, item := range dec.Decanos {
+			if item.CodigoFacultad > 0 {
+				dependencias = append(dependencias, DependenciaUsuario{
+					CodigoDependencia: item.CodigoFacultad,
+					Nombre:            item.NombreFacultad,
+					Rol:               rol,
+				})
+			}
+		}
+
+		if len(dependencias) == 0 {
+			return nil, map[string]interface{}{
+				"funcion": "resolveDependenciasFromSGA:decano",
+				"err":     "no se encontró una facultad activa para el usuario en el SGA",
+				"status":  "404",
+			}
+		}
+
+		return deduplicateDependencias(dependencias), nil
 
 	case "ASISTENTE_DECANATURA":
 		var asis asistenteFacultadXML
 		url := joinWSO2URL(protocol, baseWSO2, nsAcademica, "asistente_facultad/"+numeroDocumento)
 
 		if err := helpers.GetXml(url, &asis); err != nil {
-			return 0, map[string]interface{}{
-				"funcion": "resolveCodigoDependencia:asistente_decanatura",
+			return nil, map[string]interface{}{
+				"funcion": "resolveDependenciasFromSGA:asistente_decanatura",
 				"err":     err.Error(),
 				"status":  "502",
 			}
 		}
 
-		if asis.Facultad.CodigoDependencia == 0 {
-			return 0, map[string]interface{}{
-				"funcion": "resolveCodigoDependencia:asistente_decanatura",
+		if len(asis.Facultades) == 0 {
+			return nil, map[string]interface{}{
+				"funcion": "resolveDependenciasFromSGA:asistente_decanatura",
 				"err":     "no se encontró una dependencia activa para el usuario en el SGA",
 				"status":  "404",
 			}
 		}
 
-		return asis.Facultad.CodigoDependencia, nil
+		dependencias := make([]DependenciaUsuario, 0)
+		for _, item := range asis.Facultades {
+			if item.CodigoDependencia > 0 {
+				dependencias = append(dependencias, DependenciaUsuario{
+					CodigoDependencia: item.CodigoDependencia,
+					Nombre:            item.NombreDependencia,
+					Rol:               rol,
+				})
+			}
+		}
+
+		if len(dependencias) == 0 {
+			return nil, map[string]interface{}{
+				"funcion": "resolveDependenciasFromSGA:asistente_decanatura",
+				"err":     "no se encontró una dependencia activa para el usuario en el SGA",
+				"status":  "404",
+			}
+		}
+
+		return deduplicateDependencias(dependencias), nil
 
 	default:
-		return 0, map[string]interface{}{
-			"funcion": "resolveCodigoDependencia",
+		return nil, map[string]interface{}{
+			"funcion": "resolveDependenciasFromSGA",
 			"err":     "rol no soportado",
 			"status":  "400",
 		}
@@ -128,16 +190,23 @@ func resolveIdOikosFromHomologacion(codigoDependencia int) (int, map[string]inte
 	return hom.IdOikos, nil
 }
 
-func ResolveOikosByRol(numeroDocumento, rol string) ([]int, map[string]interface{}) {
-	codigoDependencia, err := resolveCodigoDependencia(numeroDocumento, rol)
+func ResolveDependenciasByRol(numeroDocumento, rol string) ([]DependenciaUsuario, map[string]interface{}) {
+	dependencias, err := resolveDependenciasFromSGA(numeroDocumento, rol)
 	if err != nil {
 		return nil, err
 	}
 
-	idOikos, err := resolveIdOikosFromHomologacion(codigoDependencia)
-	if err != nil {
-		return nil, err
+	resultado := make([]DependenciaUsuario, 0)
+
+	for _, dep := range dependencias {
+		idOikos, errMap := resolveIdOikosFromHomologacion(dep.CodigoDependencia)
+		if errMap != nil {
+			return nil, errMap
+		}
+
+		dep.IdOikos = idOikos
+		resultado = append(resultado, dep)
 	}
 
-	return []int{idOikos}, nil
+	return deduplicateDependencias(resultado), nil
 }

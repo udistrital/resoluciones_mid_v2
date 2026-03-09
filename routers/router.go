@@ -46,7 +46,8 @@ func init() {
 			),
 		),
 		beego.NSNamespace("/resoluciones_por_rol",
-			beego.NSRouter("", &controllers.ResolucionesPorRolController{}, "get:GetByRol"),
+			beego.NSRouter("/dependencias", &controllers.ResolucionesPorRolController{}, "get:GetDependenciasByRol"),
+			beego.NSRouter("/consulta", &controllers.ResolucionesPorRolController{}, "get:GetResolucionesByDependencia"),
 		),
 
 		beego.NSNamespace("/reporte_financiera",
