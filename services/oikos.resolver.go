@@ -91,7 +91,6 @@ func getJSONWithUtilOAS(url string, target interface{}) map[string]interface{} {
 			"status":  "502",
 		}
 	}
-
 	return nil
 }
 
@@ -153,7 +152,6 @@ func getJSON(url string, target interface{}) map[string]interface{} {
 	if errMap := getJSONWithUtilOAS(url, target); errMap == nil {
 		return nil
 	}
-
 	return getJSONWithHTTP(url, target)
 }
 
@@ -339,4 +337,13 @@ func ResolveAlcanceUsuario(numeroDocumento string, roles []string) (models.Alcan
 		EsGlobal:     false,
 		Dependencias: dependencias,
 	}, nil
+}
+
+func DependenciaPermitida(idOikos int, dependencias []models.DependenciaUsuario) bool {
+	for _, dep := range dependencias {
+		if dep.IdOikos == idOikos {
+			return true
+		}
+	}
+	return false
 }
