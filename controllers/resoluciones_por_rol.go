@@ -19,11 +19,29 @@ func (c *ResolucionesPorRolController) URLMapping() {
 	c.Mapping("GetResolucionesByDependencia", c.GetResolucionesByDependencia)
 }
 
+func parseRolesParam(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(raw, ",")
+	roles := make([]string, 0)
+
+	for _, part := range parts {
+		rol := strings.ToUpper(strings.TrimSpace(part))
+		if rol != "" {
+			roles = append(roles, rol)
+		}
+	}
+
+	return roles
+}
+
 // GetDependenciasByRol ...
 // @Title GetDependenciasByRol
-// @Description Obtiene las dependencias asociadas a un usuario según su rol
+// @Description Obtiene el alcance del usuario según sus roles
 // @Param	numero_documento	query	string	true	"Número de documento del usuario"
-// @Param	rol				query	string	true	"Rol del usuario (DECANO o ASISTENTE_DECANATURA)"
+// @Param	roles			query	string	true	"Roles del usuario separados por coma"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -32,23 +50,26 @@ func (c *ResolucionesPorRolController) GetDependenciasByRol() {
 	defer helpers.ErrorController(c.Controller, "ResolucionesPorRolController")
 
 	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
-	rol := strings.ToUpper(strings.TrimSpace(c.GetString("rol")))
+	rolesRaw := c.GetString("roles")
+	roles := parseRolesParam(rolesRaw)
 
 	if numeroDocumento == "" {
-		panic(map[string]interface{}{"funcion": "GetDependenciasByRol", "err": "numero_documento es requerido", "status": "400"})
+		panic(map[string]interface{}{
+			"funcion": "GetDependenciasByRol",
+			"err":     "numero_documento es requerido",
+			"status":  "400",
+		})
 	}
 
-	if rol == "" {
-		panic(map[string]interface{}{"funcion": "GetDependenciasByRol", "err": "rol es requerido", "status": "400"})
+	if len(roles) == 0 {
+		panic(map[string]interface{}{
+			"funcion": "GetDependenciasByRol",
+			"err":     "roles es requerido y debe contener al menos un rol",
+			"status":  "400",
+		})
 	}
 
-	switch rol {
-	case "DECANO", "ASISTENTE_DECANATURA":
-	default:
-		panic(map[string]interface{}{"funcion": "GetDependenciasByRol", "err": "rol no soportado", "status": "400"})
-	}
-
-	dependencias, errMap := services.ResolveDependenciasByRol(numeroDocumento, rol)
+	alcance, errMap := services.ResolveAlcanceUsuario(numeroDocumento, roles)
 	if errMap != nil {
 		panic(errMap)
 	}
@@ -57,17 +78,19 @@ func (c *ResolucionesPorRolController) GetDependenciasByRol() {
 	c.Data["json"] = map[string]interface{}{
 		"Success": true,
 		"Status":  200,
-		"Message": "Dependencias obtenidas con éxito",
-		"Data":    dependencias,
+		"Message": "Alcance del usuario obtenido con éxito",
+		"Data":    alcance,
 	}
 	c.ServeJSON()
 }
 
 // GetResolucionesByDependencia ...
 // @Title GetResolucionesByDependencia
-// @Description Obtiene las resoluciones asociadas a una dependencia y vigencia
-// @Param	id_oikos	query	int	true	"ID de la dependencia (OIKOS)"
-// @Param	vigencia	query	int	true	"Vigencia de las resoluciones"
+// @Description Obtiene resoluciones según el alcance del usuario y vigencia
+// @Param	numero_documento	query	string	true	"Número de documento del usuario"
+// @Param	roles			query	string	true	"Roles del usuario separados por coma"
+// @Param	vigencia		query	int		true	"Vigencia de las resoluciones"
+// @Param	id_oikos		query	int		false	"ID OIKOS para filtrar una dependencia específica"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -75,20 +98,57 @@ func (c *ResolucionesPorRolController) GetDependenciasByRol() {
 func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 	defer helpers.ErrorController(c.Controller, "ResolucionesPorRolController")
 
-	idOikos, errIdOikos := c.GetInt("id_oikos")
-	vigencia, errVigencia := c.GetInt("vigencia")
+	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
+	rolesRaw := c.GetString("roles")
+	roles := parseRolesParam(rolesRaw)
 
-	if errIdOikos != nil || idOikos <= 0 {
-		panic(map[string]interface{}{"funcion": "GetResolucionesByDependencia", "err": "id_oikos es requerido y debe ser válido", "status": "400"})
+	vigencia, errVigencia := c.GetInt("vigencia")
+	idOikos, errIdOikos := c.GetInt("id_oikos")
+
+	var dependenciaFiltro *int
+
+	if numeroDocumento == "" {
+		panic(map[string]interface{}{
+			"funcion": "GetResolucionesByDependencia",
+			"err":     "numero_documento es requerido",
+			"status":  "400",
+		})
+	}
+
+	if len(roles) == 0 {
+		panic(map[string]interface{}{
+			"funcion": "GetResolucionesByDependencia",
+			"err":     "roles es requerido y debe contener al menos un rol",
+			"status":  "400",
+		})
 	}
 
 	if errVigencia != nil || vigencia <= 0 {
-		panic(map[string]interface{}{"funcion": "GetResolucionesByDependencia", "err": "vigencia es requerida y debe ser válida", "status": "400"})
+		panic(map[string]interface{}{
+			"funcion": "GetResolucionesByDependencia",
+			"err":     "vigencia es requerida y debe ser válida",
+			"status":  "400",
+		})
 	}
 
-	resoluciones, errMap := services.GetResolucionesByDependenciaIdAndVigencia(idOikos, vigencia)
+	if errIdOikos == nil && idOikos > 0 {
+		dependenciaFiltro = &idOikos
+	}
+
+	resoluciones, errMap := services.GetResolucionesByAlcance(numeroDocumento, roles, vigencia, dependenciaFiltro)
 	if errMap != nil {
 		panic(errMap)
+	}
+
+	responseData := map[string]interface{}{
+		"numero_documento": numeroDocumento,
+		"roles":            roles,
+		"vigencia":         vigencia,
+		"resoluciones":     resoluciones,
+	}
+
+	if dependenciaFiltro != nil {
+		responseData["id_oikos"] = *dependenciaFiltro
 	}
 
 	c.Ctx.Output.SetStatus(200)
@@ -96,11 +156,7 @@ func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 		"Success": true,
 		"Status":  200,
 		"Message": "Resoluciones obtenidas con éxito",
-		"Data": map[string]interface{}{
-			"id_oikos":     idOikos,
-			"vigencia":     vigencia,
-			"resoluciones": resoluciones,
-		},
+		"Data":    responseData,
 	}
 	c.ServeJSON()
 }

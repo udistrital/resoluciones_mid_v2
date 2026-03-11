@@ -1,43 +1,34 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
-	"github.com/udistrital/resoluciones_mid_v2/helpers"
+	"github.com/udistrital/resoluciones_mid_v2/models"
+	"github.com/udistrital/utils_oas/request"
 )
 
-type DependenciaUsuario struct {
-	CodigoDependencia int    `json:"codigo_dependencia"`
-	IdOikos           int    `json:"id_oikos"`
-	Nombre            string `json:"nombre,omitempty"`
-	Rol               string `json:"rol,omitempty"`
-}
-
-type decanoFacultadXML struct {
-	Decanos []struct {
-		CodigoFacultad int    `xml:"codigo_facultad"`
-		NombreFacultad string `xml:"facultad"`
-	} `xml:"decano"`
-}
-
-type asistenteFacultadXML struct {
-	Facultades []struct {
-		CodigoDependencia int    `xml:"codigo_dependecia"`
-		NombreDependencia string `xml:"nombre_dependencia"`
-	} `xml:"facultad"`
-}
-type homologacionFacultadXML struct {
-	IdOikos int `xml:"id_oikos"`
-	IdGedep int `xml:"id_gedep"`
+var rolePriority = map[string]int{
+	"ADMINISTRADOR_RESOLUCIONES": 3,
+	"ASIS_FINANCIERA":            2,
+	"DECANO":                     1,
+	"ASISTENTE_DECANATURA":       1,
 }
 
 func normalizeBaseNoProto(u string) string {
 	u = strings.TrimSpace(u)
 	u = strings.TrimLeft(u, "/")
 	return u
+}
+
+func normalizeRol(rol string) string {
+	return strings.ToUpper(strings.TrimSpace(rol))
 }
 
 func joinWSO2URL(protocol, base, ns, path string) string {
@@ -48,9 +39,9 @@ func joinWSO2URL(protocol, base, ns, path string) string {
 	return fmt.Sprintf("%s://%s/%s/%s", protocol, base, ns, path)
 }
 
-func deduplicateDependencias(items []DependenciaUsuario) []DependenciaUsuario {
+func deduplicateDependencias(items []models.DependenciaUsuario) []models.DependenciaUsuario {
 	seen := make(map[string]bool)
-	result := make([]DependenciaUsuario, 0)
+	result := make([]models.DependenciaUsuario, 0)
 
 	for _, item := range items {
 		key := fmt.Sprintf("%d-%d", item.CodigoDependencia, item.IdOikos)
@@ -63,28 +54,127 @@ func deduplicateDependencias(items []DependenciaUsuario) []DependenciaUsuario {
 	return result
 }
 
-func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]DependenciaUsuario, map[string]interface{}) {
+func getHighestPriorityRol(roles []string) string {
+	bestRol := ""
+	bestPriority := -1
+
+	for _, rol := range roles {
+		r := normalizeRol(rol)
+		priority, ok := rolePriority[r]
+		if !ok {
+			continue
+		}
+
+		if priority > bestPriority {
+			bestPriority = priority
+			bestRol = r
+		}
+	}
+
+	return bestRol
+}
+
+func isGlobalRol(rol string) bool {
+	switch normalizeRol(rol) {
+	case "ADMINISTRADOR_RESOLUCIONES", "ASIS_FINANCIERA":
+		return true
+	default:
+		return false
+	}
+}
+
+func getJSONWithUtilOAS(url string, target interface{}) map[string]interface{} {
+	if err := request.GetJson(url, target); err != nil {
+		return map[string]interface{}{
+			"funcion": "getJSONWithUtilOAS",
+			"err":     err.Error(),
+			"status":  "502",
+		}
+	}
+
+	return nil
+}
+
+func getJSONWithHTTP(url string, target interface{}) map[string]interface{} {
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return map[string]interface{}{
+			"funcion": "getJSONWithHTTP:newRequest",
+			"err":     err.Error(),
+			"status":  "500",
+		}
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return map[string]interface{}{
+			"funcion": "getJSONWithHTTP:do",
+			"err":     err.Error(),
+			"status":  "502",
+		}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return map[string]interface{}{
+			"funcion": "getJSONWithHTTP:readBody",
+			"err":     err.Error(),
+			"status":  "502",
+		}
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return map[string]interface{}{
+			"funcion": "getJSONWithHTTP:statusCode",
+			"err":     fmt.Sprintf("respuesta no exitosa del servicio externo: %d - %s", resp.StatusCode, strings.TrimSpace(string(body))),
+			"status":  strconv.Itoa(resp.StatusCode),
+		}
+	}
+
+	if err := json.Unmarshal(body, target); err != nil {
+		return map[string]interface{}{
+			"funcion": "getJSONWithHTTP:unmarshal",
+			"err":     err.Error(),
+			"status":  "502",
+		}
+	}
+
+	return nil
+}
+
+func getJSON(url string, target interface{}) map[string]interface{} {
+	if errMap := getJSONWithUtilOAS(url, target); errMap == nil {
+		return nil
+	}
+
+	return getJSONWithHTTP(url, target)
+}
+
+func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]models.DependenciaUsuario, map[string]interface{}) {
 	protocol := beego.AppConfig.String("ProtocolAdmin")
 	baseWSO2 := beego.AppConfig.String("UrlcrudWSO2")
 	nsAcademica := beego.AppConfig.String("NscrudAcademica")
 
-	rol = strings.ToUpper(strings.TrimSpace(rol))
+	rol = normalizeRol(rol)
 
 	switch rol {
-
 	case "DECANO":
-		var dec decanoFacultadXML
+		var dec models.DecanoFacultadResponse
 		url := joinWSO2URL(protocol, baseWSO2, nsAcademica, "decano/"+numeroDocumento)
 
-		if err := helpers.GetXml(url, &dec); err != nil {
-			return nil, map[string]interface{}{
-				"funcion": "resolveDependenciasFromSGA:decano",
-				"err":     err.Error(),
-				"status":  "502",
-			}
+		if errMap := getJSON(url, &dec); errMap != nil {
+			errMap["funcion"] = "resolveDependenciasFromSGA:decano"
+			return nil, errMap
 		}
 
-		if len(dec.Decanos) == 0 {
+		if len(dec.Facultad.Decano) == 0 {
 			return nil, map[string]interface{}{
 				"funcion": "resolveDependenciasFromSGA:decano",
 				"err":     "no se encontró una facultad activa para el usuario en el SGA",
@@ -92,15 +182,18 @@ func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]DependenciaUsuar
 			}
 		}
 
-		dependencias := make([]DependenciaUsuario, 0)
-		for _, item := range dec.Decanos {
-			if item.CodigoFacultad > 0 {
-				dependencias = append(dependencias, DependenciaUsuario{
-					CodigoDependencia: item.CodigoFacultad,
-					Nombre:            item.NombreFacultad,
-					Rol:               rol,
-				})
+		dependencias := make([]models.DependenciaUsuario, 0)
+		for _, item := range dec.Facultad.Decano {
+			codigo, err := strconv.Atoi(strings.TrimSpace(item.CodigoFacultad))
+			if err != nil || codigo <= 0 {
+				continue
 			}
+
+			dependencias = append(dependencias, models.DependenciaUsuario{
+				CodigoDependencia: codigo,
+				Nombre:            item.NombreFacultad,
+				Rol:               rol,
+			})
 		}
 
 		if len(dependencias) == 0 {
@@ -114,18 +207,15 @@ func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]DependenciaUsuar
 		return deduplicateDependencias(dependencias), nil
 
 	case "ASISTENTE_DECANATURA":
-		var asis asistenteFacultadXML
+		var asis models.AsistenteFacultadResponse
 		url := joinWSO2URL(protocol, baseWSO2, nsAcademica, "asistente_facultad/"+numeroDocumento)
 
-		if err := helpers.GetXml(url, &asis); err != nil {
-			return nil, map[string]interface{}{
-				"funcion": "resolveDependenciasFromSGA:asistente_decanatura",
-				"err":     err.Error(),
-				"status":  "502",
-			}
+		if errMap := getJSON(url, &asis); errMap != nil {
+			errMap["funcion"] = "resolveDependenciasFromSGA:asistente_decanatura"
+			return nil, errMap
 		}
 
-		if len(asis.Facultades) == 0 {
+		if len(asis.Asistente.Facultad) == 0 {
 			return nil, map[string]interface{}{
 				"funcion": "resolveDependenciasFromSGA:asistente_decanatura",
 				"err":     "no se encontró una dependencia activa para el usuario en el SGA",
@@ -133,15 +223,18 @@ func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]DependenciaUsuar
 			}
 		}
 
-		dependencias := make([]DependenciaUsuario, 0)
-		for _, item := range asis.Facultades {
-			if item.CodigoDependencia > 0 {
-				dependencias = append(dependencias, DependenciaUsuario{
-					CodigoDependencia: item.CodigoDependencia,
-					Nombre:            item.NombreDependencia,
-					Rol:               rol,
-				})
+		dependencias := make([]models.DependenciaUsuario, 0)
+		for _, item := range asis.Asistente.Facultad {
+			codigo, err := strconv.Atoi(strings.TrimSpace(item.CodigoDependencia))
+			if err != nil || codigo <= 0 {
+				continue
 			}
+
+			dependencias = append(dependencias, models.DependenciaUsuario{
+				CodigoDependencia: codigo,
+				Nombre:            item.NombreDependencia,
+				Rol:               rol,
+			})
 		}
 
 		if len(dependencias) == 0 {
@@ -168,18 +261,15 @@ func resolveIdOikosFromHomologacion(codigoDependencia int) (int, map[string]inte
 	baseWSO2 := beego.AppConfig.String("UrlcrudWSO2")
 	nsHomologacion := beego.AppConfig.String("NscrudHomologacion")
 
-	var hom homologacionFacultadXML
+	var hom models.HomologacionFacultadResponse
 	url := joinWSO2URL(protocol, baseWSO2, nsHomologacion, "facultad_oikos_gedep/"+strconv.Itoa(codigoDependencia))
 
-	if err := helpers.GetXml(url, &hom); err != nil {
-		return 0, map[string]interface{}{
-			"funcion": "resolveIdOikosFromHomologacion",
-			"err":     err.Error(),
-			"status":  "502",
-		}
+	if errMap := getJSON(url, &hom); errMap != nil {
+		errMap["funcion"] = "resolveIdOikosFromHomologacion"
+		return 0, errMap
 	}
 
-	if hom.IdOikos == 0 {
+	if strings.TrimSpace(hom.Homologacion.IdOikos) == "" {
 		return 0, map[string]interface{}{
 			"funcion": "resolveIdOikosFromHomologacion",
 			"err":     "no se encontró homologación Oikos para la dependencia consultada",
@@ -187,16 +277,25 @@ func resolveIdOikosFromHomologacion(codigoDependencia int) (int, map[string]inte
 		}
 	}
 
-	return hom.IdOikos, nil
+	idOikos, err := strconv.Atoi(strings.TrimSpace(hom.Homologacion.IdOikos))
+	if err != nil || idOikos <= 0 {
+		return 0, map[string]interface{}{
+			"funcion": "resolveIdOikosFromHomologacion",
+			"err":     "el id_oikos recibido no es válido",
+			"status":  "502",
+		}
+	}
+
+	return idOikos, nil
 }
 
-func ResolveDependenciasByRol(numeroDocumento, rol string) ([]DependenciaUsuario, map[string]interface{}) {
+func ResolveDependenciasByRol(numeroDocumento, rol string) ([]models.DependenciaUsuario, map[string]interface{}) {
 	dependencias, err := resolveDependenciasFromSGA(numeroDocumento, rol)
 	if err != nil {
 		return nil, err
 	}
 
-	resultado := make([]DependenciaUsuario, 0)
+	resultado := make([]models.DependenciaUsuario, 0)
 
 	for _, dep := range dependencias {
 		idOikos, errMap := resolveIdOikosFromHomologacion(dep.CodigoDependencia)
@@ -209,4 +308,35 @@ func ResolveDependenciasByRol(numeroDocumento, rol string) ([]DependenciaUsuario
 	}
 
 	return deduplicateDependencias(resultado), nil
+}
+
+func ResolveAlcanceUsuario(numeroDocumento string, roles []string) (models.AlcanceUsuario, map[string]interface{}) {
+	rolPrincipal := getHighestPriorityRol(roles)
+
+	if rolPrincipal == "" {
+		return models.AlcanceUsuario{}, map[string]interface{}{
+			"funcion": "ResolveAlcanceUsuario",
+			"err":     "el usuario no tiene roles soportados",
+			"status":  "400",
+		}
+	}
+
+	if isGlobalRol(rolPrincipal) {
+		return models.AlcanceUsuario{
+			RolPrincipal: rolPrincipal,
+			EsGlobal:     true,
+			Dependencias: []models.DependenciaUsuario{},
+		}, nil
+	}
+
+	dependencias, err := ResolveDependenciasByRol(numeroDocumento, rolPrincipal)
+	if err != nil {
+		return models.AlcanceUsuario{}, err
+	}
+
+	return models.AlcanceUsuario{
+		RolPrincipal: rolPrincipal,
+		EsGlobal:     false,
+		Dependencias: dependencias,
+	}, nil
 }
