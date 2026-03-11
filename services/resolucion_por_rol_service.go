@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -119,4 +120,60 @@ func GetResolucionesByAlcance(numeroDocumento string, roles []string, vigencia i
 	})
 
 	return resultado, nil
+}
+
+func GetResolucionesTablaByAlcance(numeroDocumento string, roles []string, vigencia int, dependenciaFiltro *int, limit int, offset int) (res []models.Resoluciones, total int, outputError map[string]interface{}) {
+	alcance, err := ResolveAlcanceUsuario(numeroDocumento, roles)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var filtro models.Filtro
+	filtro.Limit = strconv.Itoa(limit)
+	filtro.Offset = strconv.Itoa(offset)
+	filtro.Vigencia = strconv.Itoa(vigencia)
+
+	if alcance.EsGlobal {
+		if dependenciaFiltro != nil && *dependenciaFiltro > 0 {
+			filtro.FacultadId = strconv.Itoa(*dependenciaFiltro)
+		}
+	} else {
+		if len(alcance.Dependencias) == 0 {
+			return nil, 0, map[string]interface{}{
+				"funcion": "GetResolucionesTablaByAlcance",
+				"err":     "el usuario no tiene dependencias asociadas para consultar resoluciones",
+				"status":  "404",
+			}
+		}
+
+		if dependenciaFiltro != nil && *dependenciaFiltro > 0 {
+			if !dependenciaPermitida(*dependenciaFiltro, alcance.Dependencias) {
+				return nil, 0, map[string]interface{}{
+					"funcion": "GetResolucionesTablaByAlcance",
+					"err":     "la dependencia consultada no está autorizada para el usuario",
+					"status":  "403",
+				}
+			}
+
+			filtro.FacultadId = strconv.Itoa(*dependenciaFiltro)
+		} else {
+			if len(alcance.Dependencias) == 1 {
+				filtro.FacultadId = strconv.Itoa(alcance.Dependencias[0].IdOikos)
+			} else {
+				return nil, 0, map[string]interface{}{
+					"funcion": "GetResolucionesTablaByAlcance",
+					"err":     "debe seleccionar una dependencia para realizar la consulta",
+					"status":  "400",
+				}
+			}
+		}
+	}
+
+	listado, total, err2 := helpers.ListarResolucionesFiltradas(filtro)
+	if err2 != nil {
+		err2["funcion"] = "GetResolucionesTablaByAlcance"
+		return nil, 0, err2
+	}
+
+	return listado, total, nil
 }

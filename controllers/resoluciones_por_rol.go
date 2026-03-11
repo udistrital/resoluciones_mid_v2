@@ -104,6 +104,8 @@ func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 
 	vigencia, errVigencia := c.GetInt("vigencia")
 	idOikos, errIdOikos := c.GetInt("id_oikos")
+	limit, errLimit := c.GetInt("limit")
+	offset, errOffset := c.GetInt("offset")
 
 	var dependenciaFiltro *int
 
@@ -131,24 +133,36 @@ func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 		})
 	}
 
+	if errLimit != nil || limit <= 0 {
+		panic(map[string]interface{}{
+			"funcion": "GetResolucionesByDependencia",
+			"err":     "limit es requerido y debe ser válido",
+			"status":  "400",
+		})
+	}
+
+	if errOffset != nil || offset <= 0 {
+		panic(map[string]interface{}{
+			"funcion": "GetResolucionesByDependencia",
+			"err":     "offset es requerido y debe ser válido",
+			"status":  "400",
+		})
+	}
+
 	if errIdOikos == nil && idOikos > 0 {
 		dependenciaFiltro = &idOikos
 	}
 
-	resoluciones, errMap := services.GetResolucionesByAlcance(numeroDocumento, roles, vigencia, dependenciaFiltro)
+	resoluciones, total, errMap := services.GetResolucionesTablaByAlcance(
+		numeroDocumento,
+		roles,
+		vigencia,
+		dependenciaFiltro,
+		limit,
+		offset,
+	)
 	if errMap != nil {
 		panic(errMap)
-	}
-
-	responseData := map[string]interface{}{
-		"numero_documento": numeroDocumento,
-		"roles":            roles,
-		"vigencia":         vigencia,
-		"resoluciones":     resoluciones,
-	}
-
-	if dependenciaFiltro != nil {
-		responseData["id_oikos"] = *dependenciaFiltro
 	}
 
 	c.Ctx.Output.SetStatus(200)
@@ -156,7 +170,8 @@ func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 		"Success": true,
 		"Status":  200,
 		"Message": "Resoluciones obtenidas con éxito",
-		"Data":    responseData,
+		"Data":    resoluciones,
+		"Total":   total,
 	}
 	c.ServeJSON()
 }
