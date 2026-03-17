@@ -200,3 +200,127 @@ func ValidarContratoEnTitan(numeroContrato string, vigencia int, vinculacionDoce
 
 	return nil
 }
+
+func ExisteContratoEnTitan(numeroContrato string, vigencia int) (bool, map[string]interface{}) {
+	var response map[string]interface{}
+
+	queryPath := fmt.Sprintf("contrato?query=NumeroContrato:%s,Vigencia:%d", numeroContrato, vigencia)
+
+	if err := GetRequestLegacy("TitanCrudService", queryPath, &response); err != nil {
+		return false, map[string]interface{}{
+			"funcion": "/ExisteContratoEnTitan",
+			"err":     "No fue posible consultar Titan",
+			"detalle": "Contrato: " + numeroContrato + ", vigencia: " + strconv.Itoa(vigencia),
+			"status":  "502",
+		}
+	}
+
+	if success, ok := response["Success"].(bool); ok && !success {
+		return false, nil
+	}
+
+	data, ok := response["Data"]
+	if !ok || data == nil {
+		return false, nil
+	}
+
+	switch valor := data.(type) {
+	case []interface{}:
+		return dataTitanTieneContenidoReal(valor), nil
+	case map[string]interface{}:
+		return len(valor) > 0, nil
+	default:
+		return false, nil
+	}
+}
+
+func ObtenerContratosTitanPorResolucion(resolucionId int) (contratos []models.ContratoTitan, outputError map[string]interface{}) {
+	var response map[string]interface{}
+
+	queryPath := fmt.Sprintf("contrato?query=ResolucionId:%d&limit=0", resolucionId)
+
+	if err := GetRequestLegacy("TitanCrudService", queryPath, &response); err != nil {
+		return nil, map[string]interface{}{
+			"funcion": "/ObtenerContratosTitanPorResolucion",
+			"err":     "No fue posible consultar Titan",
+			"detalle": "Resolución: " + strconv.Itoa(resolucionId),
+			"status":  "502",
+		}
+	}
+
+	if success, ok := response["Success"].(bool); ok && !success {
+		return []models.ContratoTitan{}, nil
+	}
+
+	data, ok := response["Data"]
+	if !ok || data == nil {
+		return []models.ContratoTitan{}, nil
+	}
+
+	switch valor := data.(type) {
+	case []interface{}:
+		for _, item := range valor {
+			if contratoMap, ok := item.(map[string]interface{}); ok {
+				contrato := models.ContratoTitan{}
+
+				if id, ok := contratoMap["Id"].(float64); ok {
+					contrato.Id = int(id)
+				}
+				if numeroContrato, ok := contratoMap["NumeroContrato"].(string); ok {
+					contrato.NumeroContrato = numeroContrato
+				}
+				if vigencia, ok := contratoMap["Vigencia"].(float64); ok {
+					contrato.Vigencia = int(vigencia)
+				}
+				if documento, ok := contratoMap["Documento"].(string); ok {
+					contrato.Documento = documento
+				}
+				if resolucionIdResp, ok := contratoMap["ResolucionId"].(float64); ok {
+					contrato.ResolucionId = int(resolucionIdResp)
+				}
+				if rp, ok := contratoMap["Rp"].(float64); ok {
+					contrato.Rp = int(rp)
+				}
+				if activo, ok := contratoMap["Activo"].(bool); ok {
+					contrato.Activo = activo
+				}
+
+				contratos = append(contratos, contrato)
+			}
+		}
+	case map[string]interface{}:
+		contrato := models.ContratoTitan{}
+
+		if id, ok := valor["Id"].(float64); ok {
+			contrato.Id = int(id)
+		}
+		if numeroContrato, ok := valor["NumeroContrato"].(string); ok {
+			contrato.NumeroContrato = numeroContrato
+		}
+		if vigencia, ok := valor["Vigencia"].(float64); ok {
+			contrato.Vigencia = int(vigencia)
+		}
+		if documento, ok := valor["Documento"].(string); ok {
+			contrato.Documento = documento
+		}
+		if resolucionIdResp, ok := valor["ResolucionId"].(float64); ok {
+			contrato.ResolucionId = int(resolucionIdResp)
+		}
+		if rp, ok := valor["Rp"].(float64); ok {
+			contrato.Rp = int(rp)
+		}
+		if activo, ok := valor["Activo"].(bool); ok {
+			contrato.Activo = activo
+		}
+
+		contratos = append(contratos, contrato)
+	default:
+		return []models.ContratoTitan{}, nil
+	}
+
+	if contratos == nil {
+		contratos = []models.ContratoTitan{}
+	}
+
+	return contratos, nil
+}
