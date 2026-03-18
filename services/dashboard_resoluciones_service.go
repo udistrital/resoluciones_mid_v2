@@ -15,6 +15,12 @@ type resultadoResumenResolucion struct {
 	err     map[string]interface{}
 }
 
+type resultadoFiltroResolucionDashboard struct {
+	resolucion models.Resolucion
+	incluir    bool
+	err        map[string]interface{}
+}
+
 func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vigencia int, dependenciaFiltro *int, limit int, offset int) (*models.RespuestaDashboardResoluciones, map[string]interface{}) {
 	if limit <= 0 {
 		limit = 10
@@ -24,6 +30,11 @@ func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vige
 	}
 
 	resoluciones, errRes := GetResolucionesByAlcance(numeroDocumento, roles, vigencia, dependenciaFiltro)
+	if errRes != nil {
+		return nil, errRes
+	}
+
+	resoluciones, errRes = filtrarResolucionesDashboard(resoluciones)
 	if errRes != nil {
 		return nil, errRes
 	}
@@ -60,7 +71,6 @@ func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vige
 	const maxDashboardWorkers = 6
 
 	maxWorkers := maxDashboardWorkers
-
 	if len(resolucionesPaginadas) < maxWorkers {
 		maxWorkers = len(resolucionesPaginadas)
 	}
@@ -69,7 +79,6 @@ func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vige
 	}
 
 	type trabajoResolucion struct {
-		index      int
 		resolucion models.Resolucion
 	}
 
@@ -96,9 +105,8 @@ func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vige
 		}()
 	}
 
-	for i, resolucion := range resolucionesPaginadas {
+	for _, resolucion := range resolucionesPaginadas {
 		trabajos <- trabajoResolucion{
-			index:      i,
 			resolucion: resolucion,
 		}
 	}
@@ -163,6 +171,104 @@ func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vige
 	}
 
 	return respuesta, nil
+}
+
+func filtrarResolucionesDashboard(resoluciones []models.Resolucion) ([]models.Resolucion, map[string]interface{}) {
+	// Primero excluimos cancelaciones para no hacer consultas innecesarias
+	resolucionesBase := make([]models.Resolucion, 0, len(resoluciones))
+	for _, resolucion := range resoluciones {
+		if resolucion.TipoResolucionId == 666 {
+			continue
+		}
+		resolucionesBase = append(resolucionesBase, resolucion)
+	}
+
+	if len(resolucionesBase) == 0 {
+		return []models.Resolucion{}, nil
+	}
+
+	const maxFiltroWorkers = 10
+
+	maxWorkers := maxFiltroWorkers
+	if len(resolucionesBase) < maxWorkers {
+		maxWorkers = len(resolucionesBase)
+	}
+	if maxWorkers <= 0 {
+		maxWorkers = 1
+	}
+
+	type trabajoFiltro struct {
+		resolucion models.Resolucion
+	}
+
+	trabajos := make(chan trabajoFiltro, len(resolucionesBase))
+	resultados := make(chan resultadoFiltroResolucionDashboard, len(resolucionesBase))
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < maxWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for trabajo := range trabajos {
+				expedida, errMap := resolucionEstaExpedida(trabajo.resolucion.Id)
+				resultados <- resultadoFiltroResolucionDashboard{
+					resolucion: trabajo.resolucion,
+					incluir:    expedida,
+					err:        errMap,
+				}
+			}
+		}()
+	}
+
+	for _, resolucion := range resolucionesBase {
+		trabajos <- trabajoFiltro{
+			resolucion: resolucion,
+		}
+	}
+	close(trabajos)
+
+	wg.Wait()
+	close(resultados)
+
+	filtradas := make([]models.Resolucion, 0, len(resolucionesBase))
+	for item := range resultados {
+		if item.err != nil {
+			return nil, item.err
+		}
+		if item.incluir {
+			filtradas = append(filtradas, item.resolucion)
+		}
+	}
+
+	return filtradas, nil
+}
+
+func resolucionEstaExpedida(resolucionId int) (bool, map[string]interface{}) {
+	var estados []models.ResolucionEstado
+
+	if err := helpers.GetRequestNew(
+		"UrlCrudResoluciones",
+		"resolucion_estado/?query=ResolucionId:"+strconv.Itoa(resolucionId),
+		&estados,
+	); err != nil {
+		// Si en tu CRUD el query correcto fuera ResolucionId.Id en vez de ResolucionId,
+		// cambia la línea anterior por:
+		// "resolucion_estado/?query=ResolucionId.Id:"+strconv.Itoa(resolucionId),
+		return false, map[string]interface{}{
+			"funcion": "resolucionEstaExpedida",
+			"err":     err,
+			"status":  "500",
+		}
+	}
+
+	for _, estado := range estados {
+		if estado.EstadoResolucionId == 671 && estado.Activo {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func construirResumenDashboardResolucion(
