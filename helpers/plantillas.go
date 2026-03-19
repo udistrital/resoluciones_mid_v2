@@ -98,13 +98,14 @@ func CargarPlantilla(PlantillaId int) (plantilla models.ContenidoResolucion, out
 	return plantilla, outputError
 }
 
-func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interface{}) {
+func ListarPlantillas(facultadId string) (lista []models.Plantilla, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			outputError = map[string]interface{}{"funcion": "ListarPlantillas", "err": err, "status": "500"}
 			panic(outputError)
 		}
 	}()
+
 	var res []models.Resolucion
 	var resv models.ResolucionVinculacionDocente
 	var dep models.Dependencia
@@ -117,20 +118,29 @@ func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interf
 	}
 
 	for _, tipoPlantilla := range tipos {
+		res = []models.Resolucion{}
+
 		url := "resolucion?query=Activo:true,TipoResolucionId:" + strconv.Itoa(tipoPlantilla.Id)
 		if err2 := GetRequestNew("UrlCrudResoluciones", url, &res); err2 != nil {
 			logs.Error(err2)
 			panic(err2.Error())
 		}
+
 		if len(res) != 0 {
 			if err3 := GetRequestNew("UrlCrudResoluciones", ResVinEndpoint+strconv.Itoa(res[0].Id), &resv); err3 != nil {
 				logs.Error(err3)
 				panic(err3.Error())
 			}
+
+			if facultadId != "" && strconv.Itoa(resv.FacultadId) != facultadId {
+				continue
+			}
+
 			if err4 := GetRequestLegacy("UrlcrudOikos", "dependencia/"+strconv.Itoa(resv.FacultadId), &dep); err4 != nil {
 				logs.Error(err4)
 				panic(err4.Error())
 			}
+
 			plantilla := models.Plantilla{
 				Id:             res[0].Id,
 				Dedicacion:     resv.Dedicacion,
@@ -138,12 +148,15 @@ func ListarPlantillas() (lista []models.Plantilla, outputError map[string]interf
 				Facultad:       dep.Nombre,
 				TipoResolucion: tipoPlantilla.ParametroPadreId.Nombre,
 			}
+
 			lista = append(lista, plantilla)
 		}
 	}
+
 	if lista == nil {
 		lista = []models.Plantilla{}
 	}
+
 	return lista, outputError
 }
 

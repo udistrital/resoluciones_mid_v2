@@ -3,10 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
+	"github.com/udistrital/resoluciones_mid_v2/services"
 )
 
 // GestionPlantillasController operations for GestionPlantillas
@@ -84,6 +86,9 @@ func (c *GestionPlantillasController) GetOne() {
 // GetAll ...
 // @Title GetAll
 // @Description get GestionPlantillas
+// @Param	numero_documento	query	string	true	"Número de documento del usuario"
+// @Param	roles			query	string	true	"Roles del usuario separados por coma"
+// @Param	Facultad		query	string	false	"Id de facultad para filtrar plantillas"
 // @Success 200 {object} []models.ContenidoResolucion
 // @Failure 400 bad request
 // @Failure 500 Internal server error
@@ -91,9 +96,49 @@ func (c *GestionPlantillasController) GetOne() {
 func (c *GestionPlantillasController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	if l, err := helpers.ListarPlantillas(); err == nil {
+	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
+	rolesRaw := c.GetString("roles")
+	roles := parseRolesParam(rolesRaw)
+
+	facultadIdStr := c.GetString("Facultad")
+	var dependenciaFiltro *int
+
+	if numeroDocumento == "" {
+		panic(map[string]interface{}{
+			"funcion": "GetAll",
+			"err":     "numero_documento es requerido",
+			"status":  "400",
+		})
+	}
+
+	if len(roles) == 0 {
+		panic(map[string]interface{}{
+			"funcion": "GetAll",
+			"err":     "roles es requerido y debe contener al menos un rol",
+			"status":  "400",
+		})
+	}
+
+	if facultadIdStr != "" {
+		facultadId, err := strconv.Atoi(facultadIdStr)
+		if err != nil || facultadId <= 0 {
+			panic(map[string]interface{}{
+				"funcion": "GetAll",
+				"err":     helpers.ErrorParametros,
+				"status":  "400",
+			})
+		}
+		dependenciaFiltro = &facultadId
+	}
+
+	if l, err := services.GetPlantillasByAlcance(numeroDocumento, roles, dependenciaFiltro); err == nil {
 		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantillas consultadas con exito", "Data": l}
+		c.Data["json"] = map[string]interface{}{
+			"Success": true,
+			"Status":  200,
+			"Message": "Plantillas consultadas con exito",
+			"Data":    l,
+		}
 	} else {
 		panic(err)
 	}

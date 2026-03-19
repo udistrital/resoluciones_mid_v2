@@ -274,6 +274,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 			panic(outputError)
 		}
 	}()
+
 	var rest []models.ResolucionEstado
 	var resv []models.ResolucionVinculacionDocente
 	var res []models.Resolucion
@@ -289,7 +290,6 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	queryResVin := ""
 	offset2 := (limit * (offset - 1)) + 100
 
-	// Preparar filtro por tipo de resolucion
 	if len(f.TipoResolucion) > 0 {
 		params := url.Values{}
 		params.Add("query", "Nombre:"+f.TipoResolucion)
@@ -303,7 +303,6 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		}
 	}
 
-	// Preparar filtro por tipos de resolución excluyendo cancelación
 	if len(f.ExcluirTipo) > 0 {
 		url := "parametro?query=TipoParametroId.CodigoAbreviacion:TR"
 		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
@@ -322,7 +321,6 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		f.TipoResolucion = tiposRes
 	}
 
-	// Si no hay filtros por tipo de resolución filtrar los 4 tipos para excluir plantillas
 	if len(f.TipoResolucion) == 0 && len(f.ExcluirTipo) == 0 {
 		url := "parametro?query=TipoParametroId.CodigoAbreviacion:TR"
 		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
@@ -341,7 +339,6 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		f.TipoResolucion = tiposRes
 	}
 
-	// preparar filtro por estado o estados
 	if len(f.Estado) > 0 {
 		param := url.Values{}
 		param.Add("query", "Nombre.in:"+f.Estado)
@@ -349,6 +346,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		if err = GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
 			panic(err.Error())
 		}
+
 		estados := ""
 		for i, param := range parametros {
 			if i > 0 {
@@ -358,9 +356,8 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		}
 
 		queryRes = queryBase + "EstadoResolucionId.in:" + estados + ","
-
-		//Preparar filtro de resolucion por: numero, vigencia, periodo, semanas, facultad, tipoResolucion
 		queryRes += "ResolucionId.Activo:true,"
+
 		if len(f.NumeroResolucion) > 0 {
 			queryRes += "ResolucionId.NumeroResolucion:" + f.NumeroResolucion + ","
 		}
@@ -381,18 +378,17 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		}
 		queryRes = strings.TrimSuffix(queryRes, ",")
 
-		// carga de datos filtrados
 		url1 := "resolucion_estado?" + queryRes + "&limit=0&fields=ResolucionId"
 		if err = GetRequestNew("UrlcrudResoluciones", url1, &rest); err != nil {
 			logs.Error(err)
 			panic(err.Error())
 		}
+
 		listado = make([]string, 0, len(rest))
 		for i := range rest {
 			listado = append(listado, strconv.Itoa(rest[i].ResolucionId.Id))
 		}
 	} else {
-		// Preparar filtro de resolucion por: numero, vigencia, periodo, semanas, facultad, tipoResolucion
 		queryRes = queryBase
 		if len(f.NumeroResolucion) > 0 {
 			queryRes += "NumeroResolucion:" + f.NumeroResolucion + ","
@@ -414,19 +410,22 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		}
 		queryRes = strings.TrimSuffix(queryRes, ",")
 
-		// carga de datos filtrados
 		url1 := "resolucion?" + queryRes + "&limit=0&fields=Id"
 		if err = GetRequestNew("UrlcrudResoluciones", url1, &res); err != nil {
 			logs.Error(err)
 			panic(err.Error())
 		}
+
 		listado = make([]string, 0, len(res))
 		for i := range res {
 			listado = append(listado, strconv.Itoa(res[i].Id))
 		}
 	}
 
-	// filtrar dedicacion y nivel por resolucionVinculacionDocente
+	if len(listado) == 0 {
+		return []models.Resoluciones{}, 0, outputError
+	}
+
 	queryResVin = queryBase
 	if len(f.Dedicacion) > 0 {
 		queryResVin += "Dedicacion:" + f.Dedicacion + ","
@@ -434,37 +433,39 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	if len(f.NivelAcademico) > 0 {
 		queryResVin += "NivelAcademico:" + f.NivelAcademico + ","
 	}
-	if len(listado) > 0 {
-		queryResVin += "Id.in:" + strings.Join(listado, "|") + ","
-	}
+	queryResVin += "Id.in:" + strings.Join(listado, "|")
 	queryResVin = strings.TrimSuffix(queryResVin, ",")
+
 	url := "resolucion_vinculacion_docente?" + queryResVin + "&limit=0&fields=Id"
 	if err = GetRequestNew("UrlCrudResoluciones", url, &resv); err != nil {
 		logs.Error(err)
 		panic(err.Error())
 	}
+
 	total = len(resv)
 
-	// actualizar listado
 	listado = make([]string, 0, len(resv))
 	for i := range resv {
 		listado = append(listado, strconv.Itoa(resv[i].Id))
+	}
+
+	if len(listado) == 0 {
+		return []models.Resoluciones{}, 0, outputError
 	}
 
 	if len(listado) < offset2 {
 		offset2 = len(listado)
 	}
 
-	var listadoCompleto string
-	if len(listado) > 0 {
-		listadoCompleto = fmt.Sprintf("Id.in:%s", strings.Join(listado[:offset2], "|"))
-	} else {
-		queryBase = strings.TrimSuffix(queryBase, ",")
-	}
-
+	listadoCompleto := fmt.Sprintf("Id.in:%s", strings.Join(listado[:offset2], "|"))
 	queryFinal := fmt.Sprintf("?limit=%s&offset=%d&%s%s", f.Limit, limit*(offset-1), queryBase, listadoCompleto)
+
 	if listaRes, err2 = ListarResoluciones(queryFinal); err2 != nil {
 		panic(err2)
+	}
+
+	if listaRes == nil {
+		listaRes = []models.Resoluciones{}
 	}
 
 	return listaRes, total, outputError
