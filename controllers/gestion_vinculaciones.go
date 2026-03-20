@@ -9,6 +9,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
+	"github.com/udistrital/resoluciones_mid_v2/services"
 )
 
 // Gestion_vinculacionesController operations for Gestion_vinculaciones
@@ -29,6 +30,8 @@ func (c *GestionVinculacionesController) URLMapping() {
 	c.Mapping("CalcularValorContratosSeleccionados", c.CalcularValorContratosSeleccionados)
 	c.Mapping("ConsultarSemaforoDocente", c.ConsultarSemaforoDocente)
 	c.Mapping("ConsultarSemanasRestantes", c.ConsultarSemanasRestantes)
+	c.Mapping("ConsultarSemaforoResolucion", c.ConsultarSemaforoResolucion)
+	c.Mapping("ConsultarDashboardResoluciones", c.ConsultarDashboardResoluciones)
 }
 
 // Post ...
@@ -439,6 +442,88 @@ func (c *GestionVinculacionesController) RegistrarRps() {
 	c.ServeJSON()
 }
 
+// ConsultarSemaforoResolucion ...
+// @Title ConsultarSemaforoResolucion
+// @Description Consulta el estado del dashboard de vinculaciones de una resolución y opcionalmente filtra por documento
+// @Param resolucion_id path string true "ID de la resolución"
+// @Param usuario query string true "Número de documento del usuario que consulta"
+// @Param roles query string true "Roles del usuario separados por coma"
+// @Param numero_documento query string false "Número de documento del docente para filtrar"
+// @Success 200 {object} models.RespuestaSemaforoResolucion
+// @Failure 400 bad request
+// @Failure 403 forbidden
+// @Failure 404 not found
+// @Failure 500 internal server error
+// @router /consultar_semaforo_resolucion/:resolucion_id [get]
+func (c *GestionVinculacionesController) ConsultarSemaforoResolucion() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	resolucionIdStr := c.Ctx.Input.Param(":resolucion_id")
+	usuario := strings.TrimSpace(c.GetString("usuario"))
+	rolesParam := strings.TrimSpace(c.GetString("roles"))
+	numeroDocumentoStr := strings.TrimSpace(c.GetString("numero_documento"))
+
+	resolucionId, err := strconv.Atoi(resolucionIdStr)
+	if err != nil || resolucionId <= 0 {
+		panic(map[string]interface{}{
+			"funcion": "ConsultarSemaforoResolucion",
+			"err":     helpers.ErrorParametros,
+			"status":  "400",
+		})
+	}
+
+	if usuario == "" || rolesParam == "" {
+		panic(map[string]interface{}{
+			"funcion": "ConsultarSemaforoResolucion",
+			"err":     "Los parámetros usuario y roles son obligatorios",
+			"status":  "400",
+		})
+	}
+
+	roles := make([]string, 0)
+	for _, rol := range strings.Split(rolesParam, ",") {
+		rol = strings.TrimSpace(rol)
+		if rol != "" {
+			roles = append(roles, rol)
+		}
+	}
+
+	if len(roles) == 0 {
+		panic(map[string]interface{}{
+			"funcion": "ConsultarSemaforoResolucion",
+			"err":     "Debe enviar al menos un rol válido",
+			"status":  "400",
+		})
+	}
+
+	var numeroDocumentoFiltro *int
+	if numeroDocumentoStr != "" {
+		numeroDocumento, err := strconv.Atoi(numeroDocumentoStr)
+		if err != nil || numeroDocumento <= 0 {
+			panic(map[string]interface{}{
+				"funcion": "ConsultarSemaforoResolucion",
+				"err":     "El parámetro numero_documento no es válido",
+				"status":  "400",
+			})
+		}
+		numeroDocumentoFiltro = &numeroDocumento
+	}
+
+	if respuesta, errMap := services.ConsultarSemaforoResolucion(resolucionId, usuario, roles, numeroDocumentoFiltro); errMap == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{
+			"Success": true,
+			"Status":  200,
+			"Message": "Semáforo consultado exitosamente",
+			"Data":    respuesta,
+		}
+	} else {
+		panic(errMap)
+	}
+
+	c.ServeJSON()
+}
+
 // ObtenerProgreso ...
 // @Title ObtenerProgreso
 // @Description Consulta el estado y progreso de un job en ejecución
@@ -463,4 +548,115 @@ func (c *GestionVinculacionesController) ObtenerProgreso() {
 		c.Data["json"] = result
 		c.ServeJSON()
 	}
+}
+
+// ConsultarDashboardResoluciones ...
+// @Title ConsultarDashboardResoluciones
+// @Description Consulta el dashboard general de resoluciones con su avance de vinculaciones
+// @Param numero_documento query string true "Número de documento del usuario que consulta"
+// @Param roles query string true "Roles del usuario separados por coma"
+// @Param vigencia query string true "Vigencia a consultar"
+// @Param id_oikos query string false "Dependencia Oikos para filtrar"
+// @Param limit query int false "Cantidad de registros por página"
+// @Param offset query int false "Posición inicial para paginación"
+// @Success 200 {object} models.RespuestaDashboardResoluciones
+// @Failure 400 bad request
+// @Failure 403 forbidden
+// @Failure 500 internal server error
+// @router /dashboard_resoluciones [get]
+func (c *GestionVinculacionesController) ConsultarDashboardResoluciones() {
+	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
+
+	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
+	rolesParam := strings.TrimSpace(c.GetString("roles"))
+	vigenciaStr := strings.TrimSpace(c.GetString("vigencia"))
+	idOikosStr := strings.TrimSpace(c.GetString("id_oikos"))
+	limitStr := strings.TrimSpace(c.GetString("limit"))
+	offsetStr := strings.TrimSpace(c.GetString("offset"))
+
+	if numeroDocumento == "" || rolesParam == "" || vigenciaStr == "" {
+		panic(map[string]interface{}{
+			"funcion": "ConsultarDashboardResoluciones",
+			"err":     helpers.ErrorParametros,
+			"status":  "400",
+		})
+	}
+
+	vigencia, err := strconv.Atoi(vigenciaStr)
+	if err != nil || vigencia <= 0 {
+		panic(map[string]interface{}{
+			"funcion": "ConsultarDashboardResoluciones",
+			"err":     "La vigencia no es válida",
+			"status":  "400",
+		})
+	}
+
+	limit := 10
+	if limitStr != "" {
+		limitParsed, err := strconv.Atoi(limitStr)
+		if err != nil || limitParsed <= 0 {
+			panic(map[string]interface{}{
+				"funcion": "ConsultarDashboardResoluciones",
+				"err":     "El parámetro limit no es válido",
+				"status":  "400",
+			})
+		}
+		limit = limitParsed
+	}
+
+	offset := 0
+	if offsetStr != "" {
+		offsetParsed, err := strconv.Atoi(offsetStr)
+		if err != nil || offsetParsed < 0 {
+			panic(map[string]interface{}{
+				"funcion": "ConsultarDashboardResoluciones",
+				"err":     "El parámetro offset no es válido",
+				"status":  "400",
+			})
+		}
+		offset = offsetParsed
+	}
+
+	roles := make([]string, 0)
+	for _, rol := range strings.Split(rolesParam, ",") {
+		rol = strings.TrimSpace(rol)
+		if rol != "" {
+			roles = append(roles, rol)
+		}
+	}
+
+	if len(roles) == 0 {
+		panic(map[string]interface{}{
+			"funcion": "ConsultarDashboardResoluciones",
+			"err":     "Debe enviar al menos un rol válido",
+			"status":  "400",
+		})
+	}
+
+	var dependenciaFiltro *int
+	if idOikosStr != "" {
+		idOikos, err := strconv.Atoi(idOikosStr)
+		if err != nil || idOikos <= 0 {
+			panic(map[string]interface{}{
+				"funcion": "ConsultarDashboardResoluciones",
+				"err":     "El parámetro id_oikos no es válido",
+				"status":  "400",
+			})
+		}
+		dependenciaFiltro = &idOikos
+	}
+
+	if respuesta, errMap := services.ConsultarDashboardResoluciones(numeroDocumento, roles, vigencia, dependenciaFiltro, limit, offset); errMap == nil {
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = map[string]interface{}{
+			"Success": true,
+			"Status":  200,
+			"Message": "Dashboard de resoluciones consultado exitosamente",
+			"Data":    respuesta,
+		}
+	} else {
+		panic(errMap)
+	}
+
+	c.ServeJSON()
 }

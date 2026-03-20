@@ -832,3 +832,37 @@ func RegistrarVinculacionesRp(registros []models.RpSeleccionado) (outputError ma
 
 	return nil
 }
+
+func ObtenerVinculacionPorResolucionYDocente(resolucionId int, numeroDocumento int) (vinculacion *models.VinculacionDocente, outputError map[string]interface{}) {
+	defer func() {
+		if err := recover(); err != nil {
+			outputError = map[string]interface{}{
+				"funcion": "/ObtenerVinculacionPorResolucionYDocente",
+				"err":     err,
+				"status":  "500",
+			}
+		}
+	}()
+
+	var vinculaciones []models.VinculacionDocente
+	url := "vinculacion_docente?query=ResolucionVinculacionDocenteId.Id:" +
+		strconv.Itoa(resolucionId) + ",PersonaId:" + strconv.Itoa(numeroDocumento)
+
+	if err := GetRequestNew("UrlcrudResoluciones", url, &vinculaciones); err != nil {
+		return nil, map[string]interface{}{
+			"funcion": "/ObtenerVinculacionPorResolucionYDocente",
+			"err":     err.Error(),
+			"status":  "502",
+		}
+	}
+
+	if len(vinculaciones) == 0 {
+		return nil, map[string]interface{}{
+			"funcion": "/ObtenerVinculacionPorResolucionYDocente",
+			"err":     "No se encontró la vinculación para la resolución y docente indicados",
+			"status":  "404",
+		}
+	}
+
+	return &vinculaciones[0], nil
+}

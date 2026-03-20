@@ -15,9 +15,12 @@ func GetPlantillasByAlcance(numeroDocumento string, roles []string, dependenciaF
 
 	if alcance.EsGlobal {
 		if dependenciaFiltro != nil && *dependenciaFiltro > 0 {
-			return helpers.ListarPlantillas(strconv.Itoa(*dependenciaFiltro))
+			lista, err := helpers.ListarPlantillas(strconv.Itoa(*dependenciaFiltro))
+			return lista, err
 		}
-		return helpers.ListarPlantillas("")
+
+		lista, err := helpers.ListarPlantillas("")
+		return lista, err
 	}
 
 	if len(alcance.Dependencias) == 0 {

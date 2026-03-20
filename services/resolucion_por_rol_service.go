@@ -177,3 +177,35 @@ func GetResolucionesTablaByAlcance(numeroDocumento string, roles []string, vigen
 
 	return listado, total, nil
 }
+
+func UsuarioPuedeConsultarResolucion(resolucionId int, numeroDocumento string, roles []string) (bool, map[string]interface{}) {
+	var resolucion models.Resolucion
+
+	route := fmt.Sprintf("resolucion/%d", resolucionId)
+	if err := helpers.GetRequestNew("UrlCrudResoluciones", route, &resolucion); err != nil {
+		return false, map[string]interface{}{
+			"funcion": "UsuarioPuedeConsultarResolucion",
+			"err":     err.Error(),
+			"status":  "502",
+		}
+	}
+
+	alcance, errMap := ResolveAlcanceUsuario(numeroDocumento, roles)
+	if errMap != nil {
+		return false, errMap
+	}
+
+	if alcance.EsGlobal {
+		return true, nil
+	}
+
+	if !DependenciaPermitida(resolucion.DependenciaId, alcance.Dependencias) {
+		return false, map[string]interface{}{
+			"funcion": "UsuarioPuedeConsultarResolucion",
+			"err":     "La resolución no está autorizada para el usuario",
+			"status":  "403",
+		}
+	}
+
+	return true, nil
+}
