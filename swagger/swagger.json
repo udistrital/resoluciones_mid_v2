@@ -161,6 +161,28 @@
                 ],
                 "description": "get GestionPlantillas",
                 "operationId": "GestionPlantillasController.GetAll",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "numero_documento",
+                        "description": "Número de documento del usuario",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roles",
+                        "description": "Roles del usuario separados por coma",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "Facultad",
+                        "description": "Id de facultad para filtrar plantillas",
+                        "type": "string"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -813,6 +835,64 @@
                 }
             }
         },
+        "/gestion_vinculaciones/consultar_semaforo_resolucion/{resolucion_id}": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el estado del dashboard de vinculaciones de una resolución y opcionalmente filtra por documento",
+                "operationId": "GestionVinculacionesController.ConsultarSemaforoResolucion",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "resolucion_id",
+                        "description": "ID de la resolución",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "usuario",
+                        "description": "Número de documento del usuario que consulta",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roles",
+                        "description": "Roles del usuario separados por coma",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "numero_documento",
+                        "description": "Número de documento del docente para filtrar",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.RespuestaSemaforoResolucion"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "403": {
+                        "description": "forbidden"
+                    },
+                    "404": {
+                        "description": "not found"
+                    },
+                    "500": {
+                        "description": "internal server error"
+                    }
+                }
+            }
+        },
         "/gestion_vinculaciones/consultar_semanas_restantes/{fecha}/{vigencia}/{contrato}": {
             "get": {
                 "tags": [
@@ -856,6 +936,75 @@
                     },
                     "500": {
                         "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/gestion_vinculaciones/dashboard_resoluciones": {
+            "get": {
+                "tags": [
+                    "gestion_vinculaciones"
+                ],
+                "description": "Consulta el dashboard general de resoluciones con su avance de vinculaciones",
+                "operationId": "GestionVinculacionesController.ConsultarDashboardResoluciones",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "numero_documento",
+                        "description": "Número de documento del usuario que consulta",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roles",
+                        "description": "Roles del usuario separados por coma",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "vigencia",
+                        "description": "Vigencia a consultar",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "id_oikos",
+                        "description": "Dependencia Oikos para filtrar",
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "description": "Cantidad de registros por página",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "offset",
+                        "description": "Posición inicial para paginación",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/models.RespuestaDashboardResoluciones"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request"
+                    },
+                    "403": {
+                        "description": "forbidden"
+                    },
+                    "500": {
+                        "description": "internal server error"
                     }
                 }
             }
@@ -1275,22 +1424,35 @@
                 "tags": [
                     "resoluciones_por_rol"
                 ],
-                "description": "Obtiene las resoluciones asociadas a una dependencia y vigencia",
+                "description": "Obtiene resoluciones según el alcance del usuario y vigencia",
                 "operationId": "ResolucionesPorRolController.GetResolucionesByDependencia",
                 "parameters": [
                     {
                         "in": "query",
-                        "name": "id_oikos",
-                        "description": "ID de la dependencia (OIKOS)",
+                        "name": "numero_documento",
+                        "description": "Número de documento del usuario",
                         "required": true,
-                        "type": "integer",
-                        "format": "int64"
+                        "type": "string"
+                    },
+                    {
+                        "in": "query",
+                        "name": "roles",
+                        "description": "Roles del usuario separados por coma",
+                        "required": true,
+                        "type": "string"
                     },
                     {
                         "in": "query",
                         "name": "vigencia",
                         "description": "Vigencia de las resoluciones",
                         "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    {
+                        "in": "query",
+                        "name": "id_oikos",
+                        "description": "ID OIKOS para filtrar una dependencia específica",
                         "type": "integer",
                         "format": "int64"
                     }
@@ -1316,7 +1478,7 @@
                 "tags": [
                     "resoluciones_por_rol"
                 ],
-                "description": "Obtiene las dependencias asociadas a un usuario según su rol",
+                "description": "Obtiene el alcance del usuario según sus roles",
                 "operationId": "ResolucionesPorRolController.GetDependenciasByRol",
                 "parameters": [
                     {
@@ -1328,8 +1490,8 @@
                     },
                     {
                         "in": "query",
-                        "name": "rol",
-                        "description": "Rol del usuario (DECANO o ASISTENTE_DECANATURA)",
+                        "name": "roles",
+                        "description": "Roles del usuario separados por coma",
                         "required": true,
                         "type": "string"
                     }
@@ -1959,6 +2121,51 @@
                 }
             }
         },
+        "models.EstadoSemaforoVinculacion": {
+            "title": "EstadoSemaforoVinculacion",
+            "type": "object",
+            "properties": {
+                "estado_codigo": {
+                    "type": "string"
+                },
+                "estado_nombre": {
+                    "type": "string"
+                },
+                "numero_contrato": {
+                    "type": "string"
+                },
+                "numero_documento": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "numero_rp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "prioridad": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "tiene_rp_resoluciones": {
+                    "type": "boolean"
+                },
+                "tiene_rp_titan": {
+                    "type": "boolean"
+                },
+                "vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "vigencia_rp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "vinculacion_id": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
         "models.ExpedicionCancelacion": {
             "title": "ExpedicionCancelacion",
             "type": "object",
@@ -2457,6 +2664,178 @@
                     "type": "string"
                 },
                 "Vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.RespuestaDashboardResoluciones": {
+            "title": "RespuestaDashboardResoluciones",
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "resoluciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ResumenDashboardResolucion"
+                    }
+                },
+                "resumen_global": {
+                    "$ref": "#/definitions/models.ResumenGlobalDashboardResoluciones"
+                },
+                "total": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.RespuestaSemaforoResolucion": {
+            "title": "RespuestaSemaforoResolucion",
+            "type": "object",
+            "properties": {
+                "detalle": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.EstadoSemaforoVinculacion"
+                    }
+                },
+                "resumen": {
+                    "$ref": "#/definitions/models.ResumenSemaforoResolucion"
+                }
+            }
+        },
+        "models.ResumenDashboardResolucion": {
+            "title": "ResumenDashboardResolucion",
+            "type": "object",
+            "properties": {
+                "completas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "dependencia_id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "dependencia_nombre": {
+                    "type": "string"
+                },
+                "estado_general_codigo": {
+                    "type": "string"
+                },
+                "estado_general_nombre": {
+                    "type": "string"
+                },
+                "numero_resolucion": {
+                    "type": "string"
+                },
+                "pendientes_titan": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "porcentaje_completas": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "porcentaje_pendientes_titan": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "porcentaje_sin_rp": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "resolucion_id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "sin_rp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "total": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "total_con_rp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "vigencia": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ResumenGlobalDashboardResoluciones": {
+            "title": "ResumenGlobalDashboardResoluciones",
+            "type": "object",
+            "properties": {
+                "porcentaje_resoluciones_completas": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "resoluciones_completas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "resoluciones_con_pendientes_titan": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "resoluciones_con_sin_rp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "total_resoluciones": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
+        "models.ResumenSemaforoResolucion": {
+            "title": "ResumenSemaforoResolucion",
+            "type": "object",
+            "properties": {
+                "completas": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "pendientes_titan": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "porcentaje_completas": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "porcentaje_pendientes_titan": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "porcentaje_sin_rp": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "resolucion_id": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "sin_rp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "total": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "total_con_rp": {
                     "type": "integer",
                     "format": "int64"
                 }
