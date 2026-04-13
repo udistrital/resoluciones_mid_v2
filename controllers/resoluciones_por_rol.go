@@ -5,6 +5,7 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
+	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/resoluciones_mid_v2/services"
 )
 
@@ -35,6 +36,16 @@ func parseRolesParam(raw string) []string {
 	}
 
 	return roles
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+
+	return ""
 }
 
 // GetDependenciasByRol ...
@@ -101,6 +112,17 @@ func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
 	rolesRaw := c.GetString("roles")
 	roles := parseRolesParam(rolesRaw)
+	filtro := models.Filtro{
+		NumeroResolucion: firstNonEmpty(c.GetString("NumeroResolucion"), c.GetString("numero_resolucion")),
+		Vigencia:         strings.TrimSpace(c.GetString("vigencia")),
+		Periodo:          strings.TrimSpace(c.GetString("Periodo")),
+		Semanas:          strings.TrimSpace(c.GetString("Semanas")),
+		NivelAcademico:   strings.TrimSpace(c.GetString("NivelAcademico")),
+		Dedicacion:       strings.TrimSpace(c.GetString("Dedicacion")),
+		Estado:           strings.TrimSpace(c.GetString("Estado")),
+		TipoResolucion:   strings.TrimSpace(c.GetString("TipoResolucion")),
+		ExcluirTipo:      strings.TrimSpace(c.GetString("ExcluirTipo")),
+	}
 
 	vigencia, errVigencia := c.GetInt("vigencia")
 	idOikos, errIdOikos := c.GetInt("id_oikos")
@@ -153,13 +175,15 @@ func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 		dependenciaFiltro = &idOikos
 	}
 
+	filtro.Limit = c.GetString("limit")
+	filtro.Offset = c.GetString("offset")
+	filtro.Vigencia = strings.TrimSpace(c.GetString("vigencia"))
+
 	resoluciones, total, errMap := services.GetResolucionesTablaByAlcance(
 		numeroDocumento,
 		roles,
-		vigencia,
+		filtro,
 		dependenciaFiltro,
-		limit,
-		offset,
 	)
 	if errMap != nil {
 		panic(errMap)
