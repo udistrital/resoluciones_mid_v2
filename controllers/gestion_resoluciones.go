@@ -106,7 +106,7 @@ func (c *GestionResolucionesController) GetAll() {
 
 	var f models.Filtro
 	var limit, offset int
-	var err1, err2, err3, err4, err5, err6, err7 error
+	var err1, err2, err3, err4, err5, err6 error
 
 	f.Limit = c.GetString("limit")
 	f.Offset = c.GetString("offset")
@@ -139,11 +139,7 @@ func (c *GestionResolucionesController) GetAll() {
 	if len(f.Semanas) > 0 {
 		_, err6 = strconv.Atoi(f.Semanas)
 	}
-	if len(f.FacultadId) > 0 {
-		_, err7 = strconv.Atoi(f.FacultadId)
-	}
-
-	if err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil || err7 != nil || limit <= 0 || offset <= 0 {
+	if err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil || limit <= 0 || offset <= 0 {
 		panic(map[string]interface{}{"funcion": "GetAll", "err": helpers.ErrorParametros, "status": "400"})
 	}
 

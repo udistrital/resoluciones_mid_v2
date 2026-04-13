@@ -278,6 +278,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	var rest []models.ResolucionEstado
 	var resv []models.ResolucionVinculacionDocente
 	var res []models.Resolucion
+	var dependencias []models.Dependencia
 	var parametros []models.Parametro
 	var listado []string
 	var err error
@@ -289,6 +290,7 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 	queryRes := ""
 	queryResVin := ""
 	offset2 := (limit * (offset - 1)) + 100
+	filtroFacultadResolucion := ""
 
 	if len(f.TipoResolucion) > 0 {
 		params := url.Values{}
@@ -339,6 +341,29 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		f.TipoResolucion = tiposRes
 	}
 
+	if len(f.FacultadId) > 0 {
+		if _, err = strconv.Atoi(f.FacultadId); err == nil {
+			filtroFacultadResolucion = "DependenciaId:" + f.FacultadId
+		} else {
+			rutaDependencias := "dependencia?limit=0&query=Nombre__icontains:" + url.QueryEscape(f.FacultadId)
+			if err = GetRequestLegacy("UrlcrudOikos", rutaDependencias, &dependencias); err != nil {
+				logs.Error(err)
+				panic(err.Error())
+			}
+
+			if len(dependencias) == 0 {
+				return []models.Resoluciones{}, 0, outputError
+			}
+
+			ids := make([]string, 0, len(dependencias))
+			for _, dependencia := range dependencias {
+				ids = append(ids, strconv.Itoa(dependencia.Id))
+			}
+
+			filtroFacultadResolucion = "DependenciaId.in:" + strings.Join(ids, "|")
+		}
+	}
+
 	if len(f.Estado) > 0 {
 		param := url.Values{}
 		param.Add("query", "Nombre.in:"+f.Estado)
@@ -370,8 +395,8 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		if len(f.Semanas) > 0 {
 			queryRes += "ResolucionId.NumeroSemanas:" + f.Semanas + ","
 		}
-		if len(f.FacultadId) > 0 {
-			queryRes += "ResolucionId.DependenciaId:" + f.FacultadId + ","
+		if filtroFacultadResolucion != "" {
+			queryRes += "ResolucionId." + filtroFacultadResolucion + ","
 		}
 		if len(f.TipoResolucion) > 0 {
 			queryRes += "ResolucionId.TipoResolucionId.in:" + f.TipoResolucion + ","
@@ -402,8 +427,8 @@ func ListarResolucionesFiltradas(f models.Filtro) (listaRes []models.Resolucione
 		if len(f.Semanas) > 0 {
 			queryRes += "NumeroSemanas:" + f.Semanas + ","
 		}
-		if len(f.FacultadId) > 0 {
-			queryRes += "DependenciaId:" + f.FacultadId + ","
+		if filtroFacultadResolucion != "" {
+			queryRes += filtroFacultadResolucion + ","
 		}
 		if len(f.TipoResolucion) > 0 {
 			queryRes += "TipoResolucionId.in:" + f.TipoResolucion + ","
