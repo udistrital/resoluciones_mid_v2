@@ -122,16 +122,11 @@ func GetResolucionesByAlcance(numeroDocumento string, roles []string, vigencia i
 	return resultado, nil
 }
 
-func GetResolucionesTablaByAlcance(numeroDocumento string, roles []string, vigencia int, dependenciaFiltro *int, limit int, offset int) (res []models.Resoluciones, total int, outputError map[string]interface{}) {
+func GetResolucionesTablaByAlcance(numeroDocumento string, roles []string, filtro models.Filtro, dependenciaFiltro *int) (res []models.Resoluciones, total int, outputError map[string]interface{}) {
 	alcance, err := ResolveAlcanceUsuario(numeroDocumento, roles)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	var filtro models.Filtro
-	filtro.Limit = strconv.Itoa(limit)
-	filtro.Offset = strconv.Itoa(offset)
-	filtro.Vigencia = strconv.Itoa(vigencia)
 
 	if alcance.EsGlobal {
 		if dependenciaFiltro != nil && *dependenciaFiltro > 0 {
