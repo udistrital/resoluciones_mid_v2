@@ -8,6 +8,14 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
+type idsReporteFinanciera struct {
+	rvin int
+	radd int
+	rred int
+	rcan int
+	rexp int
+}
+
 func cargarDependenciaReporte(id int, function string) (models.Dependencia, map[string]interface{}) {
 	var dependencia models.Dependencia
 	url := "dependencia/" + strconv.Itoa(id)
@@ -67,6 +75,55 @@ func construirRegistroReporteFinanciera(
 	}
 }
 
+func cargarParametroActivoPorCodigoReporte(codigo string) (models.Parametro, map[string]interface{}) {
+	var parametros []models.Parametro
+	url := "parametro?query=CodigoAbreviacion:" + codigo + ",Activo:true"
+	if err := GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
+		return models.Parametro{}, map[string]interface{}{
+			"funcion": "cargarParametroActivoPorCodigoReporte",
+			"err":     err.Error(),
+			"status":  "500",
+		}
+	}
+	if len(parametros) == 0 {
+		return models.Parametro{}, map[string]interface{}{
+			"funcion": "cargarParametroActivoPorCodigoReporte",
+			"err":     fmt.Sprintf("no se encontró parámetro activo para %s", codigo),
+			"status":  "404",
+		}
+	}
+	return parametros[0], nil
+}
+
+func cargarIdsReporteFinanciera() (idsReporteFinanciera, map[string]interface{}) {
+	codigos := []string{"RVIN", "RADD", "RRED", "RCAN", "REXP"}
+	valores := make(map[string]int, len(codigos))
+
+	for _, codigo := range codigos {
+		parametro, errMap := cargarParametroActivoPorCodigoReporte(codigo)
+		if errMap != nil {
+			return idsReporteFinanciera{}, errMap
+		}
+		valores[codigo] = parametro.Id
+	}
+
+	return idsReporteFinanciera{
+		rvin: valores["RVIN"],
+		radd: valores["RADD"],
+		rred: valores["RRED"],
+		rcan: valores["RCAN"],
+		rexp: valores["REXP"],
+	}, nil
+}
+
+func aplicarIdsReporte(datos *models.DatosReporte, ids idsReporteFinanciera) {
+	datos.TipoResolucionVinculacionId = ids.rvin
+	datos.TipoResolucionAdicionId = ids.radd
+	datos.TipoResolucionReduccionId = ids.rred
+	datos.TipoResolucionCancelacionId = ids.rcan
+	datos.EstadoResolucionExpedidaId = ids.rexp
+}
+
 func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.ReporteFinancieraFinal2, outputError map[string]interface{}) {
 
 	defer func() {
@@ -82,6 +139,13 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 		outputError = errMap
 		panic(outputError)
 	}
+
+	ids, errMap := cargarIdsReporteFinanciera()
+	if errMap != nil {
+		outputError = errMap
+		panic(outputError)
+	}
+	aplicarIdsReporte(&reporte, ids)
 
 	if err := SendRequestNew("UrlCrudResoluciones", "reporte_financiera/all", "POST", &resp, &reporte); err != nil {
 		logs.Error(err)
