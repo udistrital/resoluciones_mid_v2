@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -30,21 +28,13 @@ func (c *ServicesController) URLMapping() {
 func (c *ServicesController) DesagregadoPlaneacion() {
 	defer helpers.ErrorController(c.Controller, "ServicesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "DesagregadoPlaneacion", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var d []models.ObjetoDesagregado
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &d); err == nil {
-		if dd, err2 := helpers.CalcularComponentesSalario(d); err2 == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Cálculos realizados con éxito", "Data": dd}
-		} else {
-			panic(err2)
-		}
+	decodeJSONBody(c.Ctx.Input.RequestBody, &d, "DesagregadoPlaneacion")
+
+	if dd, err2 := helpers.CalcularComponentesSalario(d); err2 == nil {
+		writeJSON(&c.Controller, 201, "Cálculos realizados con éxito", dd, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "DesagregadoPlaneacion", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
