@@ -1,14 +1,16 @@
 package services
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
+
+var parametroDashboardCache sync.Map
 
 type resultadoResumenResolucion struct {
 	resumen *models.ResumenDashboardResolucion
@@ -174,10 +176,15 @@ func ConsultarDashboardResoluciones(numeroDocumento string, roles []string, vige
 }
 
 func filtrarResolucionesDashboard(resoluciones []models.Resolucion) ([]models.Resolucion, map[string]interface{}) {
+	cancelacionID, errMap := obtenerParametroIDPorCodigoDashboard("RCAN")
+	if errMap != nil {
+		return nil, errMap
+	}
+
 	// Primero excluimos cancelaciones para no hacer consultas innecesarias
 	resolucionesBase := make([]models.Resolucion, 0, len(resoluciones))
 	for _, resolucion := range resoluciones {
-		if resolucion.TipoResolucionId == 666 {
+		if resolucion.TipoResolucionId == cancelacionID {
 			continue
 		}
 		resolucionesBase = append(resolucionesBase, resolucion)
@@ -245,6 +252,11 @@ func filtrarResolucionesDashboard(resoluciones []models.Resolucion) ([]models.Re
 }
 
 func resolucionEstaExpedida(resolucionId int) (bool, map[string]interface{}) {
+	expedidaID, errMap := obtenerParametroIDPorCodigoDashboard("REXP")
+	if errMap != nil {
+		return false, errMap
+	}
+
 	var estados []models.ResolucionEstado
 
 	if err := helpers.GetRequestNew(
@@ -263,12 +275,40 @@ func resolucionEstaExpedida(resolucionId int) (bool, map[string]interface{}) {
 	}
 
 	for _, estado := range estados {
-		if estado.EstadoResolucionId == 671 && estado.Activo {
+		if estado.EstadoResolucionId == expedidaID && estado.Activo {
 			return true, nil
 		}
 	}
 
 	return false, nil
+}
+
+func obtenerParametroIDPorCodigoDashboard(codigo string) (int, map[string]interface{}) {
+	if valor, ok := parametroDashboardCache.Load(codigo); ok {
+		if id, ok := valor.(int); ok {
+			return id, nil
+		}
+	}
+
+	var parametros []models.Parametro
+	ruta := "parametro?query=CodigoAbreviacion:" + codigo + ",Activo:true"
+	if err := helpers.GetRequestNew("UrlcrudParametros", ruta, &parametros); err != nil {
+		return 0, map[string]interface{}{
+			"funcion": "obtenerParametroIDPorCodigoDashboard",
+			"err":     err,
+			"status":  "500",
+		}
+	}
+	if len(parametros) == 0 {
+		return 0, map[string]interface{}{
+			"funcion": "obtenerParametroIDPorCodigoDashboard",
+			"err":     fmt.Sprintf("no se encontró parámetro activo para el código %s", codigo),
+			"status":  "404",
+		}
+	}
+
+	parametroDashboardCache.Store(codigo, parametros[0].Id)
+	return parametros[0].Id, nil
 }
 
 func construirResumenDashboardResolucion(
@@ -288,13 +328,7 @@ func construirResumenDashboardResolucion(
 
 	dependenciaNombre := obtenerNombreDependencia(resolucion.DependenciaId, cacheDependencias, cacheDependenciasMu)
 
-	mapaTitan := make(map[string]int)
-	for _, contrato := range contratosTitan {
-		contratoNumero := strings.TrimSpace(contrato.NumeroContrato)
-		if contratoNumero != "" && contrato.Activo {
-			mapaTitan[contratoNumero]++
-		}
-	}
+	mapaTitan := construirMapaConteoContratosTitan(contratosTitan)
 
 	total := 0
 	totalConRp := 0
@@ -304,24 +338,15 @@ func construirResumenDashboardResolucion(
 
 	for _, vinculacion := range vinculaciones {
 		total++
-
-		numeroContrato := ""
-		if vinculacion.NumeroContrato != nil {
-			numeroContrato = strings.TrimSpace(*vinculacion.NumeroContrato)
-		}
-
-		tieneRpResoluciones := vinculacion.NumeroRp > 0 &&
-			vinculacion.VigenciaRp > 0 &&
-			numeroContrato != ""
-
-		if !tieneRpResoluciones {
+		resumenRp := resumirEstadoRp(vinculacion)
+		if !resumenRp.TieneRpResoluciones {
 			sinRp++
 			continue
 		}
 
 		totalConRp++
 
-		if mapaTitan[numeroContrato] > 0 {
+		if mapaTitan[resumenRp.NumeroContrato] > 0 {
 			completas++
 		} else {
 			pendientesTitan++

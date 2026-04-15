@@ -331,8 +331,8 @@ func (c *GestionVinculacionesController) RegistrarRps() {
 	go helpers.ProcesarPreliquidaciones(jobID, rps)
 
 	writeJSON(&c.Controller, 200, "Proceso de registro de RPs iniciado correctamente", nil, map[string]interface{}{
-		"JobId":   jobID,
-		"Total":   len(rps),
+		"JobId": jobID,
+		"Total": len(rps),
 	})
 }
 

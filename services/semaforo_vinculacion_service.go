@@ -30,12 +30,7 @@ func ConsultarSemaforoResolucion(resolucionId int, numeroDocUsuario string, role
 		return nil, errTitan
 	}
 
-	mapaTitan := make(map[string]bool)
-	for _, contrato := range contratosTitan {
-		if contrato.NumeroContrato != "" && contrato.Activo {
-			mapaTitan[contrato.NumeroContrato] = true
-		}
-	}
+	mapaTitan := construirMapaContratosTitan(contratosTitan)
 
 	resultado := make([]models.EstadoSemaforoVinculacion, 0, len(vinculaciones))
 
@@ -46,49 +41,17 @@ func ConsultarSemaforoResolucion(resolucionId int, numeroDocUsuario string, role
 	sinRp := 0
 
 	for _, vinculacion := range vinculaciones {
-		numeroDocumento := int(vinculacion.PersonaId)
+		estado := clasificarEstadoSemaforoVinculacion(vinculacion, mapaTitan)
+		numeroDocumento := estado.NumeroDocumento
 
 		if numeroDocumentoFiltro != nil && *numeroDocumentoFiltro > 0 && numeroDocumento != *numeroDocumentoFiltro {
 			continue
 		}
 
-		estado := models.EstadoSemaforoVinculacion{
-			VinculacionId:       vinculacion.Id,
-			NumeroDocumento:     numeroDocumento,
-			Vigencia:            vinculacion.Vigencia,
-			NumeroRp:            int(vinculacion.NumeroRp),
-			VigenciaRp:          int(vinculacion.VigenciaRp),
-			TieneRpResoluciones: false,
-			TieneRpTitan:        false,
-			EstadoCodigo:        "SIN_RP",
-			EstadoNombre:        "Sin RP cargado en resoluciones",
-			Prioridad:           3,
-		}
-
-		if vinculacion.NumeroContrato != nil {
-			estado.NumeroContrato = *vinculacion.NumeroContrato
-		}
-
-		tieneRpResoluciones := vinculacion.NumeroRp > 0 &&
-			vinculacion.VigenciaRp > 0 &&
-			estado.NumeroContrato != ""
-
-		if tieneRpResoluciones {
-			totalConRp++
-			estado.TieneRpResoluciones = true
-			estado.EstadoCodigo = "PENDIENTE_TITAN"
-			estado.EstadoNombre = "Cargado en resoluciones, pendiente en Titan"
-			estado.Prioridad = 2
-
-			if mapaTitan[estado.NumeroContrato] {
-				estado.TieneRpTitan = true
-				estado.EstadoCodigo = "COMPLETO"
-				estado.EstadoNombre = "Cargado en resoluciones y Titan"
-				estado.Prioridad = 1
-			}
-		}
-
 		total++
+		if estado.TieneRpResoluciones {
+			totalConRp++
+		}
 
 		switch estado.EstadoCodigo {
 		case "COMPLETO":
