@@ -383,7 +383,9 @@ func (c *GestionVinculacionesController) ObtenerProgreso() {
 
 	result := helpers.ObtenerJob(jobID)
 	if result["Success"].(bool) {
-		writeJSON(&c.Controller, 200, "Successful", result, nil)
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = result
+		c.ServeJSON()
 	} else {
 		writeErrorJSON(&c.Controller, 404, result["Message"].(string), nil)
 	}
