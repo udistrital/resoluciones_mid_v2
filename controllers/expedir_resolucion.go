@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -32,23 +30,14 @@ func (c *ExpedirResolucionController) URLMapping() {
 func (c *ExpedirResolucionController) Expedir() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Expedir", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.ExpedicionResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "Expedir")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.ExpedirResolucion(m); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": "201", "Message": "Successful", "Data": m}
-		} else {
-			panic(err)
-		}
-	} else { //If 13 - Unmarshal
-		panic(map[string]interface{}{"funcion": "Expedir", "err": err.Error(), "status": "400"})
+	if err := helpers.ExpedirResolucion(m); err == nil {
+		writeJSON(&c.Controller, 201, "Successful", m, nil)
+	} else {
+		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // ExpedirResolucionController ...
@@ -62,23 +51,14 @@ func (c *ExpedirResolucionController) Expedir() {
 func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "ValidarDatosExpedicion", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.ExpedicionResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "ValidarDatosExpedicion")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.ValidarDatosExpedicion(m); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": "201", "Message": "Successful", "Data": "OK"}
-		} else {
-			panic(err)
-		}
+	if err := helpers.ValidarDatosExpedicion(m); err == nil {
+		writeJSON(&c.Controller, 201, "Successful", "OK", nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "ValidarDatosExpedicion", "err": err.Error(), "status": "400"})
+		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // ExpedirModificacion ...
@@ -92,23 +72,14 @@ func (c *ExpedirResolucionController) ValidarDatosExpedicion() {
 func (c *ExpedirResolucionController) ExpedirModificacion() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "ExpedirModificacion", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.ExpedicionResolucion
-	// If 13 - Unmarshal
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.ExpedirModificacion(m); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": "201", "Message": "Successful", "Data": m}
-		} else {
-			panic(err)
-		}
-	} else { //If 13 - Unmarshal
-		panic(map[string]interface{}{"funcion": "ExpedirModificacion", "err": err.Error(), "status": "400"})
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "ExpedirModificacion")
+
+	if err := helpers.ExpedirModificacion(m); err == nil {
+		writeJSON(&c.Controller, 201, "Successful", m, nil)
+	} else {
+		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // Cancelar ...
@@ -122,21 +93,12 @@ func (c *ExpedirResolucionController) ExpedirModificacion() {
 func (c *ExpedirResolucionController) Cancelar() {
 	defer helpers.ErrorController(c.Controller, "ExpedirResolucionController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Cancelar", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.ExpedicionCancelacion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "Cancelar")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.ExpedirCancelacion(m); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": "201", "Message": "Successful", "Data": m}
-		} else {
-			panic(err)
-		}
-	} else { //If 13 - Unmarshal
-		panic(map[string]interface{}{"funcion": "Cancelar", "err": err.Error(), "status": "400"})
+	if err := helpers.ExpedirCancelacion(m); err == nil {
+		writeJSON(&c.Controller, 201, "Successful", m, nil)
+	} else {
+		panic(err)
 	}
-	c.ServeJSON()
 }

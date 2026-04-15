@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -29,21 +27,12 @@ func (c *ReporteFinancieraController) URLMapping() {
 func (c *ReporteFinancieraController) ReporteFinanciera() {
 	defer helpers.ErrorController(c.Controller, "ReporteFinancieraController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "ReporteFinanciera", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var p models.DatosReporte
+	decodeJSONBody(c.Ctx.Input.RequestBody, &p, "ReporteFinanciera")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
-		if r, err2 := helpers.ReporteFinanciera(p); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Reporte Generado con Exito", "Data": r}
-		} else {
-			panic(err2)
-		}
+	if r, err2 := helpers.ReporteFinanciera(p); err2 == nil {
+		writeJSON(&c.Controller, 201, "Reporte Generado con Exito", r, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "ReporteFinanciera", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
