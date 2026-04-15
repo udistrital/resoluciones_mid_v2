@@ -1,9 +1,6 @@
 package helpers
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -16,14 +13,6 @@ import (
 	"github.com/phpdave11/gofpdf"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
-
-var meses = map[string][]string{
-	"es": {"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"},
-}
-
-var periodo = map[string][]string{
-	"es": {"Primer", "Segundo", "Tercer"},
-}
 
 // Función que orquesta el proceso de generación de la resolución en formato pdf
 func GenerarResolucion(resolucionId int) (encodedPdf string, outputError map[string]interface{}) {
@@ -99,53 +88,6 @@ func GenerarInformeVinculaciones(vinculaciones []models.Vinculaciones) (encodedP
 	return
 }
 
-func obtenerNombreMes(m time.Month, idioma string) string {
-	// Verifica si el idioma está soportado
-	nombresMeses, ok := meses[idioma]
-	if !ok {
-		return ""
-	}
-
-	// Resta 1 al valor del mes porque en Go los meses empiezan desde 1
-	mes := int(m) - 1
-
-	// Verifica si el mes está dentro del rango válido
-	if mes < 0 || mes >= len(nombresMeses) {
-		return ""
-	}
-
-	return nombresMeses[mes]
-}
-
-func cambiarString(original string) (cambiado string) {
-	switch {
-	case original == "HCH":
-		cambiado = "Hora Cátedra Honorarios"
-	case original == "HCP":
-		cambiado = "Hora Cátedra Salarios"
-	case original == "TCO-MTO":
-		cambiado = "Tiempo Completo Ocasional - Medio Tiempo Ocasional"
-	default:
-		cambiado = original
-	}
-	return cambiado
-}
-
-func obtenerPeriodo(periodoA int, idioma string) string {
-	periodoV, ok := periodo[idioma]
-	if !ok {
-		return ""
-	}
-
-	periodoF := periodoA - 1
-
-	if periodoF < 0 || periodoF >= len(periodoV) {
-		return ""
-	}
-
-	return periodoV[periodoF]
-}
-
 // Esta función genera un documento en formato pdf con la información de la resolución registrada en la base de datos
 func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculaciones []models.Vinculaciones) (doc *gofpdf.Fpdf, outputError map[string]interface{}) {
 	defer func() {
@@ -165,9 +107,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		fecha = time.Now()
 	}
 	fechaParsed := fmt.Sprintf("(%s %02d de %d)", TranslateMonth(fecha.Month().String()), fecha.Day(), fecha.Year())
-	var tipoResolucion models.Parametro
-	if err := GetRequestNew("UrlcrudParametros", ParametroEndpoint+strconv.Itoa(datos.Resolucion.TipoResolucionId), &tipoResolucion); err != nil {
-		panic(map[string]interface{}{"funcion": "/ConstruirDocumentoResolucion-param", "err": err.Error(), "status": "500"})
+	tipoResolucion, errMap := cargarTipoResolucionDocumento(datos.Resolucion.TipoResolucionId)
+	if errMap != nil {
+		panic(errMap)
 	}
 
 	/*
@@ -179,40 +121,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 		}
 	*/
 
-	// Consultar ordenador del gasto por core_amazon_crud
-	var ordenadorGasto models.OrdenadorGasto
-	var ordenadoresGasto []models.OrdenadorGasto
-	url := "ordenador_gasto?query=DependenciaId:" + strconv.Itoa(datos.Resolucion.DependenciaFirmaId)
-	if err := GetRequestLegacy("UrlcrudCore", url, &ordenadoresGasto); err != nil {
-		logs.Error(err)
-		panic(err.Error())
-	} else {
-		if len(ordenadoresGasto) > 0 {
-			ordenadorGasto = ordenadoresGasto[0]
-		} else {
-			if err := GetRequestLegacy("UrlcrudCore", "ordenador_gasto/1", &ordenadorGasto); err != nil {
-				logs.Error(err)
-				panic(err.Error())
-			}
-		}
-		var jefeDependencia []models.JefeDependencia
-		var fechaActual = time.Now().Format("2006-01-02") // -- Se debe dejar este una vez se suba
-		// var fechaActual = "2021-01-01"
-		url2 := "jefe_dependencia?query=DependenciaId:" + strconv.Itoa(datos.Resolucion.DependenciaFirmaId) + ",FechaFin__gte:" + fechaActual + ",FechaInicio__lte:" + fechaActual
-		if err := GetRequestLegacy("UrlcrudCore", url2, &jefeDependencia); err != nil {
-			logs.Error(err)
-			panic(err.Error())
-		}
-		if len(jefeDependencia) > 0 {
-			if ordenador, err2 := BuscarDatosPersonalesDocente(float64(jefeDependencia[0].TerceroId)); err2 == nil {
-				ordenadorGasto.NombreOrdenador = ordenador.NomProveedor
-			} else {
-				logs.Error(err2)
-				panic(err2)
-			}
-		} else {
-			panic("No se encontró jefe para la dependencia en el periodo actual")
-		}
+	ordenadorGasto, errMap := cargarOrdenadorResolucion(datos.Resolucion.DependenciaFirmaId)
+	if errMap != nil {
+		panic(errMap)
 	}
 
 	pdf := gofpdf.New("P", "mm", "A4", fontPath)
@@ -227,9 +138,9 @@ func ConstruirDocumentoResolucion(datos models.ContenidoResolucion, vinculacione
 	var facultad models.Dependencia
 	var resAnterior models.Resolucion
 	var resVinDocente []models.ResolucionVinculacionDocente
-	url = "dependencia/" + strconv.Itoa(int(datos.Vinculacion.FacultadId))
-	if err2 := GetRequestLegacy("UrlcrudOikos", url, &facultad); err2 != nil {
-		outputError = map[string]interface{}{"funcion": "/ConstruirTablaVinculaciones-dep", "err": err2.Error(), "status": "500"}
+	facultad, errMap = cargarFacultadDocumento(int(datos.Vinculacion.FacultadId))
+	if errMap != nil {
+		outputError = errMap
 		panic(outputError)
 	}
 	if tipoResolucion.CodigoAbreviacion != "RVIN" && tipoResolucion.CodigoAbreviacion != "RTP" {
@@ -1102,108 +1013,4 @@ func ConstruirVinculacionesDesagregado(pdf *gofpdf.Fpdf, vinculaciones []models.
 	}
 
 	return pdf, outputError
-}
-
-// Genera la tabla del cuadro de responsabilidades que va l final de cada resolución
-func ConstruirCuadroResp(pdf *gofpdf.Fpdf, data []map[string]interface{}, resp bool) (p *gofpdf.Fpdf, outputError map[string]interface{}) {
-	defer func() {
-		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "ConstruirCuadroResp", "err": err, "status": "500"}
-			panic(outputError)
-		}
-	}()
-
-	headers := []string{"Funcion", "Nombre", "Cargo", "Firma"}
-
-	pdf.SetFont(Calibri, "", 6)
-	for i, str := range headers {
-		w := 42.0
-		if i == 0 {
-			w = w / 2
-		}
-		if i == 1 {
-			w = w * 1.5
-		}
-		pdf.CellFormat(w, 4, str, "1", 0, "C", false, 0, "")
-	}
-	pdf.Ln(-1)
-
-	pdf.SetFont(Calibri, "", 6)
-	for _, fila := range data {
-		for i, str := range headers {
-			w := 42.0
-			if i == 0 {
-				w = w / 2
-			}
-			if i == 1 {
-				w = w * 1.5
-			}
-			if _, ok := fila[str]; ok {
-				pdf.CellFormat(w, 4, fila[str].(string), "1", 0, "C", false, 0, "")
-			} else {
-				pdf.CellFormat(w, 4, "", "1", 0, "C", false, 0, "")
-			}
-		}
-		pdf.Ln(-1)
-	}
-
-	return pdf, outputError
-}
-
-// Codifica el documento pdf en formato Base64
-func encodePDF(pdf *gofpdf.Fpdf) string {
-	var buffer bytes.Buffer
-	writer := bufio.NewWriter(&buffer)
-	//pdf.OutputFileAndClose("resolucion.pdf") // para guardar el archivo localmente
-	pdf.Output(writer)
-	writer.Flush()
-	encodedFile := base64.StdEncoding.EncodeToString(buffer.Bytes())
-	return encodedFile
-}
-
-// Para un mes en inglés retorna el nombre del mes en español
-func TranslateMonth(engMonth string) (espMonth string) {
-	meses := map[string]string{
-		"January":   "Enero",
-		"February":  "Febrero",
-		"March":     "Marzo",
-		"April":     "Abril",
-		"May":       "Mayo",
-		"June":      "Junio",
-		"July":      "Julio",
-		"August":    "Agosto",
-		"September": "Septiembre",
-		"October":   "Octubre",
-		"November":  "Noviembre",
-		"December":  "Diciembre",
-	}
-	espMonth, _ = meses[engMonth]
-	return
-}
-
-// Realiza el proceso de almacenar la resolución a traves del gestór documental
-func AlmacenarResolucionGestorDocumental(resolucionId int) (documento models.Documento, outputError map[string]interface{}) {
-	var doc models.DocumentoContainer
-	if documentoGenerado, err := GenerarResolucion(resolucionId); err == nil {
-		data := make([]map[string]interface{}, 0)
-		data = append(data, map[string]interface{}{
-			"IdTipoDocumento": 22,
-			"file":            documentoGenerado,
-			"nombre":          "ResolucionDVE" + strconv.Itoa(resolucionId),
-			"descripcion":     "Resolución de vinculación especial",
-			"metadatos":       map[string]interface{}{},
-		})
-		url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String("UrlGestorDocumental") + "document/upload"
-		if err := SendJson(url, "POST", &doc, data); err != nil {
-			logs.Error(err.Error())
-			outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": err.Error(), "status": "500"}
-		}
-	} else {
-		logs.Error(err)
-		outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": err, "status": "500"}
-	}
-	if doc.Status != "200" {
-		outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": doc.Error, "status": doc.Status}
-	}
-	return doc.Res, outputError
 }
