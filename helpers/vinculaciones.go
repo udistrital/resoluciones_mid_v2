@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -8,6 +9,340 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
+
+type contextoConstruccionVinculacion struct {
+	tipoResolucion  models.Parametro
+	valorPunto      float64
+	salarioMinimoID int
+}
+
+func cargarDisponibilidadesVinculacion(idVinculacion int) ([]models.DisponibilidadVinculacion, error) {
+	var disponibilidades []models.DisponibilidadVinculacion
+	url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(idVinculacion)
+	if err := GetRequestNew("UrlcrudResoluciones", url, &disponibilidades); err != nil {
+		return nil, err
+	}
+	if len(disponibilidades) == 0 {
+		return nil, fmt.Errorf("no se encontraron disponibilidades para la vinculación %d", idVinculacion)
+	}
+
+	return disponibilidades, nil
+}
+
+func cargarDisponibilidadesResumenVinculacion(idVinculacion int) ([]models.DisponibilidadVinculacion, error) {
+	var disponibilidades []models.DisponibilidadVinculacion
+	url := "disponibilidad_vinculacion?fields=Disponibilidad&query=VinculacionDocenteId.Id:" + strconv.Itoa(idVinculacion)
+	if err := GetRequestNew("UrlcrudResoluciones", url, &disponibilidades); err != nil {
+		return nil, err
+	}
+	if len(disponibilidades) == 0 {
+		return nil, fmt.Errorf("no se encontró resumen de disponibilidad para la vinculación %d", idVinculacion)
+	}
+
+	return disponibilidades, nil
+}
+
+func cargarProyectoCurricular(idProyectoCurricular int) (models.Dependencia, error) {
+	var proyectos []models.Dependencia
+	url := "dependencia?query=Id:" + strconv.Itoa(idProyectoCurricular)
+	if err := GetRequestLegacy("UrlcrudOikos", url, &proyectos); err != nil {
+		return models.Dependencia{}, err
+	}
+	if len(proyectos) == 0 {
+		return models.Dependencia{}, fmt.Errorf("no se encontró proyecto curricular %d", idProyectoCurricular)
+	}
+
+	return proyectos[0], nil
+}
+
+func desactivarDisponibilidadesVinculacion(disponibilidades []models.DisponibilidadVinculacion) error {
+	var resp map[string]interface{}
+	for _, disp := range disponibilidades {
+		disp.Activo = false
+		if err := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion/"+strconv.Itoa(disp.Id), "PUT", &resp, disp); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func cargarDisponibilidadesActivasVinculacion(idVinculacion int) ([]models.DisponibilidadVinculacion, error) {
+	var disponibilidades []models.DisponibilidadVinculacion
+	url := "disponibilidad_vinculacion?query=vinculacion_docente_id:" + strconv.Itoa(idVinculacion) + ",activo:true"
+	if err := GetRequestNew("UrlCrudResoluciones", url, &disponibilidades); err != nil {
+		return nil, err
+	}
+	if len(disponibilidades) == 0 {
+		return nil, fmt.Errorf("no se encontraron disponibilidades activas para la vinculación %d", idVinculacion)
+	}
+
+	return disponibilidades, nil
+}
+
+func actualizarDisponibilidadVinculacion(disponibilidad models.DisponibilidadVinculacion) error {
+	var actualizada models.DisponibilidadVinculacion
+	url := "disponibilidad_vinculacion/" + strconv.Itoa(disponibilidad.Id)
+	if err := SendRequestNew("UrlcrudResoluciones", url, "PUT", &actualizada, disponibilidad); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func registrarDisponibilidadVinculacion(disponibilidad *models.DisponibilidadVinculacion) error {
+	var registrada models.DisponibilidadVinculacion
+	if err := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &registrada, disponibilidad); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func actualizarDisponibilidadesDesdeDesagregado(disponibilidades []models.DisponibilidadVinculacion, desagregado map[string]interface{}) error {
+	for nombre, valor := range desagregado {
+		if nombre == "NumeroContrato" || nombre == "Vigencia" {
+			continue
+		}
+
+		index := -1
+		for i := range disponibilidades {
+			if disponibilidades[i].Rubro == nombre {
+				index = i
+				break
+			}
+		}
+		if index == -1 {
+			return fmt.Errorf("no se encontró rubro %s en las disponibilidades activas", nombre)
+		}
+
+		disponibilidades[index].Valor = valor.(float64)
+		if err := actualizarDisponibilidadVinculacion(disponibilidades[index]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func registrarDisponibilidadesDesdeDesagregado(idVinculacion int, numeroDisponibilidad int, desagregado map[string]interface{}) error {
+	for nombre, valor := range desagregado {
+		if nombre == "NumeroContrato" || nombre == "Vigencia" {
+			continue
+		}
+
+		dispVinculacion := &models.DisponibilidadVinculacion{
+			Disponibilidad:       numeroDisponibilidad,
+			Rubro:                nombre,
+			NombreRubro:          "",
+			VinculacionDocenteId: &models.VinculacionDocente{Id: idVinculacion},
+			Activo:               true,
+			Valor:                valor.(float64),
+		}
+		if err := registrarDisponibilidadVinculacion(dispVinculacion); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func registrarDisponibilidadSueldoBasico(idVinculacion int, numeroDisponibilidad int, valor float64) error {
+	dispVinculacion := &models.DisponibilidadVinculacion{
+		Disponibilidad:       numeroDisponibilidad,
+		Rubro:                "SueldoBasico",
+		NombreRubro:          "",
+		VinculacionDocenteId: &models.VinculacionDocente{Id: idVinculacion},
+		Activo:               true,
+		Valor:                valor,
+	}
+
+	return registrarDisponibilidadVinculacion(dispVinculacion)
+}
+
+func cargarContextoConstruccionVinculacion(data models.ObjetoPrevinculaciones) (contextoConstruccionVinculacion, error) {
+	var contexto contextoConstruccionVinculacion
+	vigencia := strconv.Itoa(data.Vigencia)
+
+	if data.ResolucionData.NivelAcademico == "PREGRADO" {
+		var resolucion models.Resolucion
+		if err := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(data.ResolucionData.Id), &resolucion); err != nil {
+			return contexto, err
+		}
+		if err := GetRequestNew("UrlCrudParametros", ParametroEndpoint+strconv.Itoa(resolucion.TipoResolucionId), &contexto.tipoResolucion); err != nil {
+			return contexto, err
+		}
+		if contexto.tipoResolucion.CodigoAbreviacion == "RVIN" {
+			_, valorPunto, err := CargarParametroPeriodo(vigencia, "PSAL")
+			if err != nil {
+				return contexto, fmt.Errorf("%v", err)
+			}
+			contexto.valorPunto = valorPunto
+		}
+	}
+
+	if data.ResolucionData.NivelAcademico == "POSGRADO" {
+		salarioMinimoID, _, err := CargarParametroPeriodo(vigencia, "SMMLV")
+		if err != nil {
+			return contexto, fmt.Errorf("%v", err)
+		}
+		contexto.salarioMinimoID = salarioMinimoID
+	}
+
+	return contexto, nil
+}
+
+func construirVinculacionDocenteBase(docente models.CargaLectiva, data models.ObjetoPrevinculaciones, contexto contextoConstruccionVinculacion) (models.VinculacionDocente, error) {
+	docDocente, e1 := strconv.Atoi(docente.DocDocente)
+	horas, e2 := strconv.Atoi(docente.HorasLectivas)
+	proyecto, e3 := strconv.Atoi(docente.IDProyecto)
+	dedicacionID, e4 := strconv.Atoi(docente.IDTipoVinculacion)
+	if e1 != nil || e2 != nil || e3 != nil || e4 != nil {
+		return models.VinculacionDocente{}, fmt.Errorf("error de conversión de datos")
+	}
+
+	return models.VinculacionDocente{
+		Vigencia:                       data.Vigencia,
+		PersonaId:                      float64(docDocente),
+		NumeroContrato:                 nil,
+		NumeroHorasSemanales:           horas,
+		NumeroSemanas:                  data.NumeroSemanas,
+		ResolucionVinculacionDocenteId: data.ResolucionData,
+		ProyectoCurricularId:           proyecto,
+		Categoria:                      docente.CategoriaNombre,
+		DependenciaAcademica:           docente.DependenciaAcademica,
+		DedicacionId:                   dedicacionID,
+		Activo:                         true,
+		ValorPuntoSalarial:             contexto.valorPunto,
+		SalarioMinimoId:                contexto.salarioMinimoID,
+	}, nil
+}
+
+func cargarTipoResolucionDesdeVinculacion(vinculacion models.VinculacionDocente) (models.Parametro, error) {
+	var resolucion models.Resolucion
+	var tipoResolucion models.Parametro
+
+	if err := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(vinculacion.ResolucionVinculacionDocenteId.Id), &resolucion); err != nil {
+		return tipoResolucion, err
+	}
+	if err := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(resolucion.TipoResolucionId), &tipoResolucion); err != nil {
+		return tipoResolucion, err
+	}
+
+	return tipoResolucion, nil
+}
+
+func resolverNumeroDisponibilidad(vinculacionOriginalID int, docPresupuestal *models.DocumentoPresupuestal) (int, error) {
+	if docPresupuestal != nil && docPresupuestal.Tipo != "rp" {
+		return int(docPresupuestal.Consecutivo), nil
+	}
+
+	disponibilidades, err := cargarDisponibilidadesVinculacion(vinculacionOriginalID)
+	if err != nil {
+		return 0, err
+	}
+
+	return disponibilidades[0].Disponibilidad, nil
+}
+
+func aplicarDocumentoPresupuestalVinculacion(vinculacion *models.VinculacionDocente, original *models.Vinculaciones, docPresupuestal *models.DocumentoPresupuestal, tipoResolucion models.Parametro) {
+	if docPresupuestal != nil && docPresupuestal.Tipo == "rp" {
+		vinculacion.NumeroRp = docPresupuestal.Consecutivo
+		vinculacion.VigenciaRp = float64(docPresupuestal.Vigencia)
+	} else if original != nil {
+		vinculacion.NumeroRp = float64(original.RegistroPresupuestal)
+		vinculacion.VigenciaRp = float64(original.Vigencia)
+	}
+
+	if tipoResolucion.CodigoAbreviacion == "RADD" {
+		vinculacion.NumeroRp = 0
+		vinculacion.VigenciaRp = 0
+	}
+}
+
+func resolverNumeroHorasModificacion(cambios *models.CambioVinculacion, vinculacionOriginal models.VinculacionDocente) error {
+	if cambios.NumeroHorasSemanales != 0 {
+		return nil
+	}
+
+	valores := make(map[string]float64)
+	if err := CalcularTrazabilidad(strconv.Itoa(vinculacionOriginal.Id), &valores); err != nil {
+		logs.Error("Error en trazabilidad -> " + err.Error())
+		return fmt.Errorf("error en trazabilidad -> %s", err.Error())
+	}
+
+	cambios.NumeroHorasSemanales = int(valores["NumeroHorasSemanales"])
+	tipoResolucion, err := cargarTipoResolucionDesdeVinculacion(vinculacionOriginal)
+	if err != nil {
+		return err
+	}
+
+	if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
+		cambios.NumeroHorasSemanales += cambios.VinculacionOriginal.NumeroHorasSemanales
+	} else {
+		cambios.NumeroHorasSemanales -= cambios.VinculacionOriginal.NumeroHorasSemanales
+	}
+
+	return nil
+}
+
+func construirNuevaVinculacionModificacion(cambios *models.CambioVinculacion, resolucionNueva *models.ResolucionVinculacionDocente, vinculacionOriginal models.VinculacionDocente) models.VinculacionDocente {
+	return models.VinculacionDocente{
+		Vigencia:                       cambios.VinculacionOriginal.Vigencia,
+		PersonaId:                      cambios.VinculacionOriginal.PersonaId,
+		NumeroHorasSemanales:           cambios.NumeroHorasSemanales,
+		NumeroHorasTrabajadas:          cambios.NumeroHorasTrabajadas,
+		NumeroSemanas:                  cambios.NumeroSemanas,
+		ResolucionVinculacionDocenteId: resolucionNueva,
+		DedicacionId:                   vinculacionOriginal.DedicacionId,
+		ProyectoCurricularId:           vinculacionOriginal.ProyectoCurricularId,
+		Categoria:                      vinculacionOriginal.Categoria,
+		DependenciaAcademica:           vinculacionOriginal.DependenciaAcademica,
+		ValorPuntoSalarial:             vinculacionOriginal.ValorPuntoSalarial,
+		SalarioMinimoId:                vinculacionOriginal.SalarioMinimoId,
+		FechaInicio:                    cambios.FechaInicio,
+		Activo:                         true,
+	}
+}
+
+func cargarCiudadExpedicionDocumento(idCiudad string) (string, error) {
+	var ciudad map[string]interface{}
+	if err := GetRequestLegacy("UrlcrudCore", "ciudad/"+idCiudad, &ciudad); err != nil {
+		return "", err
+	}
+
+	nombre, ok := ciudad["Nombre"].(string)
+	if !ok || nombre == "" {
+		return "", fmt.Errorf("ciudad de expedición inválida para id %s", idCiudad)
+	}
+
+	return nombre, nil
+}
+
+func construirResumenVinculacion(previnculacion models.VinculacionDocente, persona models.InformacionPersonaNatural, ciudadExpedicion string, proyectoCurricular models.Dependencia, disponibilidad models.DisponibilidadVinculacion) models.Vinculaciones {
+	if previnculacion.NumeroContrato == nil {
+		previnculacion.NumeroContrato = new(string)
+	}
+
+	return models.Vinculaciones{
+		Id:                       previnculacion.Id,
+		Nombre:                   persona.NomProveedor,
+		TipoDocumento:            persona.TipoDocumento.ValorParametro,
+		ExpedicionDocumento:      ciudadExpedicion,
+		PersonaId:                previnculacion.PersonaId,
+		NumeroHorasSemanales:     previnculacion.NumeroHorasSemanales,
+		NumeroSemanas:            previnculacion.NumeroSemanas,
+		Categoria:                strings.Trim(previnculacion.Categoria, " "),
+		Dedicacion:               previnculacion.ResolucionVinculacionDocenteId.Dedicacion,
+		ValorContratoFormato:     FormatMoney(int(previnculacion.ValorContrato), 2),
+		NumeroContrato:           *previnculacion.NumeroContrato,
+		Vigencia:                 previnculacion.Vigencia,
+		ProyectoCurricularId:     previnculacion.ProyectoCurricularId,
+		ProyectoCurricularNombre: proyectoCurricular.Nombre,
+		Disponibilidad:           disponibilidad.Disponibilidad,
+		RegistroPresupuestal:     int(previnculacion.NumeroRp),
+	}
+}
 
 // Consulta las vinculaciones asociadas a una resolución y construye un listado con la información relevante
 func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.Vinculaciones, outputError map[string]interface{}) {
@@ -19,10 +354,6 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 	}()
 	var previnculaciones []models.VinculacionDocente
 	//var previnculacionesAux []models.VinculacionDocente
-	var disponibilidad []models.DisponibilidadVinculacion
-	var persona models.InformacionPersonaNatural
-	var ciudad map[string]interface{}
-	var err2 map[string]interface{}
 
 	if rp {
 		previnculaciones, outputError = PrevinculacionesRps(resolucionId)
@@ -31,7 +362,7 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 	}
 
 	for i := range previnculaciones {
-		persona, err2 = BuscarDatosPersonalesDocente(previnculaciones[i].PersonaId)
+		persona, err2 := BuscarDatosPersonalesDocente(previnculaciones[i].PersonaId)
 		if err2 != nil {
 			panic(err2)
 		}
@@ -39,46 +370,25 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 		// TODO: Esta consulta para obtener la ciudad de expedición de un documento deberá moverse a ubicaciones_crud
 		// una vez se corrigan los valores del campo correspondiente en el esquema terceros
 		// teniendo en cuenta que, a la fecha (15/03/2022), core_amazon_crud está en proceso de ser deprecada
-		if err3 := GetRequestLegacy("UrlcrudCore", "ciudad/"+persona.CiudadExpedicionDocumento, &ciudad); err3 != nil {
+		ciudadExpedicion, err3 := cargarCiudadExpedicionDocumento(persona.CiudadExpedicionDocumento)
+		if err3 != nil {
 			logs.Error(err3.Error())
 			panic(err3.Error())
 		}
 
-		url := "disponibilidad_vinculacion?fields=Disponibilidad&query=VinculacionDocenteId.Id:" + strconv.Itoa(previnculaciones[i].Id)
-		if err4 := GetRequestNew("UrlcrudResoluciones", url, &disponibilidad); err4 != nil {
-			logs.Error(err4.Error())
-			panic(err4.Error())
-		}
+			disponibilidad, err4 := cargarDisponibilidadesResumenVinculacion(previnculaciones[i].Id)
+			if err4 != nil {
+				logs.Error(err4.Error())
+				panic(err4.Error())
+			}
 
-		var proycur []models.Dependencia
-		url1 := "dependencia?query=Id:" + strconv.Itoa(previnculaciones[i].ProyectoCurricularId)
-		if err := GetRequestLegacy("UrlcrudOikos", url1, &proycur); err != nil { // If 6
-			logs.Error(proycur)
+		proycur, err := cargarProyectoCurricular(previnculaciones[i].ProyectoCurricularId)
+		if err != nil { // If 6
 			outputError = map[string]interface{}{"funcion": "/ValidarDatosExpedicion6", "err": err.Error(), "status": "502"}
 		}
 
-		if previnculaciones[i].NumeroContrato == nil {
-			previnculaciones[i].NumeroContrato = new(string)
-		}
-		vinculacion := &models.Vinculaciones{
-			Id:                       previnculaciones[i].Id,
-			Nombre:                   persona.NomProveedor,
-			TipoDocumento:            persona.TipoDocumento.ValorParametro,
-			ExpedicionDocumento:      ciudad["Nombre"].(string),
-			PersonaId:                previnculaciones[i].PersonaId,
-			NumeroHorasSemanales:     previnculaciones[i].NumeroHorasSemanales,
-			NumeroSemanas:            previnculaciones[i].NumeroSemanas,
-			Categoria:                strings.Trim(previnculaciones[i].Categoria, " "),
-			Dedicacion:               previnculaciones[i].ResolucionVinculacionDocenteId.Dedicacion,
-			ValorContratoFormato:     FormatMoney(int(previnculaciones[i].ValorContrato), 2),
-			NumeroContrato:           *previnculaciones[i].NumeroContrato,
-			Vigencia:                 previnculaciones[i].Vigencia,
-			ProyectoCurricularId:     previnculaciones[i].ProyectoCurricularId,
-			ProyectoCurricularNombre: proycur[0].Nombre,
-			Disponibilidad:           disponibilidad[0].Disponibilidad,
-			RegistroPresupuestal:     int(previnculaciones[i].NumeroRp),
-		}
-		vinculaciones = append(vinculaciones, *vinculacion)
+		vinculacion := construirResumenVinculacion(previnculaciones[i], persona, ciudadExpedicion, proycur, disponibilidad[0])
+		vinculaciones = append(vinculaciones, vinculacion)
 	}
 
 	if vinculaciones == nil {
@@ -140,7 +450,6 @@ func RetirarVinculaciones(vinculaciones []models.Vinculaciones) (outputError map
 	for _, vinc := range vinculaciones {
 		var modificacion []models.ModificacionVinculacion
 		var vinculacion models.VinculacionDocente
-		var disponibilidades []models.DisponibilidadVinculacion
 		var resp map[string]interface{}
 
 		// Se consulta si hay modificaciones para elegir el procedimiento
@@ -150,21 +459,17 @@ func RetirarVinculaciones(vinculaciones []models.Vinculaciones) (outputError map
 		}
 
 		if len(modificacion) == 0 {
-
-			url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinc.Id)
-			if err := GetRequestNew("UrlcrudResoluciones", url, &disponibilidades); err != nil {
+			disponibilidades, err := cargarDisponibilidadesVinculacion(vinc.Id)
+			if err != nil {
 				panic("Consultando disponibilidades -> " + err.Error())
 			}
 
-			for _, disp := range disponibilidades {
-				disp.Activo = false
-				if err2 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion/"+strconv.Itoa(disp.Id), "PUT", &resp, disp); err2 != nil {
-					panic("Desactivando disponibilidad -> " + err2.Error())
-				}
+			if err := desactivarDisponibilidadesVinculacion(disponibilidades); err != nil {
+				panic("Desactivando disponibilidad -> " + err.Error())
 			}
 
 			disponibilidades[0].VinculacionDocenteId.Activo = false
-			url2 := VinculacionEndpoint + strconv.Itoa(vinculacion.Id)
+			url2 := VinculacionEndpoint + strconv.Itoa(disponibilidades[0].VinculacionDocenteId.Id)
 			if err3 := SendRequestNew("UrlcrudResoluciones", url2, "PUT", &vinculacion, disponibilidades[0].VinculacionDocenteId); err3 != nil {
 				panic("Desactivando vinculacion -> " + err3.Error())
 			}
@@ -183,16 +488,13 @@ func RetirarVinculaciones(vinculaciones []models.Vinculaciones) (outputError map
 				panic("Desactivando vinculación -> " + err6.Error())
 			}
 
-			url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(modificacion[0].VinculacionDocenteRegistradaId.Id)
-			if err := GetRequestNew("UrlcrudResoluciones", url, &disponibilidades); err != nil {
+			disponibilidades, err := cargarDisponibilidadesVinculacion(modificacion[0].VinculacionDocenteRegistradaId.Id)
+			if err != nil {
 				panic("Consultando disponibilidades -> " + err.Error())
 			}
 
-			for _, disp := range disponibilidades {
-				disp.Activo = false
-				if err2 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion/"+strconv.Itoa(disp.Id), "PUT", &resp, disp); err2 != nil {
-					panic("Desactivando disponibilidad -> " + err2.Error())
-				}
+			if err := desactivarDisponibilidadesVinculacion(disponibilidades); err != nil {
+				panic("Desactivando disponibilidad -> " + err.Error())
 			}
 		}
 	}
@@ -210,72 +512,20 @@ func ConstruirVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 	}()
 
 	var vinculaciones []models.VinculacionDocente
-	var resolucion models.Resolucion
-	var tipoResolucion models.Parametro
-	var valorPunto float64
-	vigencia := strconv.Itoa(d.Vigencia)
+	contexto, err := cargarContextoConstruccionVinculacion(d)
+	if err != nil {
+		outputError = map[string]interface{}{"funcion": "/ConstruirVinculaciones-contexto", "err": err, "status": "500"}
+		panic(outputError)
+	}
+
 	for i := range d.Docentes {
-		docDocente, e1 := strconv.Atoi(d.Docentes[i].DocDocente)
-		horas, e2 := strconv.Atoi(d.Docentes[i].HorasLectivas)
-		proyecto, e3 := strconv.Atoi(d.Docentes[i].IDProyecto)
-		dedicacionId, e4 := strconv.Atoi(d.Docentes[i].IDTipoVinculacion)
-		if e1 != nil || e2 != nil || e3 != nil || e4 != nil {
-			panic("Error de conversión de datos")
-		}
-		vinculacion := &models.VinculacionDocente{
-			Vigencia:                       d.Vigencia,
-			PersonaId:                      float64(docDocente),
-			NumeroContrato:                 nil,
-			NumeroHorasSemanales:           horas,
-			NumeroSemanas:                  d.NumeroSemanas,
-			ResolucionVinculacionDocenteId: d.ResolucionData,
-			ProyectoCurricularId:           proyecto,
-			Categoria:                      d.Docentes[i].CategoriaNombre,
-			DependenciaAcademica:           d.Docentes[i].DependenciaAcademica,
-			DedicacionId:                   dedicacionId,
-			Activo:                         true,
+		vinculacion, err := construirVinculacionDocenteBase(d.Docentes[i], d, contexto)
+		if err != nil {
+			outputError = map[string]interface{}{"funcion": "/ConstruirVinculaciones-base", "err": err, "status": "500"}
+			panic(outputError)
 		}
 
-		if d.ResolucionData.NivelAcademico == "PREGRADO" {
-			//1.)Validar el tipo de resolucion
-			// 1.1 ) Se obtiene la resolucion
-			url := "resolucion/" + strconv.Itoa(vinculacion.ResolucionVinculacionDocenteId.Id)
-			err := GetRequestNew("UrlCrudResoluciones", url, &resolucion)
-			if err != nil {
-				outputError = map[string]interface{}{"funcion": "/ConstruirVinculaciones-res", "err": err, "status": "500"}
-				panic(outputError)
-			}
-
-			// 1.2 ) Se obtiene el tipo de resolucion
-			url2 := ParametroEndpoint + strconv.Itoa(resolucion.TipoResolucionId)
-			err2 := GetRequestNew("UrlCrudParametros", url2, &tipoResolucion)
-			if err2 != nil {
-				outputError = map[string]interface{}{"funcion": "/ConstruirVinculaciones-tipores", "err": err2, "status": "500"}
-				panic(outputError)
-			}
-
-			//Se valida si es una resolucion de vinculacion
-			if tipoResolucion.CodigoAbreviacion == "RVIN" {
-				// Se aplica el valor del punto de parametros
-				_, vP, err3 := CargarParametroPeriodo(vigencia, "PSAL")
-				if err3 != nil {
-					logs.Error(err3)
-					panic(err3)
-				}
-				valorPunto = vP
-			}
-			vinculacion.ValorPuntoSalarial = valorPunto
-		}
-		if d.ResolucionData.NivelAcademico == "POSGRADO" {
-			salarioMinimoId, _, err2 := CargarParametroPeriodo(vigencia, "SMMLV")
-			if err2 != nil {
-				logs.Error(err2)
-				panic(err2)
-			}
-			vinculacion.SalarioMinimoId = salarioMinimoId
-		}
-
-		vinculaciones = append(vinculaciones, *vinculacion)
+		vinculaciones = append(vinculaciones, vinculacion)
 	}
 
 	return vinculaciones, outputError
@@ -290,7 +540,6 @@ func EditarVinculaciones(vd models.EdicionVinculaciones) (v []models.Vinculacion
 	}()
 	var vinculacionesModificadas []models.VinculacionDocente
 	var err map[string]interface{}
-	var disVinc []models.DisponibilidadVinculacion
 
 	for i := range vd.Vinculaciones {
 		vd.Vinculaciones[i].NumeroSemanas = vd.Semanas
@@ -308,7 +557,8 @@ func EditarVinculaciones(vd models.EdicionVinculaciones) (v []models.Vinculacion
 		vinculacionesModificadas = append(vinculacionesModificadas, vRegistrada)
 	}
 	for j := range vinculacionesModificadas {
-		if err := GetRequestNew("UrlCrudResoluciones", "disponibilidad_vinculacion?query=vinculacion_docente_id:"+strconv.Itoa(vinculacionesModificadas[j].Id)+",activo:true", &disVinc); err != nil {
+		disVinc, err := cargarDisponibilidadesActivasVinculacion(vinculacionesModificadas[j].Id)
+		if err != nil {
 			panic(err.Error())
 		}
 
@@ -318,31 +568,15 @@ func EditarVinculaciones(vd models.EdicionVinculaciones) (v []models.Vinculacion
 				panic(err)
 			}
 
-			for nombre, valor := range desagregado {
-				if nombre != "NumeroContrato" && nombre != "Vigencia" {
-					var index int
-					for k := range disVinc {
-						if disVinc[k].Rubro == nombre {
-							index = k
-						}
-					}
-					disVinc[index].Valor = valor.(float64)
-					var dvModificada models.DisponibilidadVinculacion
-					url := "disponibilidad_vinculacion/" + strconv.Itoa(disVinc[index].Id)
-					if err3 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &dvModificada, disVinc[index]); err3 != nil {
-						logs.Error(err3.Error())
-						panic("Modificando disponibilidad vinculación -> " + err3.Error())
-					}
-				}
+			if err := actualizarDisponibilidadesDesdeDesagregado(disVinc, desagregado); err != nil {
+				logs.Error(err.Error())
+				panic("Modificando disponibilidad vinculación -> " + err.Error())
 			}
 		} else {
-			var index int
-			disVinc[index].Valor = vinculacionesModificadas[j].ValorContrato
-			var dvModificada models.DisponibilidadVinculacion
-			url := "disponibilidad_vinculacion/" + strconv.Itoa(disVinc[index].Id)
-			if err3 := SendRequestNew("UrlcrudResoluciones", url, "PUT", &dvModificada, disVinc[index]); err3 != nil {
-				logs.Error(err3.Error())
-				panic("Modificando disponibilidad vinculación -> " + err3.Error())
+			disVinc[0].Valor = vinculacionesModificadas[j].ValorContrato
+			if err := actualizarDisponibilidadVinculacion(disVinc[0]); err != nil {
+				logs.Error(err.Error())
+				panic("Modificando disponibilidad vinculación -> " + err.Error())
 			}
 		}
 	}
@@ -378,8 +612,6 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 		vinculacionesRegistradas = append(vinculacionesRegistradas, vRegistrada)
 	}
 
-	var dvRegistrada models.DisponibilidadVinculacion
-
 	for j := range vinculacionesRegistradas {
 
 		if d.ResolucionData.Dedicacion != "HCH" {
@@ -394,37 +626,16 @@ func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.Vincula
 				// for _, rubro := range disponibilidad.Afectacion {
 				// TODO La idea es cruzar los rubros (Afectacion) seleccionados en la Disponibilidad con los valores calculados para cada uno
 				// una vez salga kronos a producción, de manera que el valor calculado con Titan se corresponda con el rubro de Kronos
-				for nombre, valor := range desagregado {
-					if nombre != "NumeroContrato" && nombre != "Vigencia" {
-						dispVinculacion := &models.DisponibilidadVinculacion{
-							Disponibilidad:       int(disponibilidad.Consecutivo),
-							Rubro:                nombre,
-							NombreRubro:          "", // rubro.Padre,
-							VinculacionDocenteId: &models.VinculacionDocente{Id: vinculacionesRegistradas[j].Id},
-							Activo:               true,
-							Valor:                valor.(float64),
-						}
-
-						if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &dispVinculacion); err3 != nil {
-							logs.Error(err3.Error())
-							panic("Registrando disponibilidad -> " + err3.Error())
-						}
-					}
+				if err := registrarDisponibilidadesDesdeDesagregado(vinculacionesRegistradas[j].Id, int(disponibilidad.Consecutivo), desagregado); err != nil {
+					logs.Error(err.Error())
+					panic("Registrando disponibilidad -> " + err.Error())
 				}
 			}
 		} else {
 			for _, disponibilidad := range d.Disponibilidad {
-				dispVinculacion := &models.DisponibilidadVinculacion{
-					Disponibilidad:       int(disponibilidad.Consecutivo),
-					Rubro:                "SueldoBasico", // nombre, // rubro.Padre,
-					NombreRubro:          "",
-					VinculacionDocenteId: &models.VinculacionDocente{Id: vinculacionesRegistradas[j].Id},
-					Activo:               true,
-					Valor:                vinculacionesRegistradas[j].ValorContrato,
-				}
-				if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &dispVinculacion); err3 != nil {
-					logs.Error(err3.Error())
-					panic("Registrando disponibilidad -> " + err3.Error())
+				if err := registrarDisponibilidadSueldoBasico(vinculacionesRegistradas[j].Id, int(disponibilidad.Consecutivo), vinculacionesRegistradas[j].ValorContrato); err != nil {
+					logs.Error(err.Error())
+					panic("Registrando disponibilidad -> " + err.Error())
 				}
 			}
 		}
@@ -460,48 +671,12 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 			panic("Error en acta de inicio " + err2.Error())
 		}
 	} else if obj.CambiosVinculacion.NumeroHorasSemanales == 0 {
-		// Si solo se modificaron las semanas, las horas son las mismas de la vinc original
-		// Aplica solo para cancelaciones de pregrado
-		valores := make(map[string]float64)
-		if err := CalcularTrazabilidad(strconv.Itoa(vinculacion.Id), &valores); err != nil {
-			logs.Error("Error en trazabilidad -> " + err.Error())
-			panic("Error en trazabilidad -> " + err.Error())
-		}
-		var tipoResolucion models.Parametro
-		var resolucion models.Resolucion
-		obj.CambiosVinculacion.NumeroHorasSemanales = int(valores["NumeroHorasSemanales"])
-		err2 := GetRequestNew("UrlCrudResoluciones", "resolucion/"+strconv.Itoa(vinculacion.ResolucionVinculacionDocenteId.Id), &resolucion)
-		if err2 != nil {
-			panic(err2.Error())
-		}
-		err3 := GetRequestNew("UrlcrudParametros", "parametro/"+strconv.Itoa(resolucion.TipoResolucionId), &tipoResolucion)
-		if err3 != nil {
-			panic(err3.Error())
-		}
-		if tipoResolucion.CodigoAbreviacion == "RVIN" || tipoResolucion.CodigoAbreviacion == "RADD" {
-			obj.CambiosVinculacion.NumeroHorasSemanales += obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
-		} else {
-			obj.CambiosVinculacion.NumeroHorasSemanales -= obj.CambiosVinculacion.VinculacionOriginal.NumeroHorasSemanales
+		if err := resolverNumeroHorasModificacion(obj.CambiosVinculacion, vinculacion); err != nil {
+			panic(err.Error())
 		}
 	}
 
-	// Creación de la nueva vinculación
-	nuevaVinculacion := models.VinculacionDocente{
-		Vigencia:                       obj.CambiosVinculacion.VinculacionOriginal.Vigencia,
-		PersonaId:                      obj.CambiosVinculacion.VinculacionOriginal.PersonaId,
-		NumeroHorasSemanales:           obj.CambiosVinculacion.NumeroHorasSemanales,
-		NumeroHorasTrabajadas:          obj.CambiosVinculacion.NumeroHorasTrabajadas,
-		NumeroSemanas:                  obj.CambiosVinculacion.NumeroSemanas,
-		ResolucionVinculacionDocenteId: obj.ResolucionNuevaId,
-		DedicacionId:                   vinculacion.DedicacionId,
-		ProyectoCurricularId:           vinculacion.ProyectoCurricularId,
-		Categoria:                      vinculacion.Categoria,
-		DependenciaAcademica:           vinculacion.DependenciaAcademica,
-		ValorPuntoSalarial:             vinculacion.ValorPuntoSalarial,
-		SalarioMinimoId:                vinculacion.SalarioMinimoId,
-		FechaInicio:                    obj.CambiosVinculacion.FechaInicio,
-		Activo:                         true,
-	}
+	nuevaVinculacion := construirNuevaVinculacionModificacion(obj.CambiosVinculacion, obj.ResolucionNuevaId, vinculacion)
 
 	if fecha := NormalizarFechaTimezone(&nuevaVinculacion.FechaInicio); fecha != nil {
 		nuevaVinculacion.FechaInicio = *fecha
@@ -515,21 +690,8 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 
 	nuevaVinculacion = vin[0]
 
-	// Si el documento es RP se almacenan los datos relevantes
-	if obj.CambiosVinculacion.DocPresupuestal != nil && obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
-		nuevaVinculacion.NumeroRp = obj.CambiosVinculacion.DocPresupuestal.Consecutivo
-		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.DocPresupuestal.Vigencia)
-	} else {
-		nuevaVinculacion.NumeroRp = float64(obj.CambiosVinculacion.VinculacionOriginal.RegistroPresupuestal)
-		nuevaVinculacion.VigenciaRp = float64(obj.CambiosVinculacion.VinculacionOriginal.Vigencia)
-	}
-
 	tipoResolucion := GetTipoResolucion(obj.ResolucionNuevaId.Id)
-
-	if tipoResolucion.CodigoAbreviacion == "RADD" {
-		nuevaVinculacion.NumeroRp = 0
-		nuevaVinculacion.VigenciaRp = 0
-	}
+	aplicarDocumentoPresupuestalVinculacion(&nuevaVinculacion, obj.CambiosVinculacion.VinculacionOriginal, obj.CambiosVinculacion.DocPresupuestal, tipoResolucion)
 
 	// Se desactiva la vinculación original, asi no estará disponible para ser modificada
 	var vinc *models.VinculacionDocente
@@ -575,79 +737,37 @@ func ModificarVinculaciones(obj models.ObjetoModificaciones) (v models.Vinculaci
 			panic(err)
 		}
 
-		var dvRegistrada models.DisponibilidadVinculacion
 		// Se registran los rubros de la disponibilidad segun el caso
 		if obj.CambiosVinculacion.DocPresupuestal == nil || obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
 			// Si no se cambia la disponibilidad se usa la misma de la vinculación original
-			var dv []models.DisponibilidadVinculacion
-
-			url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
-			if err5 := GetRequestNew("UrlcrudResoluciones", url, &dv); err5 != nil {
+			dv, err5 := cargarDisponibilidadesVinculacion(vinculacion.Id)
+			if err5 != nil {
 				panic("Cargando disponibilidad_vinculacion -> " + err5.Error())
 			}
 			for i := range dv {
-				nuevaDv := &models.DisponibilidadVinculacion{
+				if err6 := registrarDisponibilidadVinculacion(&models.DisponibilidadVinculacion{
 					Disponibilidad:       dv[i].Disponibilidad,
 					Rubro:                dv[i].Rubro,
 					NombreRubro:          dv[i].NombreRubro,
 					VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
 					Activo:               true,
-					Valor:                0,
-				}
-
-				nuevaDv.Valor = desagregado[dv[i].Rubro].(float64)
-
-				if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
+					Valor:                desagregado[dv[i].Rubro].(float64),
+				}); err6 != nil {
 					panic("Registrando disponibilidad -> " + err6.Error())
 				}
 			}
 		} else {
 			disponibilidad := obj.CambiosVinculacion.DocPresupuestal
-			// for _, rubro := range disponibilidad.Afectacion {
-			// TODO La idea es cruzar los rubros (Afectacion) seleccionados en la Disponibilidad con los valores calculados para cada uno
-			// una vez salga kronos a producción, de manera que el valor calculado con Titan se corresponda con el rubro de Kronos
-			for nombre, valor := range desagregado {
-				if nombre != "NumeroContrato" && nombre != "Vigencia" {
-					nuevaDv := &models.DisponibilidadVinculacion{
-						Disponibilidad:       int(disponibilidad.Consecutivo),
-						Rubro:                nombre,
-						NombreRubro:          "", // rubro.Padre,
-						VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
-						Activo:               true,
-						Valor:                valor.(float64),
-					}
-					if err6 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err6 != nil {
-						panic("Registrando disponibilidad -> " + err6.Error())
-					}
-				}
+			if err6 := registrarDisponibilidadesDesdeDesagregado(vinc.Id, int(disponibilidad.Consecutivo), desagregado); err6 != nil {
+				panic("Registrando disponibilidad -> " + err6.Error())
 			}
 		}
 	} else {
-		var dvRegistrada models.DisponibilidadVinculacion
-		var numeroDisponibilidad int
-		// Se registran los rubros de la disponibilidad segun el caso
-		if obj.CambiosVinculacion.DocPresupuestal == nil || obj.CambiosVinculacion.DocPresupuestal.Tipo == "rp" {
-			// Si no se cambia la disponibilidad se usa la misma de la vinculación original
-			var dv []models.DisponibilidadVinculacion
-
-			url := "disponibilidad_vinculacion?limit=0&query=VinculacionDocenteId.Id:" + strconv.Itoa(vinculacion.Id)
-			if err5 := GetRequestNew("UrlcrudResoluciones", url, &dv); err5 != nil {
-				panic("Cargando disponibilidad_vinculacion -> " + err5.Error())
-			}
-			numeroDisponibilidad = dv[0].Disponibilidad
-		} else {
-			numeroDisponibilidad = int(obj.CambiosVinculacion.DocPresupuestal.Consecutivo)
+		numeroDisponibilidad, err := resolverNumeroDisponibilidad(vinculacion.Id, obj.CambiosVinculacion.DocPresupuestal)
+		if err != nil {
+			panic("Cargando disponibilidad_vinculacion -> " + err.Error())
 		}
-		nuevaDv := &models.DisponibilidadVinculacion{
-			Disponibilidad:       numeroDisponibilidad,
-			Rubro:                "SueldoBasico",
-			NombreRubro:          "",
-			VinculacionDocenteId: &models.VinculacionDocente{Id: vinc.Id},
-			Activo:               true,
-			Valor:                nuevaVinculacion.ValorContrato,
-		}
-
-		if err3 := SendRequestNew("UrlcrudResoluciones", "disponibilidad_vinculacion", "POST", &dvRegistrada, &nuevaDv); err3 != nil {
+		if err3 := registrarDisponibilidadSueldoBasico(vinc.Id, numeroDisponibilidad, nuevaVinculacion.ValorContrato); err3 != nil {
 			logs.Error(err3.Error())
 			panic("Registrando disponibilidad -> " + err3.Error())
 		}
@@ -667,8 +787,6 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 	var cancelacionesRegistradas []models.VinculacionDocente
 	var actaInicio []models.ActaInicio
 	var vinculacionDocente models.VinculacionDocente
-	var resolucion models.Resolucion
-	var parametro models.Parametro
 	for i := range p.CambiosVinculacion {
 		vin := p.CambiosVinculacion[i].VinculacionOriginal
 		url := "acta_inicio?query=NumeroContrato:" + vin.NumeroContrato + ",Vigencia:" + strconv.Itoa(vin.Vigencia)
@@ -684,12 +802,8 @@ func RegistrarCancelaciones(p models.ObjetoCancelaciones) (v []models.Vinculacio
 		/*if err := GetRequestLegacy("UrlCrudResoluciones", url1, &vinculacionDocente); err != nil {
 			panic("Vinculación docente -> " + err.Error())
 		}*/
-		url2 := "resolucion/" + strconv.Itoa(vinculacionDocente.ResolucionVinculacionDocenteId.Id)
-		if err := GetRequestNew("UrlcrudResoluciones", url2, &resolucion); err != nil {
-			panic(err.Error())
-		}
-		url3 := "parametro/" + strconv.Itoa(resolucion.TipoResolucionId)
-		if err := GetRequestNew("UrlcrudParametros", url3, &parametro); err != nil {
+		parametro, err := cargarTipoResolucionDesdeVinculacion(vinculacionDocente)
+		if err != nil {
 			logs.Error(err)
 			panic("Cargando tipo_resolucion -> " + err.Error())
 		}
