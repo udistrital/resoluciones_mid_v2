@@ -5,4 +5,3 @@ type AuthenticatedContext struct {
 	Roles           []string
 	Source          string
 }
-

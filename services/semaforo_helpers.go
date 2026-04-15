@@ -7,7 +7,7 @@ import (
 )
 
 type resumenEstadoRp struct {
-	NumeroContrato     string
+	NumeroContrato      string
 	TieneRpResoluciones bool
 }
 

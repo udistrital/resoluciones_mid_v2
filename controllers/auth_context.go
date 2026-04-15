@@ -37,4 +37,3 @@ func requireAuthenticatedContext(ctx models.AuthenticatedContext, function strin
 func buildAuthenticatedContext(controller *beego.Controller) models.AuthenticatedContext {
 	return buildAuthenticatedContextFromRequest(controller)
 }
-

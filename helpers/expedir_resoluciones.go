@@ -12,10 +12,10 @@ import (
 )
 
 type contextoExpedicionResolucion struct {
-	resolucion      models.Resolucion
-	tipoResolucion  models.Parametro
-	facultad        models.Dependencia
-	ordenadorGasto  models.OrdenadorGasto
+	resolucion     models.Resolucion
+	tipoResolucion models.Parametro
+	facultad       models.Dependencia
+	ordenadorGasto models.OrdenadorGasto
 }
 
 func resolverUsuarioExpedicion(usuarioCodificado string) (map[string]interface{}, error) {

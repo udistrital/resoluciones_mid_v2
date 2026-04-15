@@ -376,11 +376,11 @@ func ListarVinculaciones(resolucionId string, rp bool) (vinculaciones []models.V
 			panic(err3.Error())
 		}
 
-			disponibilidad, err4 := cargarDisponibilidadesResumenVinculacion(previnculaciones[i].Id)
-			if err4 != nil {
-				logs.Error(err4.Error())
-				panic(err4.Error())
-			}
+		disponibilidad, err4 := cargarDisponibilidadesResumenVinculacion(previnculaciones[i].Id)
+		if err4 != nil {
+			logs.Error(err4.Error())
+			panic(err4.Error())
+		}
 
 		proycur, err := cargarProyectoCurricular(previnculaciones[i].ProyectoCurricularId)
 		if err != nil { // If 6
