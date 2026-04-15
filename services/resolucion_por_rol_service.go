@@ -56,15 +56,6 @@ func GetResolucionesByVigencia(vigencia int) (res []models.Resolucion, outputErr
 	return temp, nil
 }
 
-func dependenciaPermitida(idOikos int, dependencias []models.DependenciaUsuario) bool {
-	for _, dep := range dependencias {
-		if dep.IdOikos == idOikos {
-			return true
-		}
-	}
-	return false
-}
-
 func GetResolucionesByAlcance(numeroDocumento string, roles []string, vigencia int, dependenciaFiltro *int) (res []models.Resolucion, outputError map[string]interface{}) {
 	alcance, err := ResolveAlcanceUsuario(numeroDocumento, roles)
 	if err != nil {
@@ -87,7 +78,7 @@ func GetResolucionesByAlcance(numeroDocumento string, roles []string, vigencia i
 	}
 
 	if dependenciaFiltro != nil && *dependenciaFiltro > 0 {
-		if !dependenciaPermitida(*dependenciaFiltro, alcance.Dependencias) {
+		if !DependenciaPermitida(*dependenciaFiltro, alcance.Dependencias) {
 			return nil, map[string]interface{}{
 				"funcion": "GetResolucionesByAlcance",
 				"err":     "la dependencia consultada no está autorizada para el usuario",
@@ -142,7 +133,7 @@ func GetResolucionesTablaByAlcance(numeroDocumento string, roles []string, filtr
 		}
 
 		if dependenciaFiltro != nil && *dependenciaFiltro > 0 {
-			if !dependenciaPermitida(*dependenciaFiltro, alcance.Dependencias) {
+			if !DependenciaPermitida(*dependenciaFiltro, alcance.Dependencias) {
 				return nil, 0, map[string]interface{}{
 					"funcion": "GetResolucionesTablaByAlcance",
 					"err":     "la dependencia consultada no está autorizada para el usuario",
