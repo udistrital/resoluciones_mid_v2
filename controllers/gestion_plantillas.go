@@ -78,7 +78,7 @@ func (c *GestionPlantillasController) GetOne() {
 func (c *GestionPlantillasController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	authContext := requireAuthenticatedContext(buildAuthenticatedContext(&c.Controller), "GetAll")
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "GetAll")
 
 	facultadIdStr := c.GetString("Facultad")
 	var dependenciaFiltro *int

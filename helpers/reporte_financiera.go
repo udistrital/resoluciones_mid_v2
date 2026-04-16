@@ -3,6 +3,7 @@ package helpers
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -15,6 +16,8 @@ type idsReporteFinanciera struct {
 	rcan int
 	rexp int
 }
+
+var reporteParametroCache sync.Map
 
 func cargarDependenciaReporte(id int, function string) (models.Dependencia, map[string]interface{}) {
 	var dependencia models.Dependencia
@@ -76,6 +79,12 @@ func construirRegistroReporteFinanciera(
 }
 
 func cargarParametroActivoPorCodigoReporte(codigo string) (models.Parametro, map[string]interface{}) {
+	if cached, ok := reporteParametroCache.Load(codigo); ok {
+		if parametro, ok := cached.(models.Parametro); ok {
+			return parametro, nil
+		}
+	}
+
 	var parametros []models.Parametro
 	url := "parametro?query=CodigoAbreviacion:" + codigo + ",Activo:true"
 	if err := GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
@@ -92,6 +101,7 @@ func cargarParametroActivoPorCodigoReporte(codigo string) (models.Parametro, map
 			"status":  "404",
 		}
 	}
+	reporteParametroCache.Store(codigo, parametros[0])
 	return parametros[0], nil
 }
 

@@ -7,22 +7,56 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
-type authContextReader interface {
-	GetString(string, ...string) string
+var trustedNumeroDocumentoHeaders = []string{
+	"X-Authenticated-User",
+	"X-User-Document",
+	"X-User",
 }
 
-func buildAuthenticatedContextFromRequest(reader authContextReader) models.AuthenticatedContext {
-	numeroDocumento := strings.TrimSpace(reader.GetString("numero_documento"))
-	roles := parseRolesParam(reader.GetString("roles"))
+var trustedRolesHeaders = []string{
+	"X-Authenticated-Roles",
+	"X-User-Roles",
+	"X-Roles",
+}
 
-	return models.AuthenticatedContext{
+func firstHeaderValue(controller *beego.Controller, headers ...string) string {
+	for _, header := range headers {
+		if value := strings.TrimSpace(controller.Ctx.Input.Header(header)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func buildRequestAuthContext(controller *beego.Controller) models.RequestAuthContext {
+	numeroDocumento := firstHeaderValue(controller, trustedNumeroDocumentoHeaders...)
+	rolesRaw := firstHeaderValue(controller, trustedRolesHeaders...)
+	source := "headers"
+	trusted := true
+
+	if numeroDocumento == "" {
+		numeroDocumento = strings.TrimSpace(controller.GetString("numero_documento"))
+		source = "query_fallback"
+		trusted = false
+	}
+
+	if strings.TrimSpace(rolesRaw) == "" {
+		rolesRaw = controller.GetString("roles")
+		if source == "headers" {
+			source = "query_fallback"
+			trusted = false
+		}
+	}
+
+	return models.RequestAuthContext{
 		NumeroDocumento: numeroDocumento,
-		Roles:           roles,
-		Source:          "query",
+		Roles:           parseRolesParam(rolesRaw),
+		Source:          source,
+		Trusted:         trusted,
 	}
 }
 
-func requireAuthenticatedContext(ctx models.AuthenticatedContext, function string) models.AuthenticatedContext {
+func requireRequestAuthContext(ctx models.RequestAuthContext, function string) models.RequestAuthContext {
 	if err := validateRequiredText(ctx.NumeroDocumento, "numero_documento es requerido"); err != nil {
 		panic(badRequest(function, err))
 	}
@@ -32,8 +66,4 @@ func requireAuthenticatedContext(ctx models.AuthenticatedContext, function strin
 	}
 
 	return ctx
-}
-
-func buildAuthenticatedContext(controller *beego.Controller) models.AuthenticatedContext {
-	return buildAuthenticatedContextFromRequest(controller)
 }

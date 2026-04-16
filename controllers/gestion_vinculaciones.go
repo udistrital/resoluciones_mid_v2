@@ -352,7 +352,7 @@ func (c *GestionVinculacionesController) RegistrarRps() {
 func (c *GestionVinculacionesController) ConsultarSemaforoResolucion() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	authContext := requireAuthenticatedContext(buildAuthenticatedContext(&c.Controller), "ConsultarSemaforoResolucion")
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "ConsultarSemaforoResolucion")
 	numeroDocumentoStr := strings.TrimSpace(c.GetString("numero_documento"))
 
 	resolucionId := parsePositivePathID(&c.Controller, ":resolucion_id", "ConsultarSemaforoResolucion")
@@ -383,9 +383,14 @@ func (c *GestionVinculacionesController) ObtenerProgreso() {
 
 	result := helpers.ObtenerJob(jobID)
 	if result["Success"].(bool) {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = result
-		c.ServeJSON()
+		extras := make(map[string]interface{}, len(result))
+		for key, value := range result {
+			if key == "Success" {
+				continue
+			}
+			extras[key] = value
+		}
+		writeJSON(&c.Controller, 200, "Successful", result, extras)
 	} else {
 		writeErrorJSON(&c.Controller, 404, result["Message"].(string), nil)
 	}
@@ -408,7 +413,7 @@ func (c *GestionVinculacionesController) ObtenerProgreso() {
 func (c *GestionVinculacionesController) ConsultarDashboardResoluciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	authContext := requireAuthenticatedContext(buildAuthenticatedContext(&c.Controller), "ConsultarDashboardResoluciones")
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "ConsultarDashboardResoluciones")
 	vigenciaStr := strings.TrimSpace(c.GetString("vigencia"))
 	idOikosStr := strings.TrimSpace(c.GetString("id_oikos"))
 	limitStr := strings.TrimSpace(c.GetString("limit"))
