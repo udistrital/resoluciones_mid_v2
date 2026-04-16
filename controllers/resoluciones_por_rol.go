@@ -29,7 +29,7 @@ func (c *ResolucionesPorRolController) URLMapping() {
 func (c *ResolucionesPorRolController) GetDependenciasByRol() {
 	defer helpers.ErrorController(c.Controller, "ResolucionesPorRolController")
 
-	authContext := requireAuthenticatedContext(buildAuthenticatedContext(&c.Controller), "GetDependenciasByRol")
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "GetDependenciasByRol")
 
 	alcance, errMap := services.ResolveAlcanceUsuario(authContext.NumeroDocumento, authContext.Roles)
 	if errMap != nil {
@@ -53,7 +53,7 @@ func (c *ResolucionesPorRolController) GetDependenciasByRol() {
 func (c *ResolucionesPorRolController) GetResolucionesByDependencia() {
 	defer helpers.ErrorController(c.Controller, "ResolucionesPorRolController")
 
-	authContext := requireAuthenticatedContext(buildAuthenticatedContext(&c.Controller), "GetResolucionesByDependencia")
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "GetResolucionesByDependencia")
 	filtro := buildFiltroConsulta(c, "vigencia")
 
 	vigencia, errVigencia := c.GetInt("vigencia")
