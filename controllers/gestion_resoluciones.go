@@ -1,9 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-	"strconv"
-
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/models"
@@ -36,23 +33,14 @@ func (c *GestionResolucionesController) URLMapping() {
 func (c *GestionResolucionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.ContenidoResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "Post")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if idResolucion, err2 := helpers.InsertarResolucion(m); err2 == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Resolución insertada con exito", "Data": idResolucion}
-		} else {
-			panic(err)
-		}
+	if idResolucion, err2 := helpers.InsertarResolucion(m); err2 == nil {
+		writeJSON(&c.Controller, 201, "Resolución insertada con exito", idResolucion, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // GetOne ...
@@ -66,20 +54,13 @@ func (c *GestionResolucionesController) Post() {
 func (c *GestionResolucionesController) GetOne() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	id, err := strconv.Atoi(idStr)
-
-	if err != nil || id <= 0 {
-		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	id := parsePositivePathID(&c.Controller, ":id", "GetOne")
 
 	if r, err2 := helpers.CargarResolucionCompleta(id); err2 == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resolución cargada con exito", "Data": r}
+		writeJSON(&c.Controller, 200, "Resolución cargada con exito", r, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // GetAll ...
@@ -104,52 +85,16 @@ func (c *GestionResolucionesController) GetOne() {
 func (c *GestionResolucionesController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	var f models.Filtro
-	var limit, offset int
-	var err1, err2, err3, err4, err5, err6 error
-
-	f.Limit = c.GetString("limit")
-	f.Offset = c.GetString("offset")
-	f.NumeroResolucion = c.GetString("NumeroResolucion")
-	f.Vigencia = c.GetString("Vigencia")
-	f.Periodo = c.GetString("Periodo")
-	f.Semanas = c.GetString("Semanas")
-	f.FacultadId = c.GetString("Facultad")
-	f.NivelAcademico = c.GetString("NivelAcademico")
-	f.Dedicacion = c.GetString("Dedicacion")
-	f.Estado = c.GetString("Estado")
-	f.TipoResolucion = c.GetString("TipoResolucion")
-	f.ExcluirTipo = c.GetString("ExcluirTipo")
-
-	if len(f.Limit) > 0 {
-		limit, err1 = strconv.Atoi(f.Limit)
-	}
-	if len(f.Offset) > 0 {
-		offset, err2 = strconv.Atoi(f.Offset)
-	}
-	if len(f.NumeroResolucion) > 0 {
-		_, err3 = strconv.Atoi(f.NumeroResolucion)
-	}
-	if len(f.Vigencia) > 0 {
-		_, err4 = strconv.Atoi(f.Vigencia)
-	}
-	if len(f.Periodo) > 0 {
-		_, err5 = strconv.Atoi(f.Periodo)
-	}
-	if len(f.Semanas) > 0 {
-		_, err6 = strconv.Atoi(f.Semanas)
-	}
-	if err1 != nil || err2 != nil || err3 != nil || err4 != nil || err5 != nil || err6 != nil || limit <= 0 || offset <= 0 {
-		panic(map[string]interface{}{"funcion": "GetAll", "err": helpers.ErrorParametros, "status": "400"})
+	f := buildFiltroConsulta(c, "Vigencia")
+	if err := validateFiltroConsulta(f); err != nil {
+		panic(badRequest("GetAll", err))
 	}
 
 	if l, t, err := helpers.ListarResolucionesFiltradas(f); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Total": t, "Data": l}
+		writeJSON(&c.Controller, 200, helpers.CargaResExito, l, map[string]interface{}{"Total": t})
 	} else {
 		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // Put ...
@@ -164,30 +109,16 @@ func (c *GestionResolucionesController) GetAll() {
 func (c *GestionResolucionesController) Put() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	_, err := strconv.Atoi(idStr)
-
-	if err != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
-	}
-
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorBody, "status": "400"})
-	}
+	parsePositivePathID(&c.Controller, ":id", "Put")
 
 	var r models.ContenidoResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &r, "Put")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &r); err == nil {
-		if err := helpers.ActualizarResolucionCompleta(r); err == nil {
-			c.Ctx.Output.SetStatus(200)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resolución actualizada con exito", "Data": r}
-		} else {
-			panic(err)
-		}
+	if err := helpers.ActualizarResolucionCompleta(r); err == nil {
+		writeJSON(&c.Controller, 200, "Resolución actualizada con exito", r, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "Put", "err": err.Error(), "status": "400"})
+		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // Delete ...
@@ -201,21 +132,14 @@ func (c *GestionResolucionesController) Put() {
 func (c *GestionResolucionesController) Delete() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	id, err := strconv.Atoi(idStr)
+	id := parsePositivePathID(&c.Controller, ":id", "Delete")
 
-	if err != nil {
-		panic(map[string]interface{}{"funcion": "Delete", "err": helpers.ErrorParametros, "status": "400"})
-	}
-
-	if err2 := helpers.AnularResolucion(id); err == nil {
-		c.Ctx.Output.SetStatus(200)
+	if err2 := helpers.AnularResolucion(id); err2 == nil {
 		d := map[string]interface{}{"Id": id}
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Resolución anulada con exito", "Data": d}
+		writeJSON(&c.Controller, 200, "Resolución anulada con exito", d, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // ConsultaDocente ...
@@ -229,20 +153,13 @@ func (c *GestionResolucionesController) Delete() {
 func (c *GestionResolucionesController) ConsultaDocente() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	id, err := strconv.Atoi(idStr)
-
-	if err != nil || id <= 0 {
-		panic(map[string]interface{}{"funcion": "ConsultaDocente", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	id := parsePositivePathID(&c.Controller, ":id", "ConsultaDocente")
 
 	if r, err2 := helpers.ConsultaDocente(id); err2 == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": r}
+		writeJSON(&c.Controller, 200, helpers.CargaResExito, r, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // GenerarResolucion ...
@@ -256,20 +173,13 @@ func (c *GestionResolucionesController) ConsultaDocente() {
 func (c *GestionResolucionesController) GenerarResolucion() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	id, err := strconv.Atoi(idStr)
-
-	if err != nil || id <= 0 {
-		panic(map[string]interface{}{"funcion": "GenerarResolucion", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	id := parsePositivePathID(&c.Controller, ":id", "GenerarResolucion")
 
 	if r, err2 := helpers.GenerarResolucion(id); err2 == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": helpers.CargaResExito, "Data": r}
+		writeJSON(&c.Controller, 200, helpers.CargaResExito, r, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // ActualizarEstado ...
@@ -283,21 +193,12 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 func (c *GestionResolucionesController) ActualizarEstado() {
 	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "ActualizarEstado", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.NuevoEstadoResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "ActualizarEstado")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err2 := helpers.CambiarEstadoResolucion(m.ResolucionId, m.Estado, m.Usuario); err2 == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Resolución insertada con exito", "Data": "OK"}
-		} else {
-			panic(err)
-		}
+	if err2 := helpers.CambiarEstadoResolucion(m.ResolucionId, m.Estado, m.Usuario); err2 == nil {
+		writeJSON(&c.Controller, 201, "Resolución insertada con exito", "OK", nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "ActualizarEstado", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }

@@ -30,55 +30,28 @@ func (c *VincularRpController) Post() {
 	file, header, err := c.GetFile("file")
 	if err != nil {
 		logs.Error("Error al obtener archivo del request:", err)
-		c.Data["json"] = map[string]interface{}{
-			"Success": false,
-			"Message": "No se pudo leer el archivo",
-			"Error":   err.Error(),
-		}
-		c.ServeJSON()
+		writeErrorJSON(&c.Controller, http.StatusBadRequest, "No se pudo leer el archivo", map[string]interface{}{"Error": err.Error()})
 		return
 	}
 	defer file.Close()
 
 	vigenciaStr := c.GetString("vigenciaRp")
 	if vigenciaStr == "" {
-		c.Data["json"] = map[string]interface{}{
-			"Success": false,
-			"Message": "Debe indicar la vigencia del RP (vigenciaRp)",
-		}
-		c.ServeJSON()
+		writeErrorJSON(&c.Controller, http.StatusBadRequest, "Debe indicar la vigencia del RP (vigenciaRp)", nil)
 		return
 	}
 
 	vigenciaRp, err := strconv.Atoi(vigenciaStr)
 	if err != nil {
-		c.Data["json"] = map[string]interface{}{
-			"Success": false,
-			"Message": "El valor de 'vigenciaRp' debe ser un número entero",
-			"Error":   err.Error(),
-		}
-		c.ServeJSON()
+		writeErrorJSON(&c.Controller, http.StatusBadRequest, "El valor de 'vigenciaRp' debe ser un número entero", map[string]interface{}{"Error": err.Error()})
 		return
 	}
 
 	resultados, err := services.ProcesarVinculaciones(file, header, vigenciaRp)
 	if err != nil {
-		c.Data["json"] = map[string]interface{}{
-			"Success": false,
-			"Message": "Error al procesar el archivo",
-			"Error":   err.Error(),
-		}
-		c.ServeJSON()
+		writeErrorJSON(&c.Controller, http.StatusBadRequest, "Error al procesar el archivo", map[string]interface{}{"Error": err.Error()})
 		return
 	}
 
-	response := map[string]interface{}{
-		"Success": true,
-		"Message": "Procesadas " + strconv.Itoa(len(resultados)) + " filas",
-		"Data":    resultados,
-	}
-
-	c.Ctx.Output.SetStatus(http.StatusOK)
-	c.Data["json"] = response
-	c.ServeJSON()
+	writeJSON(&c.Controller, http.StatusOK, "Procesadas "+strconv.Itoa(len(resultados))+" filas", resultados, nil)
 }

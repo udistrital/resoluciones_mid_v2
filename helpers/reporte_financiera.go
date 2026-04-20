@@ -3,10 +3,136 @@ package helpers
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
+
+type idsReporteFinanciera struct {
+	rvin int
+	radd int
+	rred int
+	rcan int
+	rexp int
+}
+
+var reporteParametroCache sync.Map
+
+func cargarDependenciaReporte(id int, function string) (models.Dependencia, map[string]interface{}) {
+	var dependencia models.Dependencia
+	url := "dependencia/" + strconv.Itoa(id)
+	if err := GetRequestLegacy("UrlcrudOikos", url, &dependencia); err != nil {
+		return models.Dependencia{}, map[string]interface{}{
+			"funcion": function,
+			"err":     err.Error(),
+			"status":  "500",
+		}
+	}
+	return dependencia, nil
+}
+
+func cargarDocenteReporte(documento int) (models.ObjetoDocenteTg, error) {
+	var infoDocente models.ObjetoDocenteTg
+	url := fmt.Sprintf("docente/%d", documento)
+	if err := GetRequestWSO2("NscrudAcademica", url, &infoDocente); err != nil {
+		return models.ObjetoDocenteTg{}, err
+	}
+	return infoDocente, nil
+}
+
+func construirRegistroReporteFinanciera(
+	item models.ReporteFinanciera2,
+	facultad models.Dependencia,
+	proyectoCurricular models.Dependencia,
+	infoDocente models.ObjetoDocenteTg,
+	codigoFacultad int,
+) models.ReporteFinancieraFinal2 {
+	return models.ReporteFinancieraFinal2{
+		Id:                    item.Id,
+		Resolucion:            item.Resolucion,
+		DocumentoDocente:      item.DocumentoDocente,
+		Horas:                 item.Horas,
+		Semanas:               item.Semanas,
+		Total:                 item.Total,
+		Cdp:                   item.Cdp,
+		Rp:                    item.Rp,
+		Vigencia:              item.Vigencia,
+		Periodo:               item.Periodo,
+		NivelAcademico:        item.NivelAcademico,
+		TipoVinculacion:       item.TipoVinculacion,
+		Sueldobasico:          item.Sueldobasico,
+		Primanavidad:          item.Primanavidad,
+		Vacaciones:            item.Vacaciones,
+		Primavacaciones:       item.Primavacaciones,
+		Cesantias:             item.Cesantias,
+		TipoResolucion:        item.TipoResolucion,
+		Interesescesantias:    item.Interesescesantias,
+		Primaservicios:        item.Primaservicios,
+		Bonificacionservicios: item.Bonificacionservicios,
+		Nombre:                infoDocente.DocenteTg.Docente[0].Nombre,
+		ProyectoCurricular:    proyectoCurricular.Nombre,
+		CodigoProyecto:        item.Proyectocurricular,
+		Facultad:              facultad.Nombre,
+		CodigoFacultad:        codigoFacultad,
+	}
+}
+
+func cargarParametroActivoPorCodigoReporte(codigo string) (models.Parametro, map[string]interface{}) {
+	if cached, ok := reporteParametroCache.Load(codigo); ok {
+		if parametro, ok := cached.(models.Parametro); ok {
+			return parametro, nil
+		}
+	}
+
+	var parametros []models.Parametro
+	url := "parametro?query=CodigoAbreviacion:" + codigo + ",Activo:true"
+	if err := GetRequestNew("UrlcrudParametros", url, &parametros); err != nil {
+		return models.Parametro{}, map[string]interface{}{
+			"funcion": "cargarParametroActivoPorCodigoReporte",
+			"err":     err.Error(),
+			"status":  "500",
+		}
+	}
+	if len(parametros) == 0 {
+		return models.Parametro{}, map[string]interface{}{
+			"funcion": "cargarParametroActivoPorCodigoReporte",
+			"err":     fmt.Sprintf("no se encontró parámetro activo para %s", codigo),
+			"status":  "404",
+		}
+	}
+	reporteParametroCache.Store(codigo, parametros[0])
+	return parametros[0], nil
+}
+
+func cargarIdsReporteFinanciera() (idsReporteFinanciera, map[string]interface{}) {
+	codigos := []string{"RVIN", "RADD", "RRED", "RCAN", "REXP"}
+	valores := make(map[string]int, len(codigos))
+
+	for _, codigo := range codigos {
+		parametro, errMap := cargarParametroActivoPorCodigoReporte(codigo)
+		if errMap != nil {
+			return idsReporteFinanciera{}, errMap
+		}
+		valores[codigo] = parametro.Id
+	}
+
+	return idsReporteFinanciera{
+		rvin: valores["RVIN"],
+		radd: valores["RADD"],
+		rred: valores["RRED"],
+		rcan: valores["RCAN"],
+		rexp: valores["REXP"],
+	}, nil
+}
+
+func aplicarIdsReporte(datos *models.DatosReporte, ids idsReporteFinanciera) {
+	datos.TipoResolucionVinculacionId = ids.rvin
+	datos.TipoResolucionAdicionId = ids.radd
+	datos.TipoResolucionReduccionId = ids.rred
+	datos.TipoResolucionCancelacionId = ids.rcan
+	datos.EstadoResolucionExpedidaId = ids.rexp
+}
 
 func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.ReporteFinancieraFinal2, outputError map[string]interface{}) {
 
@@ -18,14 +144,18 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 	}()
 
 	var resp []models.ReporteFinanciera2
-	var facultad models.Dependencia
-	var proyectoCurricular models.Dependencia
-
-	url := "dependencia/" + strconv.Itoa(reporte.Facultad)
-	if err2 := GetRequestLegacy("UrlcrudOikos", url, &facultad); err2 != nil {
-		outputError = map[string]interface{}{"funcion": "/Obtención proyecto curricular reporte", "err": err2.Error(), "status": "500"}
+	facultad, errMap := cargarDependenciaReporte(reporte.Facultad, "/Obtención facultad reporte")
+	if errMap != nil {
+		outputError = errMap
 		panic(outputError)
 	}
+
+	ids, errMap := cargarIdsReporteFinanciera()
+	if errMap != nil {
+		outputError = errMap
+		panic(outputError)
+	}
+	aplicarIdsReporte(&reporte, ids)
 
 	if err := SendRequestNew("UrlCrudResoluciones", "reporte_financiera/all", "POST", &resp, &reporte); err != nil {
 		logs.Error(err)
@@ -33,47 +163,24 @@ func ReporteFinanciera(reporte models.DatosReporte) (reporteFinal []models.Repor
 	}
 
 	for i := 0; i < len(resp); i++ {
-		var infoDocente models.ObjetoDocenteTg
-		//var aux interface{}
-
-		url := "dependencia/" + strconv.Itoa(resp[i].Proyectocurricular)
-		if err2 := GetRequestLegacy("UrlcrudOikos", url, &proyectoCurricular); err2 != nil {
-			outputError = map[string]interface{}{"funcion": "/Obtención proyecto curricular reporte", "err": err2.Error(), "status": "500"}
+		proyectoCurricular, errMap := cargarDependenciaReporte(resp[i].Proyectocurricular, "/Obtención proyecto curricular reporte")
+		if errMap != nil {
+			outputError = errMap
 			panic(outputError)
 		}
 
-		url = fmt.Sprintf("docente/%d", resp[i].DocumentoDocente)
-		if err2 := GetRequestWSO2("NscrudAcademica", url, &infoDocente); err2 != nil {
+		infoDocente, err2 := cargarDocenteReporte(resp[i].DocumentoDocente)
+		if err2 != nil {
 			panic(err2.Error())
 		}
-		var reporteAux models.ReporteFinancieraFinal2
-		reporteAux.Id = resp[i].Id
-		reporteAux.Resolucion = resp[i].Resolucion
-		reporteAux.DocumentoDocente = resp[i].DocumentoDocente
-		reporteAux.Horas = resp[i].Horas
-		reporteAux.Semanas = resp[i].Semanas
-		reporteAux.Total = resp[i].Total
-		reporteAux.Cdp = resp[i].Cdp
-		reporteAux.Rp = resp[i].Rp
-		reporteAux.Vigencia = resp[i].Vigencia
-		reporteAux.Periodo = resp[i].Periodo
-		reporteAux.NivelAcademico = resp[i].NivelAcademico
-		reporteAux.TipoVinculacion = resp[i].TipoVinculacion
-		reporteAux.Sueldobasico = resp[i].Sueldobasico
-		reporteAux.Primanavidad = resp[i].Primanavidad
-		reporteAux.Vacaciones = resp[i].Vacaciones
-		reporteAux.Primavacaciones = resp[i].Primavacaciones
-		reporteAux.Cesantias = resp[i].Cesantias
-		reporteAux.TipoResolucion = resp[i].TipoResolucion
-		reporteAux.Interesescesantias = resp[i].Interesescesantias
-		reporteAux.Primaservicios = resp[i].Primaservicios
-		reporteAux.Bonificacionservicios = resp[i].Bonificacionservicios
-		reporteAux.Nombre = infoDocente.DocenteTg.Docente[0].Nombre
-		reporteAux.ProyectoCurricular = proyectoCurricular.Nombre
-		reporteAux.CodigoProyecto = resp[i].Proyectocurricular
-		reporteAux.Facultad = facultad.Nombre
-		reporteAux.CodigoFacultad = reporte.Facultad
-		reporteFinal = append(reporteFinal, reporteAux)
+
+		reporteFinal = append(reporteFinal, construirRegistroReporteFinanciera(
+			resp[i],
+			facultad,
+			proyectoCurricular,
+			infoDocente,
+			reporte.Facultad,
+		))
 	}
 	return reporteFinal, nil
 }

@@ -1,159 +1,12 @@
 package services
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/models"
-	"github.com/udistrital/utils_oas/request"
 )
-
-var rolePriority = map[string]int{
-	"ADMINISTRADOR_RESOLUCIONES": 3,
-	"ASIS_FINANCIERA":            2,
-	"DECANO":                     1,
-	"ASISTENTE_DECANATURA":       1,
-}
-
-func normalizeBaseNoProto(u string) string {
-	u = strings.TrimSpace(u)
-	u = strings.TrimLeft(u, "/")
-	return u
-}
-
-func normalizeRol(rol string) string {
-	return strings.ToUpper(strings.TrimSpace(rol))
-}
-
-func joinWSO2URL(protocol, base, ns, path string) string {
-	protocol = strings.TrimRight(protocol, "://")
-	base = strings.TrimRight(normalizeBaseNoProto(base), "/")
-	ns = strings.Trim(ns, "/")
-	path = strings.TrimLeft(path, "/")
-	return fmt.Sprintf("%s://%s/%s/%s", protocol, base, ns, path)
-}
-
-func deduplicateDependencias(items []models.DependenciaUsuario) []models.DependenciaUsuario {
-	seen := make(map[string]bool)
-	result := make([]models.DependenciaUsuario, 0)
-
-	for _, item := range items {
-		key := fmt.Sprintf("%d-%d", item.CodigoDependencia, item.IdOikos)
-		if !seen[key] {
-			seen[key] = true
-			result = append(result, item)
-		}
-	}
-
-	return result
-}
-
-func getHighestPriorityRol(roles []string) string {
-	bestRol := ""
-	bestPriority := -1
-
-	for _, rol := range roles {
-		r := normalizeRol(rol)
-		priority, ok := rolePriority[r]
-		if !ok {
-			continue
-		}
-
-		if priority > bestPriority {
-			bestPriority = priority
-			bestRol = r
-		}
-	}
-
-	return bestRol
-}
-
-func isGlobalRol(rol string) bool {
-	switch normalizeRol(rol) {
-	case "ADMINISTRADOR_RESOLUCIONES", "ASIS_FINANCIERA":
-		return true
-	default:
-		return false
-	}
-}
-
-func getJSONWithUtilOAS(url string, target interface{}) map[string]interface{} {
-	if err := request.GetJson(url, target); err != nil {
-		return map[string]interface{}{
-			"funcion": "getJSONWithUtilOAS",
-			"err":     err.Error(),
-			"status":  "502",
-		}
-	}
-	return nil
-}
-
-func getJSONWithHTTP(url string, target interface{}) map[string]interface{} {
-	client := &http.Client{
-		Timeout: 20 * time.Second,
-	}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return map[string]interface{}{
-			"funcion": "getJSONWithHTTP:newRequest",
-			"err":     err.Error(),
-			"status":  "500",
-		}
-	}
-
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return map[string]interface{}{
-			"funcion": "getJSONWithHTTP:do",
-			"err":     err.Error(),
-			"status":  "502",
-		}
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return map[string]interface{}{
-			"funcion": "getJSONWithHTTP:readBody",
-			"err":     err.Error(),
-			"status":  "502",
-		}
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return map[string]interface{}{
-			"funcion": "getJSONWithHTTP:statusCode",
-			"err":     fmt.Sprintf("respuesta no exitosa del servicio externo: %d - %s", resp.StatusCode, strings.TrimSpace(string(body))),
-			"status":  strconv.Itoa(resp.StatusCode),
-		}
-	}
-
-	if err := json.Unmarshal(body, target); err != nil {
-		return map[string]interface{}{
-			"funcion": "getJSONWithHTTP:unmarshal",
-			"err":     err.Error(),
-			"status":  "502",
-		}
-	}
-
-	return nil
-}
-
-func getJSON(url string, target interface{}) map[string]interface{} {
-	if errMap := getJSONWithUtilOAS(url, target); errMap == nil {
-		return nil
-	}
-	return getJSONWithHTTP(url, target)
-}
 
 func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]models.DependenciaUsuario, map[string]interface{}) {
 	protocol := beego.AppConfig.String("ProtocolAdmin")
@@ -337,13 +190,4 @@ func ResolveAlcanceUsuario(numeroDocumento string, roles []string) (models.Alcan
 		EsGlobal:     false,
 		Dependencias: dependencias,
 	}, nil
-}
-
-func DependenciaPermitida(idOikos int, dependencias []models.DependenciaUsuario) bool {
-	for _, dep := range dependencias {
-		if dep.IdOikos == idOikos {
-			return true
-		}
-	}
-	return false
 }

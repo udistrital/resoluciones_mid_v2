@@ -316,45 +316,77 @@ func FormatoReglas(v []models.Predicado) (reglas string) {
 	return
 }
 
+func cargarPeriodoParametrosActual(anoActual int) ([]models.Periodo, map[string]interface{}) {
+	var periodo []models.Periodo
+	url := "/periodo?limit=-1&query=year:" + strconv.Itoa(anoActual) + ",codigo_abreviacion:PAR,activo:true,aplicacion_id:30"
+	if err := GetRequestNew("UrlcrudParametros", url, &periodo); err != nil {
+		return nil, map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err.Error(), "status": "500"}
+	}
+	return periodo, nil
+}
+
+func cargarParametroDesagregado() ([]models.Parametro, map[string]interface{}) {
+	var parametro []models.Parametro
+	url := "/parametro?limit=-1&query=codigo_abreviacion:PDVE,activo:true"
+	if err := GetRequestNew("UrlcrudParametros", url, &parametro); err != nil {
+		return nil, map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err.Error(), "status": "500"}
+	}
+	return parametro, nil
+}
+
+func cargarParametrosPeriodoDesagregado(parametroID, periodoID int) ([]models.ParametroPeriodo, map[string]interface{}) {
+	var parametroPeriodo []models.ParametroPeriodo
+	url := "/parametro_periodo?limit=-1&query=parametro_id:" + strconv.Itoa(parametroID) + ",periodo_id:" + strconv.Itoa(periodoID) + ",activo:true"
+	if err := GetRequestNew("UrlcrudParametros", url, &parametroPeriodo); err != nil {
+		return nil, map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err.Error(), "status": "500"}
+	}
+	return parametroPeriodo, nil
+}
+
+func construirPredicadosDesagregado(anoActual int, parametroPeriodo []models.ParametroPeriodo) []models.Predicado {
+	predicados := make([]models.Predicado, 0)
+
+	for _, pp := range parametroPeriodo {
+		var valores map[string]map[string]float64
+		json.Unmarshal([]byte(pp.Valor), &valores)
+		for concepto, porcentajes := range valores {
+			if mayor, ok := porcentajes["porcentaje_mayor"]; ok {
+				predicados = append(predicados, models.Predicado{Nombre: "porcentaje_devengo_v2_mayor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", mayor) + ")."})
+			}
+			if menor, ok := porcentajes["porcentaje_menor"]; ok {
+				predicados = append(predicados, models.Predicado{Nombre: "porcentaje_devengo_v2_menor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", menor) + ")."})
+			}
+		}
+	}
+
+	return predicados
+}
+
 // Genera las reglas de porcentajes de desagregado
 func obtenerReglasDesagregado() (predicadosString string, outputError map[string]interface{}) {
-	// se debe obtener desde parametros los valores de porcentaje de prestaciones y cargar los predicados dinamicos
-	// obtener el periodo vigente para app de resoluciones
-	var predicados []models.Predicado
 	var periodo []models.Periodo
 	anoActual := time.Now().Year()
-	url1 := "/periodo?limit=-1&query=year:" + strconv.Itoa(anoActual) + ",codigo_abreviacion:PAR,activo:true,aplicacion_id:30"
-	if err1 := GetRequestNew("UrlcrudParametros", url1, &periodo); err1 == nil {
-		var parametro []models.Parametro
-		url2 := "/parametro?limit=-1&query=codigo_abreviacion:PDVE,activo:true"
-		if err2 := GetRequestNew("UrlcrudParametros", url2, &parametro); err2 == nil {
-			var parametroPeriodo []models.ParametroPeriodo
-			url3 := "/parametro_periodo?limit=-1&query=parametro_id:" + strconv.Itoa(parametro[0].Id) + ",periodo_id:" + strconv.Itoa(periodo[0].Id) + ",activo:true"
-			if err3 := GetRequestNew("UrlcrudParametros", url3, &parametroPeriodo); err3 == nil {
-				for _, pp := range parametroPeriodo {
-					var valores map[string]map[string]float64
-					json.Unmarshal([]byte(pp.Valor), &valores)
-					for concepto, porcentajes := range valores {
-						if mayor, ok := porcentajes["porcentaje_mayor"]; ok {
-							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_devengo_v2_mayor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", mayor) + ")."})
-						}
-						if menor, ok := porcentajes["porcentaje_menor"]; ok {
-							predicados = append(predicados, models.Predicado{Nombre: "porcentaje_devengo_v2_menor(" + strconv.Itoa(anoActual) + "," + strings.ToLower(concepto) + "," + fmt.Sprintf("%.5f", menor) + ")."})
-						}
-					}
-				}
-			} else {
-				outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err3.Error(), "status": "500"}
-				return predicadosString, outputError
-			}
-		} else {
-			outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err2.Error(), "status": "500"}
-			return predicadosString, outputError
-		}
-	} else {
-		outputError = map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": err1.Error(), "status": "500"}
+	periodo, outputError = cargarPeriodoParametrosActual(anoActual)
+	if outputError != nil {
 		return predicadosString, outputError
 	}
-	predicadosString = FormatoReglas(predicados)
+	if len(periodo) == 0 {
+		return predicadosString, map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": "no se encontró periodo activo para parámetros", "status": "500"}
+	}
+
+	parametro, outputError := cargarParametroDesagregado()
+	if outputError != nil {
+		return predicadosString, outputError
+	}
+	if len(parametro) == 0 {
+		return predicadosString, map[string]interface{}{"funcion": "/CargarParametroPeriodo-reglasDesagregado", "err": "no se encontró parámetro PDVE activo", "status": "500"}
+	}
+
+	parametroPeriodo, outputError := cargarParametrosPeriodoDesagregado(parametro[0].Id, periodo[0].Id)
+	if outputError != nil {
+		return predicadosString, outputError
+	}
+
+	predicadosString = FormatoReglas(construirPredicadosDesagregado(anoActual, parametroPeriodo))
 	return predicadosString, outputError
 }

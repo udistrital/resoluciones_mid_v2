@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-	"strconv"
 	"strings"
 	"time"
 
@@ -45,23 +43,14 @@ func (c *GestionVinculacionesController) URLMapping() {
 func (c *GestionVinculacionesController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var p models.ObjetoPrevinculaciones
+	decodeJSONBody(c.Ctx.Input.RequestBody, &p, "Post")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
-		if r, err2 := helpers.RegistrarVinculaciones(p); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones registradas con exito", "Data": r}
-		} else {
-			panic(err2)
-		}
+	if r, err2 := helpers.RegistrarVinculaciones(p); err2 == nil {
+		writeJSON(&c.Controller, 201, "Vinculaciones registradas con exito", r, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // EditarVinculacion ...
@@ -75,23 +64,14 @@ func (c *GestionVinculacionesController) Post() {
 func (c *GestionVinculacionesController) EditarVinculaciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var vd models.EdicionVinculaciones
+	decodeJSONBody(c.Ctx.Input.RequestBody, &vd, "ModificarVinculacion")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &vd); err == nil {
-		if r, err2 := helpers.EditarVinculaciones(vd); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones modificadas con éxito", "Data": r}
-		} else {
-			panic(err2)
-		}
+	if r, err2 := helpers.EditarVinculaciones(vd); err2 == nil {
+		writeJSON(&c.Controller, 201, "Vinculaciones modificadas con éxito", r, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // ModificarVinculacion ...
@@ -105,23 +85,14 @@ func (c *GestionVinculacionesController) EditarVinculaciones() {
 func (c *GestionVinculacionesController) ModificarVinculacion() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var p models.ObjetoModificaciones
+	decodeJSONBody(c.Ctx.Input.RequestBody, &p, "ModificarVinculacion")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
-		if r, err2 := helpers.ModificarVinculaciones(p); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones modificadas con éxito", "Data": r}
-		} else {
-			panic(err2)
-		}
+	if r, err2 := helpers.ModificarVinculaciones(p); err2 == nil {
+		writeJSON(&c.Controller, 201, "Vinculaciones modificadas con éxito", r, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "ModificarVinculacion", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // Desvincular ...
@@ -135,23 +106,14 @@ func (c *GestionVinculacionesController) ModificarVinculacion() {
 func (c *GestionVinculacionesController) Desvincular() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Desvincular", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var p models.ObjetoCancelaciones
+	decodeJSONBody(c.Ctx.Input.RequestBody, &p, "Desvincular")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
-		if r, err2 := helpers.RegistrarCancelaciones(p); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Cancelaciones registradas con éxito", "Data": r}
-		} else {
-			panic(err2)
-		}
+	if r, err2 := helpers.RegistrarCancelaciones(p); err2 == nil {
+		writeJSON(&c.Controller, 201, "Cancelaciones registradas con éxito", r, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "Desvincular", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // DocentesPrevinculados ...
@@ -166,19 +128,13 @@ func (c *GestionVinculacionesController) DocentesPrevinculados() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
 	resolucionId := c.Ctx.Input.Param(":resolucion_id")
-	id, err := strconv.Atoi(resolucionId)
-
-	if err != nil || id <= 0 {
-		panic(map[string]interface{}{"funcion": "DocentesPrevinculados", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	parsePositivePathID(&c.Controller, ":resolucion_id", "DocentesPrevinculados")
 
 	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId, false); err2 == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
+		writeJSON(&c.Controller, 200, "Successful", vinculaciones, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // DocentesPrevinculadosRp ...
@@ -193,19 +149,13 @@ func (c *GestionVinculacionesController) DocentesPrevinculadosRp() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
 	resolucionId := c.Ctx.Input.Param(":resolucion_id")
-	id, err := strconv.Atoi(resolucionId)
-
-	if err != nil || id <= 0 {
-		panic(map[string]interface{}{"funcion": "DocentesPrevinculadosRp", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	parsePositivePathID(&c.Controller, ":resolucion_id", "DocentesPrevinculadosRp")
 
 	if vinculaciones, err2 := helpers.ListarVinculaciones(resolucionId, true); err2 == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": vinculaciones}
+		writeJSON(&c.Controller, 200, "Successful", vinculaciones, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // DocentesCargaHoraria ...
@@ -223,27 +173,18 @@ func (c *GestionVinculacionesController) DocentesPrevinculadosRp() {
 func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	vigencia := c.Ctx.Input.Param(":vigencia")
-	periodo := c.Ctx.Input.Param(":periodo")
+	vigencia := parseYearPathParam(&c.Controller, ":vigencia", "DocentesCargaHoraria")
+	periodo := parseSingleDigitPositivePathParam(&c.Controller, ":periodo", "DocentesCargaHoraria")
 	dedicacion := c.Ctx.Input.Param(":dedicacion")
 	facultad := c.Ctx.Input.Param(":facultad")
 	nivelAcademico := c.Ctx.Input.Param(":nivel_academico")
-
-	vig, err1 := strconv.Atoi(vigencia)
-	per, err2 := strconv.Atoi(periodo)
-	_, err4 := strconv.Atoi(facultad)
-
-	if (err1 != nil) || (err2 != nil) || (err4 != nil) || (vig == 0) || (per == 0) || (len(vigencia) != 4) {
-		panic(map[string]interface{}{"funcion": "DocentesCargaHoraria", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	parsePositiveIntParam(facultad, "DocentesCargaHoraria")
 
 	if respuesta, err := helpers.ListarDocentesCargaHoraria(vigencia, periodo, dedicacion, facultad, nivelAcademico); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta.CargasLectivas.CargaLectiva}
+		writeJSON(&c.Controller, 200, "Successful", respuesta.CargasLectivas.CargaLectiva, nil)
 	} else {
 		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // InformeVinculaciones ...
@@ -257,24 +198,14 @@ func (c *GestionVinculacionesController) DocentesCargaHoraria() {
 func (c *GestionVinculacionesController) InformeVinculaciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "InformeVinculaciones", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var v []models.Vinculaciones
+	decodeJSONBody(c.Ctx.Input.RequestBody, &v, "InformeVinculaciones")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
-		if i, err2 := helpers.GenerarInformeVinculaciones(v); err2 == nil {
-			c.Ctx.Output.SetStatus(200)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Informe generado con exito", "Data": i}
-		} else {
-			panic(err2)
-		}
+	if i, err2 := helpers.GenerarInformeVinculaciones(v); err2 == nil {
+		writeJSON(&c.Controller, 200, "Informe generado con exito", i, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
-
 }
 
 // DesvincularDocentes ...
@@ -288,23 +219,14 @@ func (c *GestionVinculacionesController) InformeVinculaciones() {
 func (c *GestionVinculacionesController) DesvincularDocentes() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var v []models.Vinculaciones
+	decodeJSONBody(c.Ctx.Input.RequestBody, &v, "DesvincularDocentes")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
-		if err2 := helpers.RetirarVinculaciones(v); err2 == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Vinculaciones retiradas con exito", "Data": "OK"}
-		} else {
-			panic(err2)
-		}
+	if err2 := helpers.RetirarVinculaciones(v); err2 == nil {
+		writeJSON(&c.Controller, 201, "Vinculaciones retiradas con exito", "OK", nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "DesvincularDocentes", "err": err.Error(), "status": "400"})
+		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // CalcularValorContratosSeleccionados ...
@@ -318,29 +240,20 @@ func (c *GestionVinculacionesController) DesvincularDocentes() {
 func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var p models.ObjetoPrevinculaciones
 	var total int
+	decodeJSONBody(c.Ctx.Input.RequestBody, &p, "CalcularValorContratosSeleccionados")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &p); err == nil {
-		if v, err1 := helpers.ConstruirVinculaciones(p); err1 == nil {
-			if w, err2 := helpers.CalcularSalarioPrecontratacion(v); err2 == nil {
-				total = int(helpers.CalcularTotalSalarios(w))
-				c.Ctx.Output.SetStatus(201)
-				c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Cálculo exitoso", "Data": helpers.FormatMoney(total, 2)}
-			} else {
-				panic(err2)
-			}
+	if v, err1 := helpers.ConstruirVinculaciones(p); err1 == nil {
+		if w, err2 := helpers.CalcularSalarioPrecontratacion(v); err2 == nil {
+			total = int(helpers.CalcularTotalSalarios(w))
+			writeJSON(&c.Controller, 201, "Cálculo exitoso", helpers.FormatMoney(total, 2), nil)
 		} else {
-			panic(err1)
+			panic(err2)
 		}
 	} else {
-		panic(map[string]interface{}{"funcion": "CalcularValorContratosSeleccionados", "err": err.Error(), "status": "400"})
+		panic(err1)
 	}
-	c.ServeJSON()
 }
 
 // ConsultarSemaforoDocente ...
@@ -356,25 +269,16 @@ func (c *GestionVinculacionesController) CalcularValorContratosSeleccionados() {
 func (c *GestionVinculacionesController) ConsultarSemaforoDocente() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	vigencia := c.Ctx.Input.Param(":vigencia")
-	periodo := c.Ctx.Input.Param(":periodo")
+	vigencia := parseYearPathParam(&c.Controller, ":vigencia", "ConsultarSemaforoDocente")
+	periodo := parseSingleDigitPositivePathParam(&c.Controller, ":periodo", "ConsultarSemaforoDocente")
 	docente := c.Ctx.Input.Param(":docente")
-
-	vig, err1 := strconv.Atoi(vigencia)
-	per, err2 := strconv.Atoi(periodo)
-	doc, err3 := strconv.Atoi(docente)
-
-	if (err1 != nil) || (err2 != nil) || (err3 != nil) || (vig == 0) || (per == 0) || (doc == 0) || (len(vigencia) != 4) || (len(periodo) != 1) {
-		panic(map[string]interface{}{"funcion": "ConsultarSemaforoDocente", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	parsePositiveIntParam(docente, "ConsultarSemaforoDocente")
 
 	if respuesta, err := helpers.BuscarCategoriaDocente(vigencia, periodo, docente); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta.CategoriaDocente.Categoria}
+		writeJSON(&c.Controller, 200, "Successful", respuesta.CategoriaDocente.Categoria, nil)
 	} else {
 		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // ConsultarSemanasRestantes ...
@@ -391,25 +295,22 @@ func (c *GestionVinculacionesController) ConsultarSemanasRestantes() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
 	fecha := c.Ctx.Input.Param(":fecha")
-	vigencia := c.Ctx.Input.Param(":vigencia")
+	vigencia := parseYearPathParam(&c.Controller, ":vigencia", "ConsultarSemanasRestantes")
 	contrato := c.Ctx.Input.Param(":contrato")
 
 	fechaParsed, err := time.Parse("2006-01-02", fecha)
-	vigenciaParsed, err2 := strconv.Atoi(vigencia)
+	vigenciaParsed := parsePositiveIntParam(vigencia, "ConsultarSemanasRestantes")
 	contratoValido := strings.Contains(contrato, "DVE")
 
-	if (err != nil) || (err2 != nil) || (vigenciaParsed == 0) || (len(vigencia) != 4) || !contratoValido {
+	if err != nil || !contratoValido {
 		panic(map[string]interface{}{"funcion": "ConsultarSemanasRestantes", "err": helpers.ErrorParametros, "status": "400"})
 	}
 
 	if respuesta, err := helpers.CalcularNumeroSemanas(fechaParsed, contrato, vigenciaParsed); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": "200", "Message": "Successful", "Data": respuesta}
+		writeJSON(&c.Controller, 200, "Successful", respuesta, nil)
 	} else {
 		panic(err.Error())
 	}
-
-	c.ServeJSON()
 }
 
 // RegistrarRps ...
@@ -424,22 +325,15 @@ func (c *GestionVinculacionesController) RegistrarRps() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
 	var rps []models.RpSeleccionado
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &rps); err != nil {
-		panic(map[string]interface{}{"funcion": "RegistrarRps", "err": err.Error(), "status": "400"})
-	}
+	decodeJSONBody(c.Ctx.Input.RequestBody, &rps, "RegistrarRps")
 
 	jobID := helpers.CrearJob(len(rps))
 	go helpers.ProcesarPreliquidaciones(jobID, rps)
 
-	c.Ctx.Output.SetStatus(200)
-	c.Data["json"] = map[string]interface{}{
-		"Success": true,
-		"Status":  200,
-		"Message": "Proceso de registro de RPs iniciado correctamente",
-		"JobId":   jobID,
-		"Total":   len(rps),
-	}
-	c.ServeJSON()
+	writeJSON(&c.Controller, 200, "Proceso de registro de RPs iniciado correctamente", nil, map[string]interface{}{
+		"JobId": jobID,
+		"Total": len(rps),
+	})
 }
 
 // ConsultarSemaforoResolucion ...
@@ -458,70 +352,18 @@ func (c *GestionVinculacionesController) RegistrarRps() {
 func (c *GestionVinculacionesController) ConsultarSemaforoResolucion() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	resolucionIdStr := c.Ctx.Input.Param(":resolucion_id")
-	usuario := strings.TrimSpace(c.GetString("usuario"))
-	rolesParam := strings.TrimSpace(c.GetString("roles"))
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "ConsultarSemaforoResolucion")
 	numeroDocumentoStr := strings.TrimSpace(c.GetString("numero_documento"))
 
-	resolucionId, err := strconv.Atoi(resolucionIdStr)
-	if err != nil || resolucionId <= 0 {
-		panic(map[string]interface{}{
-			"funcion": "ConsultarSemaforoResolucion",
-			"err":     helpers.ErrorParametros,
-			"status":  "400",
-		})
-	}
+	resolucionId := parsePositivePathID(&c.Controller, ":resolucion_id", "ConsultarSemaforoResolucion")
 
-	if usuario == "" || rolesParam == "" {
-		panic(map[string]interface{}{
-			"funcion": "ConsultarSemaforoResolucion",
-			"err":     "Los parámetros usuario y roles son obligatorios",
-			"status":  "400",
-		})
-	}
+	numeroDocumentoFiltro := parseOptionalPositiveIntPointer(numeroDocumentoStr, "numero_documento", "ConsultarSemaforoResolucion")
 
-	roles := make([]string, 0)
-	for _, rol := range strings.Split(rolesParam, ",") {
-		rol = strings.TrimSpace(rol)
-		if rol != "" {
-			roles = append(roles, rol)
-		}
-	}
-
-	if len(roles) == 0 {
-		panic(map[string]interface{}{
-			"funcion": "ConsultarSemaforoResolucion",
-			"err":     "Debe enviar al menos un rol válido",
-			"status":  "400",
-		})
-	}
-
-	var numeroDocumentoFiltro *int
-	if numeroDocumentoStr != "" {
-		numeroDocumento, err := strconv.Atoi(numeroDocumentoStr)
-		if err != nil || numeroDocumento <= 0 {
-			panic(map[string]interface{}{
-				"funcion": "ConsultarSemaforoResolucion",
-				"err":     "El parámetro numero_documento no es válido",
-				"status":  "400",
-			})
-		}
-		numeroDocumentoFiltro = &numeroDocumento
-	}
-
-	if respuesta, errMap := services.ConsultarSemaforoResolucion(resolucionId, usuario, roles, numeroDocumentoFiltro); errMap == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{
-			"Success": true,
-			"Status":  200,
-			"Message": "Semáforo consultado exitosamente",
-			"Data":    respuesta,
-		}
+	if respuesta, errMap := services.ConsultarSemaforoResolucion(resolucionId, authContext.NumeroDocumento, authContext.Roles, numeroDocumentoFiltro); errMap == nil {
+		writeJSON(&c.Controller, 200, "Semáforo consultado exitosamente", respuesta, nil)
 	} else {
 		panic(errMap)
 	}
-
-	c.ServeJSON()
 }
 
 // ObtenerProgreso ...
@@ -536,17 +378,21 @@ func (c *GestionVinculacionesController) ObtenerProgreso() {
 
 	jobID := c.Ctx.Input.Param(":jobId")
 	if jobID == "" {
-		panic(map[string]interface{}{"funcion": "ObtenerProgreso", "err": "Job ID requerido", "status": "400"})
+		panic(badRequest("ObtenerProgreso", validateRequiredText(jobID, "Job ID requerido")))
 	}
 
 	result := helpers.ObtenerJob(jobID)
 	if result["Success"].(bool) {
-		c.Data["json"] = result
-		c.ServeJSON()
+		extras := make(map[string]interface{}, len(result))
+		for key, value := range result {
+			if key == "Success" {
+				continue
+			}
+			extras[key] = value
+		}
+		writeJSON(&c.Controller, 200, "Successful", result, extras)
 	} else {
-		c.Ctx.Output.SetStatus(404)
-		c.Data["json"] = result
-		c.ServeJSON()
+		writeErrorJSON(&c.Controller, 404, result["Message"].(string), nil)
 	}
 }
 
@@ -567,96 +413,30 @@ func (c *GestionVinculacionesController) ObtenerProgreso() {
 func (c *GestionVinculacionesController) ConsultarDashboardResoluciones() {
 	defer helpers.ErrorController(c.Controller, "GestionVinculacionesController")
 
-	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
-	rolesParam := strings.TrimSpace(c.GetString("roles"))
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "ConsultarDashboardResoluciones")
 	vigenciaStr := strings.TrimSpace(c.GetString("vigencia"))
 	idOikosStr := strings.TrimSpace(c.GetString("id_oikos"))
 	limitStr := strings.TrimSpace(c.GetString("limit"))
 	offsetStr := strings.TrimSpace(c.GetString("offset"))
 
-	if numeroDocumento == "" || rolesParam == "" || vigenciaStr == "" {
-		panic(map[string]interface{}{
-			"funcion": "ConsultarDashboardResoluciones",
-			"err":     helpers.ErrorParametros,
-			"status":  "400",
-		})
+	if err := validateRequiredText(vigenciaStr, helpers.ErrorParametros); err != nil {
+		panic(badRequest("ConsultarDashboardResoluciones", err))
 	}
 
-	vigencia, err := strconv.Atoi(vigenciaStr)
-	if err != nil || vigencia <= 0 {
-		panic(map[string]interface{}{
-			"funcion": "ConsultarDashboardResoluciones",
-			"err":     "La vigencia no es válida",
-			"status":  "400",
-		})
-	}
+	vigencia := parseRequiredPositiveInt(vigenciaStr, "vigencia", "ConsultarDashboardResoluciones")
 
 	limit := 10
 	if limitStr != "" {
-		limitParsed, err := strconv.Atoi(limitStr)
-		if err != nil || limitParsed <= 0 {
-			panic(map[string]interface{}{
-				"funcion": "ConsultarDashboardResoluciones",
-				"err":     "El parámetro limit no es válido",
-				"status":  "400",
-			})
-		}
-		limit = limitParsed
+		limit = parseRequiredPositiveInt(limitStr, "limit", "ConsultarDashboardResoluciones")
 	}
 
-	offset := 0
-	if offsetStr != "" {
-		offsetParsed, err := strconv.Atoi(offsetStr)
-		if err != nil || offsetParsed < 0 {
-			panic(map[string]interface{}{
-				"funcion": "ConsultarDashboardResoluciones",
-				"err":     "El parámetro offset no es válido",
-				"status":  "400",
-			})
-		}
-		offset = offsetParsed
-	}
+	offset := parseOptionalNonNegativeInt(offsetStr, "offset", "ConsultarDashboardResoluciones", 0)
 
-	roles := make([]string, 0)
-	for _, rol := range strings.Split(rolesParam, ",") {
-		rol = strings.TrimSpace(rol)
-		if rol != "" {
-			roles = append(roles, rol)
-		}
-	}
+	dependenciaFiltro := parseOptionalPositiveIntPointer(idOikosStr, "id_oikos", "ConsultarDashboardResoluciones")
 
-	if len(roles) == 0 {
-		panic(map[string]interface{}{
-			"funcion": "ConsultarDashboardResoluciones",
-			"err":     "Debe enviar al menos un rol válido",
-			"status":  "400",
-		})
-	}
-
-	var dependenciaFiltro *int
-	if idOikosStr != "" {
-		idOikos, err := strconv.Atoi(idOikosStr)
-		if err != nil || idOikos <= 0 {
-			panic(map[string]interface{}{
-				"funcion": "ConsultarDashboardResoluciones",
-				"err":     "El parámetro id_oikos no es válido",
-				"status":  "400",
-			})
-		}
-		dependenciaFiltro = &idOikos
-	}
-
-	if respuesta, errMap := services.ConsultarDashboardResoluciones(numeroDocumento, roles, vigencia, dependenciaFiltro, limit, offset); errMap == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{
-			"Success": true,
-			"Status":  200,
-			"Message": "Dashboard de resoluciones consultado exitosamente",
-			"Data":    respuesta,
-		}
+	if respuesta, errMap := services.ConsultarDashboardResoluciones(authContext.NumeroDocumento, authContext.Roles, vigencia, dependenciaFiltro, limit, offset); errMap == nil {
+		writeJSON(&c.Controller, 200, "Dashboard de resoluciones consultado exitosamente", respuesta, nil)
 	} else {
 		panic(errMap)
 	}
-
-	c.ServeJSON()
 }

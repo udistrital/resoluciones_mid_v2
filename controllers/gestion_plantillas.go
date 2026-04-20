@@ -1,9 +1,7 @@
 package controllers
 
 import (
-	"encoding/json"
 	"strconv"
-	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/helpers"
@@ -37,23 +35,14 @@ func (c *GestionPlantillasController) URLMapping() {
 func (c *GestionPlantillasController) Post() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.ContenidoResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "Post")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if idPlantilla, err := helpers.InsertarPlantilla(m); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Plantilla insertada con exito", "Data": idPlantilla}
-		} else {
-			panic(err)
-		}
+	if idPlantilla, err := helpers.InsertarPlantilla(m); err == nil {
+		writeJSON(&c.Controller, 201, "Plantilla insertada con exito", idPlantilla, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
+		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // GetOne ...
@@ -67,20 +56,13 @@ func (c *GestionPlantillasController) Post() {
 func (c *GestionPlantillasController) GetOne() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	id, err := strconv.Atoi(idStr)
-
-	if err != nil || id <= 0 {
-		panic(map[string]interface{}{"funcion": "GetOne", "err": helpers.ErrorParametros, "status": "400"})
-	}
+	id := parsePositivePathID(&c.Controller, ":id", "GetOne")
 
 	if p, err2 := helpers.CargarPlantilla(id); err2 == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla cargada con exito", "Data": p}
+		writeJSON(&c.Controller, 200, "Plantilla cargada con exito", p, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // GetAll ...
@@ -96,53 +78,24 @@ func (c *GestionPlantillasController) GetOne() {
 func (c *GestionPlantillasController) GetAll() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	numeroDocumento := strings.TrimSpace(c.GetString("numero_documento"))
-	rolesRaw := c.GetString("roles")
-	roles := parseRolesParam(rolesRaw)
+	authContext := requireRequestAuthContext(buildRequestAuthContext(&c.Controller), "GetAll")
 
 	facultadIdStr := c.GetString("Facultad")
 	var dependenciaFiltro *int
 
-	if numeroDocumento == "" {
-		panic(map[string]interface{}{
-			"funcion": "GetAll",
-			"err":     "numero_documento es requerido",
-			"status":  "400",
-		})
-	}
-
-	if len(roles) == 0 {
-		panic(map[string]interface{}{
-			"funcion": "GetAll",
-			"err":     "roles es requerido y debe contener al menos un rol",
-			"status":  "400",
-		})
-	}
-
 	if facultadIdStr != "" {
-		facultadId, err := strconv.Atoi(facultadIdStr)
-		if err != nil || facultadId <= 0 {
-			panic(map[string]interface{}{
-				"funcion": "GetAll",
-				"err":     helpers.ErrorParametros,
-				"status":  "400",
-			})
+		if err := validateNamedPositiveInt(facultadIdStr, "Facultad"); err != nil {
+			panic(badRequest("GetAll", err))
 		}
+		facultadId, _ := strconv.Atoi(facultadIdStr)
 		dependenciaFiltro = &facultadId
 	}
 
-	if l, err := services.GetPlantillasByAlcance(numeroDocumento, roles, dependenciaFiltro); err == nil {
-		c.Ctx.Output.SetStatus(200)
-		c.Data["json"] = map[string]interface{}{
-			"Success": true,
-			"Status":  200,
-			"Message": "Plantillas consultadas con exito",
-			"Data":    l,
-		}
+	if l, err := services.GetPlantillasByAlcance(authContext.NumeroDocumento, authContext.Roles, dependenciaFiltro); err == nil {
+		writeJSON(&c.Controller, 200, "Plantillas consultadas con exito", l, nil)
 	} else {
 		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // Put ...
@@ -157,30 +110,16 @@ func (c *GestionPlantillasController) GetAll() {
 func (c *GestionPlantillasController) Put() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	_, err := strconv.Atoi(idStr)
-
-	if err != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorParametros, "status": "400"})
-	}
-
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Put", "err": helpers.ErrorBody, "status": "400"})
-	}
+	parsePositivePathID(&c.Controller, ":id", "Put")
 
 	var m models.ContenidoResolucion
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "Put")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if err := helpers.ActualizarPlantilla(m); err == nil {
-			c.Ctx.Output.SetStatus(200)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla actualizada con exito", "Data": m}
-		} else {
-			panic(err)
-		}
+	if err := helpers.ActualizarPlantilla(m); err == nil {
+		writeJSON(&c.Controller, 200, "Plantilla actualizada con exito", m, nil)
 	} else {
-		panic(map[string]interface{}{"funcion": "Put", "err": err.Error(), "status": "400"})
+		panic(err)
 	}
-	c.ServeJSON()
 }
 
 // Delete ...
@@ -195,21 +134,14 @@ func (c *GestionPlantillasController) Put() {
 func (c *GestionPlantillasController) Delete() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	idStr := c.Ctx.Input.Param(":id")
-	id, err := strconv.Atoi(idStr)
+	id := parsePositivePathID(&c.Controller, ":id", "Delete")
 
-	if err != nil {
-		panic(map[string]interface{}{"funcion": "Delete", "err": helpers.ErrorParametros, "status": "400"})
-	}
-
-	if err2 := helpers.BorrarPlantilla(id); err == nil {
-		c.Ctx.Output.SetStatus(200)
+	if err2 := helpers.BorrarPlantilla(id); err2 == nil {
 		d := map[string]interface{}{"Id": id}
-		c.Data["json"] = map[string]interface{}{"Success": true, "Status": 200, "Message": "Plantilla eliminada con exito", "Data": d}
+		writeJSON(&c.Controller, 200, "Plantilla eliminada con exito", d, nil)
 	} else {
 		panic(err2)
 	}
-	c.ServeJSON()
 }
 
 // CalculoFechaFin ...
@@ -223,21 +155,9 @@ func (c *GestionPlantillasController) Delete() {
 func (c *GestionPlantillasController) CalculoFechaFin() {
 	defer helpers.ErrorController(c.Controller, "GestionPlantillasController")
 
-	if v, e := helpers.ValidarBody(c.Ctx.Input.RequestBody); !v || e != nil {
-		panic(map[string]interface{}{"funcion": "Post", "err": helpers.ErrorBody, "status": "400"})
-	}
-
 	var m models.FechaFin
+	decodeJSONBody(c.Ctx.Input.RequestBody, &m, "Post")
 
-	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &m); err == nil {
-		if fechaFin := helpers.CalcularFechasContrato(m.FechaInicio, m.NumeroSemanas); err == nil {
-			c.Ctx.Output.SetStatus(201)
-			c.Data["json"] = map[string]interface{}{"Success": true, "Status": 201, "Message": "Fechas Calculadas con Exito", "Data": fechaFin}
-		} else {
-			panic(err)
-		}
-	} else {
-		panic(map[string]interface{}{"funcion": "Post", "err": err.Error(), "status": "400"})
-	}
-	c.ServeJSON()
+	fechaFin := helpers.CalcularFechasContrato(m.FechaInicio, m.NumeroSemanas)
+	writeJSON(&c.Controller, 201, "Fechas Calculadas con Exito", fechaFin, nil)
 }
