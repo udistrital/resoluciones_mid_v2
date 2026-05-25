@@ -7,6 +7,10 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
+type authQueryParamReader interface {
+	GetString(key string, defaults ...string) string
+}
+
 var trustedNumeroDocumentoHeaders = []string{
 	"X-Authenticated-User",
 	"X-User-Document",
@@ -35,7 +39,7 @@ func buildRequestAuthContext(controller *beego.Controller) models.RequestAuthCon
 	trusted := true
 
 	if numeroDocumento == "" {
-		numeroDocumento = strings.TrimSpace(controller.GetString("numero_documento"))
+		numeroDocumento = resolveQueryAuthNumeroDocumento(controller)
 		source = "query_fallback"
 		trusted = false
 	}
@@ -54,6 +58,19 @@ func buildRequestAuthContext(controller *beego.Controller) models.RequestAuthCon
 		Source:          source,
 		Trusted:         trusted,
 	}
+}
+
+func resolveQueryAuthNumeroDocumento(reader authQueryParamReader) string {
+	return firstNonEmptyQueryValue(reader, "usuario", "numero_documento")
+}
+
+func firstNonEmptyQueryValue(reader authQueryParamReader, keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(reader.GetString(key)); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func requireRequestAuthContext(ctx models.RequestAuthContext, function string) models.RequestAuthContext {
