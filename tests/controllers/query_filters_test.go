@@ -133,3 +133,20 @@ func TestValidateRequiredHelpersRechazaInvalidos(t *testing.T) {
 		t.Fatal("se esperaba error por vigencia inválida")
 	}
 }
+
+func TestResolveQueryAuthNumeroDocumentoPrefiereUsuario(t *testing.T) {
+	if got := controllerpkg.TestHookResolveQueryAuthNumeroDocumento(map[string]string{
+		"usuario":          "1023026828",
+		"numero_documento": "9999999999",
+	}); got != "1023026828" {
+		t.Fatalf("debía priorizar usuario, obtuvo %q", got)
+	}
+}
+
+func TestResolveQueryAuthNumeroDocumentoUsaCompatibilidadNumeroDocumento(t *testing.T) {
+	if got := controllerpkg.TestHookResolveQueryAuthNumeroDocumento(map[string]string{
+		"numero_documento": "1023026828",
+	}); got != "1023026828" {
+		t.Fatalf("debía usar numero_documento por compatibilidad, obtuvo %q", got)
+	}
+}
