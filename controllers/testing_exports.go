@@ -35,3 +35,7 @@ func TestHookValidateRequiredRoles(roles []string) error {
 func TestHookValidateNamedPositiveInt(value string, field string) error {
 	return validateNamedPositiveInt(value, field)
 }
+
+func TestHookResolveQueryAuthNumeroDocumento(values map[string]string) string {
+	return resolveQueryAuthNumeroDocumento(testHookQueryParamReader{values: values})
+}
