@@ -1,0 +1,408 @@
+package helpers
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sort"
+	"strings"
+
+	"github.com/astaxie/beego"
+	"github.com/udistrital/resoluciones_mid_v2/models"
+	"github.com/udistrital/utils_oas/request"
+	"github.com/udistrital/utils_oas/ssm"
+)
+
+const (
+	odinLoginPath                 = "auth/login"
+	odinRequisitosVinculacionPath = "gen/apis?api=api_requisitos_vinculacion&proc=vinculacion_docente"
+	odinSinDatosMessage           = "No se encontraron datos en el proceso Cargue de Soportes Previnculación para el docente"
+	odinUserKey                   = "OdinServicioOATIUser"
+	odinPasswordKey               = "OdinServicioOATIPassword"
+	odinVersionKey                = "OdinServicioOATIVersion"
+)
+
+func validarDocentesVinculables(ctx context.Context, datos models.ObjetoPrevinculaciones) map[string]interface{} {
+	if len(datos.Docentes) == 0 {
+		return nil
+	}
+
+	baseURL := strings.TrimSpace(beego.AppConfig.String("UrlOdinServicioOATI"))
+	username, password, version, errMap := resolverCredencialesOdin(ctx)
+	if errMap != nil {
+		return errMap
+	}
+
+	if baseURL == "" || username == "" || password == "" || version == "" {
+		return map[string]interface{}{
+			"funcion": "/validarDocentesVinculables",
+			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
+			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
+		}
+	}
+
+	token, err := autenticarOdin(ctx, baseURL, username, password, version)
+	if err != nil {
+		return err
+	}
+
+	respuesta, err := consultarRequisitosVinculacion(ctx, baseURL, token, datos)
+	if err != nil {
+		return err
+	}
+
+	noVinculables := construirDocentesNoVinculables(datos.Docentes, respuesta)
+	if len(noVinculables) == 0 {
+		return nil
+	}
+
+	return map[string]interface{}{
+		"funcion":       "/validarDocentesVinculables",
+		"err":           construirMensajeDocentesNoVinculables(len(datos.Docentes), noVinculables),
+		"status":        fmt.Sprintf("%d", http.StatusConflict),
+		"code":          "docentes_no_vinculables",
+		"data":          noVinculables,
+		"selectedCount": len(datos.Docentes),
+	}
+}
+
+func resolverCredencialesOdin(ctx context.Context) (string, string, string, map[string]interface{}) {
+	username := strings.TrimSpace(beego.AppConfig.String(odinUserKey))
+	password := beego.AppConfig.String(odinPasswordKey)
+	version := strings.TrimSpace(beego.AppConfig.String(odinVersionKey))
+
+	if username != "" && password != "" && version != "" {
+		return username, password, version, nil
+	}
+
+	parameterStore := strings.TrimSpace(beego.AppConfig.String("parameterStore"))
+	if parameterStore == "" {
+		return username, password, version, nil
+	}
+
+	usernameValue, err := resolverParametroOdin(ctx, parameterStore, odinUserKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	passwordValue, err := resolverParametroOdin(ctx, parameterStore, odinPasswordKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	versionValue, err := resolverParametroOdin(ctx, parameterStore, odinVersionKey)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return usernameValue, passwordValue, versionValue, nil
+}
+
+func resolverParametroOdin(ctx context.Context, parameterStore, parameterName string) (string, map[string]interface{}) {
+	path := fmt.Sprintf("/%s/%s/%s", parameterStore, beego.AppConfig.String("appname"), parameterName)
+	value, err := ssm.GetParameterFromParameterStore(ctx, path)
+	if err != nil {
+		return "", map[string]interface{}{
+			"funcion": "/resolverCredencialesOdin",
+			"err":     fmt.Sprintf("error consultando %s en Parameter Store: %v", parameterName, err),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+
+	return strings.TrimSpace(value), nil
+}
+
+func autenticarOdin(ctx context.Context, baseURL, username, password, version string) (string, map[string]interface{}) {
+	loginURL := unirURL(baseURL, odinLoginPath)
+	body := models.OdinAuthRequest{
+		Username: username,
+		Password: password,
+		Version:  version,
+	}
+
+	var response models.OdinAuthResponse
+	if _, err := request.PostWithContext(ctx, loginURL, body, &response); err != nil {
+		return "", map[string]interface{}{
+			"funcion": "/autenticarOdin",
+			"err":     fmt.Sprintf("error autenticando el proceso Cargue de Soportes Previnculación: %v", err),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+
+	token := strings.TrimSpace(response.Token)
+	if token == "" {
+		token = strings.TrimSpace(response.AccessToken)
+	}
+	if token == "" {
+		return "", map[string]interface{}{
+			"funcion": "/autenticarOdin",
+			"err":     "el servicio de Cargue de Soportes Previnculación no retornó token de autenticación",
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+
+	return token, nil
+}
+
+func consultarRequisitosVinculacion(ctx context.Context, baseURL, token string, datos models.ObjetoPrevinculaciones) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
+	if len(datos.Docentes) == 0 {
+		return nil, nil
+	}
+
+	body := models.OdinRequisitosVinculacionRequest{
+		Parametros: models.OdinRequisitosVinculacionParametros{
+			Anio:      fmt.Sprintf("%d", datos.Vigencia),
+			Periodo:   strings.TrimSpace(datos.Docentes[0].Periodo),
+			IdUsuario: construirIdUsuariosOdin(datos.Docentes),
+		},
+	}
+
+	url := unirURL(baseURL, odinRequisitosVinculacionPath)
+	var response interface{}
+	headerAnterior := request.GetHeader()
+	request.SetHeader("Bearer " + token)
+	defer request.SetHeader(headerAnterior)
+
+	if err := request.SendJson(url, http.MethodPost, &response, body); err != nil {
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     fmt.Sprintf("error consultando el proceso Cargue de Soportes Previnculación: %v", err),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+
+	respuestaNormalizada, errMap := normalizarRespuestaRequisitosODIN(response)
+	if errMap != nil {
+		return nil, errMap
+	}
+
+	return respuestaNormalizada, nil
+}
+
+func construirIdUsuariosOdin(docentes []models.CargaLectiva) string {
+	ids := make([]string, 0, len(docentes))
+	seen := make(map[string]struct{}, len(docentes))
+
+	for _, docente := range docentes {
+		documento := strings.TrimSpace(docente.DocDocente)
+		if documento == "" {
+			continue
+		}
+		if _, ok := seen[documento]; ok {
+			continue
+		}
+		seen[documento] = struct{}{}
+		ids = append(ids, fmt.Sprintf("'%s'", documento))
+	}
+
+	return strings.Join(ids, ",")
+}
+
+func construirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []models.OdinRequisitoVinculacion) []models.DocenteNoVinculable {
+	docentesPorDocumento := make(map[string]models.CargaLectiva, len(docentes))
+	for _, docente := range docentes {
+		documento := strings.TrimSpace(docente.DocDocente)
+		if documento == "" {
+			continue
+		}
+		if _, ok := docentesPorDocumento[documento]; !ok {
+			docentesPorDocumento[documento] = docente
+		}
+	}
+
+	respuestaPorDocumento := make(map[string]models.OdinRequisitoVinculacion, len(respuesta))
+	for _, requisito := range respuesta {
+		documento := strings.TrimSpace(requisito.IdUsuario)
+		if documento == "" {
+			continue
+		}
+		respuestaPorDocumento[documento] = requisito
+	}
+
+	documentos := make([]string, 0, len(docentesPorDocumento))
+	for documento := range docentesPorDocumento {
+		documentos = append(documentos, documento)
+	}
+	sort.Strings(documentos)
+
+	noVinculables := make([]models.DocenteNoVinculable, 0)
+	for _, documento := range documentos {
+		docente := docentesPorDocumento[documento]
+		requisito, ok := respuestaPorDocumento[documento]
+		if !ok {
+			noVinculables = append(noVinculables, models.DocenteNoVinculable{
+				Documento: documento,
+				Nombre:    construirNombreDocente(docente),
+				Motivos:   []string{odinSinDatosMessage},
+			})
+			continue
+		}
+
+		if strings.EqualFold(strings.TrimSpace(requisito.ResolucionVinculable), "S") {
+			continue
+		}
+
+		noVinculables = append(noVinculables, models.DocenteNoVinculable{
+			Documento: documento,
+			Nombre:    construirNombreDocente(docente),
+			Motivos:   construirMotivosNoVinculable(requisito),
+		})
+	}
+
+	return noVinculables
+}
+
+func construirNombreDocente(docente models.CargaLectiva) string {
+	return strings.TrimSpace(strings.Join([]string{
+		strings.TrimSpace(docente.DocenteApellido),
+		strings.TrimSpace(docente.DocenteNombre),
+	}, " "))
+}
+
+func construirMotivosNoVinculable(requisito models.OdinRequisitoVinculacion) []string {
+	motivos := make([]string, 0)
+
+	if estado := strings.TrimSpace(requisito.Estado); estado != "" && !strings.EqualFold(estado, "A") {
+		nombreEstado := strings.TrimSpace(requisito.NombreEstado)
+		if nombreEstado != "" {
+			motivos = append(motivos, fmt.Sprintf("estado del Cargue de Soportes Previnculación: %s", nombreEstado))
+		} else {
+			motivos = append(motivos, fmt.Sprintf("estado del Cargue de Soportes Previnculación no activo: %s", estado))
+		}
+	}
+	if !banderaAprobada(requisito.ApruebaSoporte) {
+		motivos = append(motivos, "soporte no aprobado")
+	}
+	if !banderaAprobada(requisito.RegistroTercero) {
+		motivos = append(motivos, "sin registro de tercero")
+	}
+	if !banderaAprobada(requisito.RegistroProveedor) {
+		motivos = append(motivos, "sin registro de proveedor")
+	}
+	if !banderaAprobada(requisito.RegistroTipoVinculo) {
+		motivos = append(motivos, "sin registro de tipo de vínculo")
+	}
+	if !banderaAprobada(requisito.RegistroNoCruce) {
+		motivos = append(motivos, "sin validación de no cruce")
+	}
+	if !banderaAprobada(requisito.RegistroPreCarga) {
+		motivos = append(motivos, "sin precarga")
+	}
+	if observacion := strings.TrimSpace(requisito.Observacion); observacion != "" {
+		motivos = append(motivos, observacion)
+	}
+	if len(motivos) == 0 {
+		motivos = append(motivos, "el proceso Cargue de Soportes Previnculación reporta docente no vinculable")
+	}
+
+	return motivos
+}
+
+func construirMensajeDocentesNoVinculables(totalSeleccionados int, docentes []models.DocenteNoVinculable) string {
+	partes := make([]string, 0, len(docentes))
+	for _, docente := range docentes {
+		nombre := strings.TrimSpace(docente.Nombre)
+		if nombre == "" {
+			nombre = docente.Documento
+		}
+		partes = append(partes, fmt.Sprintf("%s (%s): %s", nombre, docente.Documento, strings.Join(docente.Motivos, ", ")))
+	}
+
+	return fmt.Sprintf(
+		"Se seleccionaron %d docente(s). %d presentan inconsistencias en el proceso Cargue de Soportes Previnculación, por lo tanto la vinculación no continuará y no se vinculará ningún docente de la selección actual. %s",
+		totalSeleccionados,
+		len(docentes),
+		strings.Join(partes, " | "),
+	)
+}
+
+func banderaAprobada(valor string) bool {
+	return strings.EqualFold(strings.TrimSpace(valor), "S")
+}
+
+func unirURL(baseURL, path string) string {
+	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	segmento := strings.TrimLeft(strings.TrimSpace(path), "/")
+	return base + "/" + segmento
+}
+
+func normalizarRespuestaRequisitosODIN(raw interface{}) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
+	switch typed := raw.(type) {
+	case []interface{}:
+		return convertirRespuestaODIN(typed)
+	case map[string]interface{}:
+		if data, ok := typed["Data"]; ok {
+			return normalizarRespuestaRequisitosODIN(data)
+		}
+		if data, ok := typed["data"]; ok {
+			return normalizarRespuestaRequisitosODIN(data)
+		}
+
+		detalle := extraerMensajeRespuestaODIN(typed)
+		if esRespuestaSinDatosODIN(detalle) {
+			return []models.OdinRequisitoVinculacion{}, nil
+		}
+		if detalle == "" {
+			detalle = fmt.Sprintf("respuesta inesperada de ODIN: %+v", typed)
+		}
+
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     fmt.Sprintf("el servicio de Cargue de Soportes Previnculación respondió un objeto no esperado: %s", detalle),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	case nil:
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     "el servicio de Cargue de Soportes Previnculación respondió vacío",
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	default:
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     fmt.Sprintf("el servicio de Cargue de Soportes Previnculación respondió un formato no soportado: %T", raw),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+}
+
+func convertirRespuestaODIN(raw interface{}) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
+	bytes, err := json.Marshal(raw)
+	if err != nil {
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     fmt.Sprintf("error serializando respuesta del proceso Cargue de Soportes Previnculación: %v", err),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+
+	var response []models.OdinRequisitoVinculacion
+	if err := json.Unmarshal(bytes, &response); err != nil {
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     fmt.Sprintf("error interpretando respuesta del proceso Cargue de Soportes Previnculación: %v", err),
+			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
+		}
+	}
+
+	return response, nil
+}
+
+func extraerMensajeRespuestaODIN(data map[string]interface{}) string {
+	keys := []string{"Message", "message", "error", "Error", "detalle", "Detalle"}
+	for _, key := range keys {
+		if value, ok := data[key]; ok {
+			if texto := strings.TrimSpace(fmt.Sprintf("%v", value)); texto != "" {
+				return texto
+			}
+		}
+	}
+	return ""
+}
+
+func esRespuestaSinDatosODIN(mensaje string) bool {
+	normalizado := strings.ToLower(strings.TrimSpace(mensaje))
+	return strings.Contains(normalizado, "no se encontrarón datos asociados al reporte") ||
+		strings.Contains(normalizado, "no se encontraron datos asociados al reporte")
+}

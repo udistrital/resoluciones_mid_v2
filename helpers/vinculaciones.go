@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -585,15 +586,23 @@ func EditarVinculaciones(vd models.EdicionVinculaciones) (v []models.Vinculacion
 }
 
 // Registra en el CRUD a traves de POST las vinculaciones de los docentes y la disponibilidad correspondiente con los rubros elegidos
-func RegistrarVinculaciones(d models.ObjetoPrevinculaciones) (v []models.VinculacionDocente, outputError map[string]interface{}) {
+func RegistrarVinculaciones(ctx context.Context, d models.ObjetoPrevinculaciones) (v []models.VinculacionDocente, outputError map[string]interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
-			outputError = map[string]interface{}{"funcion": "/RegistrarVinculaciones", "err": err, "status": "500"}
+			if localError, ok := err.(map[string]interface{}); ok {
+				outputError = localError
+			} else {
+				outputError = map[string]interface{}{"funcion": "/RegistrarVinculaciones", "err": err, "status": "500"}
+			}
 			panic(outputError)
 		}
 	}()
 	var vinculaciones []models.VinculacionDocente
 	var err map[string]interface{}
+
+	if err := validarDocentesVinculables(ctx, d); err != nil {
+		panic(err)
+	}
 
 	if vinculaciones, err = ConstruirVinculaciones(d); err != nil {
 		panic(err)
