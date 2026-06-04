@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/utils_oas/request"
 	"github.com/udistrital/utils_oas/ssm"
@@ -81,11 +80,7 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 	config.Version = beego.AppConfig.String(odinVersionKey)
 	config.VersionKeyPath = config.Version
 
-	logs.Info("ODIN auth config inicial: base_url=%q username_set=%t password_set=%t version_set=%t parameter_store=%q",
-		config.BaseURL, config.Username != "", config.Password != "", config.Version != "", beego.AppConfig.String("parameterStore"))
-
 	if config.BaseURL == "" {
-		logs.Error("ODIN auth config incompleta: base_url vacía")
 		return odinConfig{}, map[string]interface{}{
 			"funcion": "/resolverConfiguracionOdin",
 			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
@@ -96,19 +91,15 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 	parameterStore := beego.AppConfig.String("parameterStore")
 	if parameterStore == "" {
 		if config.Username != "" && config.Password != "" && config.Version != "" {
-			logs.Info("ODIN auth config resuelta desde app.conf/env")
 			return config, nil
 		}
 
-		logs.Error("ODIN auth config incompleta: parameterStore vacío y faltan credenciales")
 		return odinConfig{}, map[string]interface{}{
 			"funcion": "/resolverConfiguracionOdin",
 			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
 			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
 		}
 	}
-
-	logs.Info("ODIN auth config: intentando resolver credenciales desde Parameter Store")
 
 	usernameValue, err := resolverParametroOdin(ctx, parameterStore, config.UsernameKeyPath)
 	if err != nil {
@@ -129,26 +120,19 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 	config.Password = passwordValue
 	config.Version = versionValue
 
-	logs.Info("ODIN auth config resuelta desde Parameter Store: base_url=%q username_set=%t password_set=%t version_set=%t",
-		config.BaseURL, config.Username != "", config.Password != "", config.Version != "")
-
 	return config, nil
 }
 
 func resolverParametroOdin(ctx context.Context, parameterStore, parameterKeyPath string) (string, map[string]interface{}) {
 	path := construirRutaParametroOdin(parameterStore, parameterKeyPath)
-	logs.Info("ODIN auth parameter lookup: parameter_key_path=%s path=%s", parameterKeyPath, path)
 	value, err := ssm.GetParameterFromParameterStore(ctx, path)
 	if err != nil {
-		logs.Error("ODIN auth parameter lookup fallo: parameter_key_path=%s path=%s err=%v", parameterKeyPath, path, err)
 		return "", map[string]interface{}{
 			"funcion": "/resolverCredencialesOdin",
 			"err":     fmt.Sprintf("error consultando %s en Parameter Store: %v", parameterKeyPath, err),
 			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
 		}
 	}
-
-	logs.Info("ODIN auth parameter lookup ok: parameter_key_path=%s path=%s value_set=%t", parameterKeyPath, path, strings.TrimSpace(value) != "")
 
 	return strings.TrimSpace(value), nil
 }
@@ -159,7 +143,6 @@ func construirRutaParametroOdin(parameterStore, parameterKeyPath string) string 
 
 func autenticarOdin(ctx context.Context, baseURL, username, password, version string) (string, map[string]interface{}) {
 	loginURL := unirURL(baseURL, odinLoginPath)
-	logs.Info("ODIN auth login request: url=%s username=%s version=%s", loginURL, username, version)
 	body := models.OdinAuthRequest{
 		Username: username,
 		Password: password,
@@ -167,23 +150,20 @@ func autenticarOdin(ctx context.Context, baseURL, username, password, version st
 	}
 
 	var response models.OdinAuthResponse
-	statusCode, err := request.PostWithContext(ctx, loginURL, body, &response)
+	_, err := request.PostWithContext(ctx, loginURL, body, &response)
 	if err != nil {
-		logs.Error("ODIN auth login fallo: url=%s status=%d err=%v", loginURL, statusCode, err)
 		return "", map[string]interface{}{
 			"funcion": "/autenticarOdin",
 			"err":     fmt.Sprintf("error autenticando el proceso Cargue de Soportes Previnculación: %v", err),
 			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
 		}
 	}
-	logs.Info("ODIN auth login ok: url=%s status=%d token_set=%t access_token_set=%t", loginURL, statusCode, strings.TrimSpace(response.Token) != "", strings.TrimSpace(response.AccessToken) != "")
 
 	token := strings.TrimSpace(response.Token)
 	if token == "" {
 		token = strings.TrimSpace(response.AccessToken)
 	}
 	if token == "" {
-		logs.Error("ODIN auth login sin token: url=%s", loginURL)
 		return "", map[string]interface{}{
 			"funcion": "/autenticarOdin",
 			"err":     "el servicio de Cargue de Soportes Previnculación no retornó token de autenticación",
