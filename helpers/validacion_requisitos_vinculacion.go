@@ -88,13 +88,13 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 		}
 	}
 
-	if config.Username != "" && config.Password != "" && config.Version != "" {
-		logs.Info("ODIN auth config resuelta desde app.conf/env")
-		return config, nil
-	}
-
 	parameterStore := beego.AppConfig.String("parameterStore")
 	if parameterStore == "" {
+		if config.Username != "" && config.Password != "" && config.Version != "" {
+			logs.Info("ODIN auth config resuelta desde app.conf/env")
+			return config, nil
+		}
+
 		logs.Error("ODIN auth config incompleta: parameterStore vacío y faltan credenciales")
 		return odinConfig{}, map[string]interface{}{
 			"funcion": "/resolverConfiguracionOdin",
