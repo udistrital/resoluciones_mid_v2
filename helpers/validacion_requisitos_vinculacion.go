@@ -25,10 +25,13 @@ const (
 )
 
 type odinConfig struct {
-	BaseURL  string
-	Username string
-	Password string
-	Version  string
+	BaseURL         string
+	Username        string
+	Password        string
+	Version         string
+	UsernameKeyPath string
+	PasswordKeyPath string
+	VersionKeyPath  string
 }
 
 func validarDocentesVinculables(ctx context.Context, datos models.ObjetoPrevinculaciones) map[string]interface{} {
@@ -72,9 +75,11 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 	}
 
 	config.Username = beego.AppConfig.String(odinUserKey)
-	password := beego.AppConfig.String(odinPasswordKey)
-	config.Password = password
+	config.UsernameKeyPath = config.Username
+	config.Password = beego.AppConfig.String(odinPasswordKey)
+	config.PasswordKeyPath = config.Password
 	config.Version = beego.AppConfig.String(odinVersionKey)
+	config.VersionKeyPath = config.Version
 
 	logs.Info("ODIN auth config inicial: base_url=%q username_set=%t password_set=%t version_set=%t parameter_store=%q",
 		config.BaseURL, config.Username != "", config.Password != "", config.Version != "", beego.AppConfig.String("parameterStore"))
@@ -105,17 +110,17 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 
 	logs.Info("ODIN auth config: intentando resolver credenciales desde Parameter Store")
 
-	usernameValue, err := resolverParametroOdin(ctx, parameterStore, odinUserKey)
+	usernameValue, err := resolverParametroOdin(ctx, parameterStore, config.UsernameKeyPath)
 	if err != nil {
 		return odinConfig{}, err
 	}
 
-	passwordValue, err := resolverParametroOdin(ctx, parameterStore, odinPasswordKey)
+	passwordValue, err := resolverParametroOdin(ctx, parameterStore, config.PasswordKeyPath)
 	if err != nil {
 		return odinConfig{}, err
 	}
 
-	versionValue, err := resolverParametroOdin(ctx, parameterStore, odinVersionKey)
+	versionValue, err := resolverParametroOdin(ctx, parameterStore, config.VersionKeyPath)
 	if err != nil {
 		return odinConfig{}, err
 	}
@@ -130,22 +135,26 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 	return config, nil
 }
 
-func resolverParametroOdin(ctx context.Context, parameterStore, parameterName string) (string, map[string]interface{}) {
-	path := fmt.Sprintf("/%s/%s/%s", parameterStore, beego.AppConfig.String("appname"), parameterName)
-	logs.Info("ODIN auth parameter lookup: parameter=%s path=%s", parameterName, path)
+func resolverParametroOdin(ctx context.Context, parameterStore, parameterKeyPath string) (string, map[string]interface{}) {
+	path := construirRutaParametroOdin(parameterStore, parameterKeyPath)
+	logs.Info("ODIN auth parameter lookup: parameter_key_path=%s path=%s", parameterKeyPath, path)
 	value, err := ssm.GetParameterFromParameterStore(ctx, path)
 	if err != nil {
-		logs.Error("ODIN auth parameter lookup fallo: parameter=%s path=%s err=%v", parameterName, path, err)
+		logs.Error("ODIN auth parameter lookup fallo: parameter_key_path=%s path=%s err=%v", parameterKeyPath, path, err)
 		return "", map[string]interface{}{
 			"funcion": "/resolverCredencialesOdin",
-			"err":     fmt.Sprintf("error consultando %s en Parameter Store: %v", parameterName, err),
+			"err":     fmt.Sprintf("error consultando %s en Parameter Store: %v", parameterKeyPath, err),
 			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
 		}
 	}
 
-	logs.Info("ODIN auth parameter lookup ok: parameter=%s path=%s value_set=%t", parameterName, path, strings.TrimSpace(value) != "")
+	logs.Info("ODIN auth parameter lookup ok: parameter_key_path=%s path=%s value_set=%t", parameterKeyPath, path, strings.TrimSpace(value) != "")
 
 	return strings.TrimSpace(value), nil
+}
+
+func construirRutaParametroOdin(parameterStore, parameterKeyPath string) string {
+	return fmt.Sprintf("/%s/%s/%s", parameterStore, beego.AppConfig.String("appname"), strings.TrimLeft(parameterKeyPath, "/"))
 }
 
 func autenticarOdin(ctx context.Context, baseURL, username, password, version string) (string, map[string]interface{}) {
