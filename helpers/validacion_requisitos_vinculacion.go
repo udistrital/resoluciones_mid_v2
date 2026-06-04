@@ -23,31 +23,29 @@ const (
 	odinVersionKey                = "OdinServicioOATIVersion"
 )
 
+type odinConfig struct {
+	BaseURL  string
+	Username string
+	Password string
+	Version  string
+}
+
 func validarDocentesVinculables(ctx context.Context, datos models.ObjetoPrevinculaciones) map[string]interface{} {
 	if len(datos.Docentes) == 0 {
 		return nil
 	}
 
-	baseURL := strings.TrimSpace(beego.AppConfig.String("UrlOdinServicioOATI"))
-	username, password, version, errMap := resolverCredencialesOdin(ctx)
+	config, errMap := resolverConfiguracionOdin(ctx)
 	if errMap != nil {
 		return errMap
 	}
 
-	if baseURL == "" || username == "" || password == "" || version == "" {
-		return map[string]interface{}{
-			"funcion": "/validarDocentesVinculables",
-			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
-			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
-		}
-	}
-
-	token, err := autenticarOdin(ctx, baseURL, username, password, version)
+	token, err := autenticarOdin(ctx, config.BaseURL, config.Username, config.Password, config.Version)
 	if err != nil {
 		return err
 	}
 
-	respuesta, err := consultarRequisitosVinculacion(ctx, baseURL, token, datos)
+	respuesta, err := consultarRequisitosVinculacion(ctx, config.BaseURL, token, datos)
 	if err != nil {
 		return err
 	}
@@ -67,36 +65,57 @@ func validarDocentesVinculables(ctx context.Context, datos models.ObjetoPrevincu
 	}
 }
 
-func resolverCredencialesOdin(ctx context.Context) (string, string, string, map[string]interface{}) {
-	username := strings.TrimSpace(beego.AppConfig.String(odinUserKey))
-	password := beego.AppConfig.String(odinPasswordKey)
-	version := strings.TrimSpace(beego.AppConfig.String(odinVersionKey))
-
-	if username != "" && password != "" && version != "" {
-		return username, password, version, nil
+func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]interface{}) {
+	config := odinConfig{
+		BaseURL: beego.AppConfig.String("UrlOdinServicioOATI"),
 	}
 
-	parameterStore := strings.TrimSpace(beego.AppConfig.String("parameterStore"))
+	config.Username = beego.AppConfig.String(odinUserKey)
+	password := beego.AppConfig.String(odinPasswordKey)
+	config.Password = password
+	config.Version = beego.AppConfig.String(odinVersionKey)
+
+	if config.BaseURL == "" {
+		return odinConfig{}, map[string]interface{}{
+			"funcion": "/resolverConfiguracionOdin",
+			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
+			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
+		}
+	}
+
+	if config.Username != "" && config.Password != "" && config.Version != "" {
+		return config, nil
+	}
+
+	parameterStore := beego.AppConfig.String("parameterStore")
 	if parameterStore == "" {
-		return username, password, version, nil
+		return odinConfig{}, map[string]interface{}{
+			"funcion": "/resolverConfiguracionOdin",
+			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
+			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
+		}
 	}
 
 	usernameValue, err := resolverParametroOdin(ctx, parameterStore, odinUserKey)
 	if err != nil {
-		return "", "", "", err
+		return odinConfig{}, err
 	}
 
 	passwordValue, err := resolverParametroOdin(ctx, parameterStore, odinPasswordKey)
 	if err != nil {
-		return "", "", "", err
+		return odinConfig{}, err
 	}
 
 	versionValue, err := resolverParametroOdin(ctx, parameterStore, odinVersionKey)
 	if err != nil {
-		return "", "", "", err
+		return odinConfig{}, err
 	}
 
-	return usernameValue, passwordValue, versionValue, nil
+	config.Username = usernameValue
+	config.Password = passwordValue
+	config.Version = versionValue
+
+	return config, nil
 }
 
 func resolverParametroOdin(ctx context.Context, parameterStore, parameterName string) (string, map[string]interface{}) {

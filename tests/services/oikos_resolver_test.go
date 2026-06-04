@@ -14,7 +14,7 @@ func TestNormalizeRol(t *testing.T) {
 }
 
 func TestJoinWSO2URL(t *testing.T) {
-	got := servicepkg.TestHookJoinWSO2URL("https://", "/pruebasapi.intranetoas.udistrital.edu.co:8104/", "/academica_crud_api/", "/decano/1023")
+	got := servicepkg.TestHookJoinWSO2URL("https://pruebasapi.intranetoas.udistrital.edu.co:8104/", "/academica_crud_api/", "/decano/1023")
 	want := "https://pruebasapi.intranetoas.udistrital.edu.co:8104/academica_crud_api/decano/1023"
 
 	if got != want {
