@@ -125,7 +125,7 @@ func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]inte
 
 func resolverParametroOdin(ctx context.Context, parameterStore, parameterKeyPath string) (string, map[string]interface{}) {
 	path := construirRutaParametroOdin(parameterStore, parameterKeyPath)
-	value, err := ssm.GetParameterFromParameterStore(ctx, path)
+	value, err := ssm.GetValueFromParameterStore(ctx, path)
 	if err != nil {
 		return "", map[string]interface{}{
 			"funcion": "/resolverCredencialesOdin",
