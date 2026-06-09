@@ -99,7 +99,7 @@ func AlmacenarResolucionGestorDocumental(resolucionId int) (documento models.Doc
 			"descripcion":     "Resolución de vinculación especial",
 			"metadatos":       map[string]interface{}{},
 		})
-		url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String("UrlGestorDocumental") + "document/upload"
+		url := joinConfiguredURL(beego.AppConfig.String("UrlGestorDocumental"), "document/upload")
 		if err := SendJson(url, "POST", &doc, data); err != nil {
 			logs.Error(err.Error())
 			outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": err.Error(), "status": "500"}

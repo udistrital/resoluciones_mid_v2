@@ -12,18 +12,11 @@ import (
 	"github.com/udistrital/utils_oas/request"
 )
 
-func normalizeBaseNoProto(u string) string {
-	u = strings.TrimSpace(u)
-	u = strings.TrimLeft(u, "/")
-	return u
-}
-
-func joinWSO2URL(protocol, base, ns, path string) string {
-	protocol = strings.TrimRight(protocol, "://")
-	base = strings.TrimRight(normalizeBaseNoProto(base), "/")
+func joinWSO2URL(base, ns, path string) string {
+	base = strings.TrimRight(strings.TrimSpace(base), "/")
 	ns = strings.Trim(ns, "/")
 	path = strings.TrimLeft(path, "/")
-	return fmt.Sprintf("%s://%s/%s/%s", protocol, base, ns, path)
+	return base + "/" + ns + "/" + path
 }
 
 func getJSONWithUtilOAS(url string, target interface{}) map[string]interface{} {

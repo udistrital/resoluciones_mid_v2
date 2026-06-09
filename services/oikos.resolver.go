@@ -9,7 +9,6 @@ import (
 )
 
 func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]models.DependenciaUsuario, map[string]interface{}) {
-	protocol := beego.AppConfig.String("ProtocolAdmin")
 	baseWSO2 := beego.AppConfig.String("UrlcrudWSO2")
 	nsAcademica := beego.AppConfig.String("NscrudAcademica")
 
@@ -18,7 +17,7 @@ func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]models.Dependenc
 	switch rol {
 	case "DECANO":
 		var dec models.DecanoFacultadResponse
-		url := joinWSO2URL(protocol, baseWSO2, nsAcademica, "decano/"+numeroDocumento)
+		url := joinWSO2URL(baseWSO2, nsAcademica, "decano/"+numeroDocumento)
 
 		if errMap := getJSON(url, &dec); errMap != nil {
 			errMap["funcion"] = "resolveDependenciasFromSGA:decano"
@@ -59,7 +58,7 @@ func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]models.Dependenc
 
 	case "ASISTENTE_DECANATURA":
 		var asis models.AsistenteFacultadResponse
-		url := joinWSO2URL(protocol, baseWSO2, nsAcademica, "asistente_facultad/"+numeroDocumento)
+		url := joinWSO2URL(baseWSO2, nsAcademica, "asistente_facultad/"+numeroDocumento)
 
 		if errMap := getJSON(url, &asis); errMap != nil {
 			errMap["funcion"] = "resolveDependenciasFromSGA:asistente_decanatura"
@@ -108,12 +107,11 @@ func resolveDependenciasFromSGA(numeroDocumento, rol string) ([]models.Dependenc
 }
 
 func resolveIdOikosFromHomologacion(codigoDependencia int) (int, map[string]interface{}) {
-	protocol := beego.AppConfig.String("ProtocolAdmin")
 	baseWSO2 := beego.AppConfig.String("UrlcrudWSO2")
 	nsHomologacion := beego.AppConfig.String("NscrudHomologacion")
 
 	var hom models.HomologacionFacultadResponse
-	url := joinWSO2URL(protocol, baseWSO2, nsHomologacion, "facultad_oikos_gedep/"+strconv.Itoa(codigoDependencia))
+	url := joinWSO2URL(baseWSO2, nsHomologacion, "facultad_oikos_gedep/"+strconv.Itoa(codigoDependencia))
 
 	if errMap := getJSON(url, &hom); errMap != nil {
 		errMap["funcion"] = "resolveIdOikosFromHomologacion"

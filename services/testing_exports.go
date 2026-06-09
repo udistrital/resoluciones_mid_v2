@@ -6,8 +6,8 @@ func TestHookNormalizeRol(rol string) string {
 	return normalizeRol(rol)
 }
 
-func TestHookJoinWSO2URL(protocol, base, ns, path string) string {
-	return joinWSO2URL(protocol, base, ns, path)
+func TestHookJoinWSO2URL(base, ns, path string) string {
+	return joinWSO2URL(base, ns, path)
 }
 
 func TestHookGetHighestPriorityRol(roles []string) string {

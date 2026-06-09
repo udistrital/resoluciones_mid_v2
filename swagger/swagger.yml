@@ -1369,6 +1369,9 @@ definitions:
     title: DatosReporte
     type: object
     properties:
+      EstadoResolucionExpedidaId:
+        type: integer
+        format: int64
       Facultad:
         type: integer
         format: int64
@@ -1376,6 +1379,18 @@ definitions:
         type: string
       Resolucion:
         type: string
+      TipoResolucionAdicionId:
+        type: integer
+        format: int64
+      TipoResolucionCancelacionId:
+        type: integer
+        format: int64
+      TipoResolucionReduccionId:
+        type: integer
+        format: int64
+      TipoResolucionVinculacionId:
+        type: integer
+        format: int64
       Vigencia:
         type: integer
         format: int64

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego"
@@ -17,9 +18,18 @@ import (
 	"github.com/udistrital/utils_oas/xray"
 )
 
+func joinConfiguredURL(baseURL string, route string) string {
+	base := strings.TrimRight(baseURL, "/")
+	path := strings.TrimLeft(route, "/")
+	if path == "" {
+		return base
+	}
+	return base + "/" + path
+}
+
 // Envia una petición con datos al endpoint indicado y extrae la respuesta del campo Data para retornarla
 func SendRequestNew(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+	url := joinConfiguredURL(beego.AppConfig.String(endpoint), route)
 
 	var response map[string]interface{}
 	var err error
@@ -29,7 +39,7 @@ func SendRequestNew(endpoint string, route string, trequest string, target inter
 }
 
 func SendRequestFull(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+	url := joinConfiguredURL(beego.AppConfig.String(endpoint), route)
 
 	var b bytes.Buffer
 	if datajson != nil {
@@ -68,7 +78,7 @@ func SendRequestFull(endpoint string, route string, trequest string, target inte
 
 // Envia una petición con datos a endponts que responden con el body sin encapsular
 func SendRequestLegacy(endpoint string, route string, trequest string, target interface{}, datajson interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+	url := joinConfiguredURL(beego.AppConfig.String(endpoint), route)
 	if err := SendJson(url, trequest, &target, &datajson); err != nil {
 		return err
 	}
@@ -77,7 +87,7 @@ func SendRequestLegacy(endpoint string, route string, trequest string, target in
 
 // Envia una petición al endpoint indicado y extrae la respuesta del campo Data para retornarla
 func GetRequestNew(endpoint string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+	url := joinConfiguredURL(beego.AppConfig.String(endpoint), route)
 	var response map[string]interface{}
 	var err error
 	err = GetJson(url, &response)
@@ -87,7 +97,7 @@ func GetRequestNew(endpoint string, route string, target interface{}) error {
 
 // Envia una petición a endponts que responden con el body sin encapsular
 func GetRequestLegacy(endpoint string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" + beego.AppConfig.String(endpoint) + route
+	url := joinConfiguredURL(beego.AppConfig.String(endpoint), route)
 	if err := GetJson(url, target); err != nil {
 		return err
 	}
@@ -95,9 +105,10 @@ func GetRequestLegacy(endpoint string, route string, target interface{}) error {
 }
 
 func GetRequestWSO2(service string, route string, target interface{}) error {
-	url := beego.AppConfig.String("ProtocolAdmin") + "://" +
-		beego.AppConfig.String("UrlcrudWSO2") +
-		beego.AppConfig.String(service) + "/" + route
+	url := joinConfiguredURL(
+		joinConfiguredURL(beego.AppConfig.String("UrlcrudWSO2"), beego.AppConfig.String(service)),
+		route,
+	)
 	if response, err := GetJsonWSO2Test(url, &target); response == 200 && err == nil {
 		return nil
 	} else {

@@ -46,7 +46,7 @@ func (c *GestionVinculacionesController) Post() {
 	var p models.ObjetoPrevinculaciones
 	decodeJSONBody(c.Ctx.Input.RequestBody, &p, "Post")
 
-	if r, err2 := helpers.RegistrarVinculaciones(p); err2 == nil {
+	if r, err2 := helpers.RegistrarVinculaciones(c.Ctx.Request.Context(), p); err2 == nil {
 		writeJSON(&c.Controller, 201, "Vinculaciones registradas con exito", r, nil)
 	} else {
 		panic(err2)
