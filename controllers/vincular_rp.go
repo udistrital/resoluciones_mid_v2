@@ -6,6 +6,7 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
+	"github.com/udistrital/resoluciones_mid_v2/helpers"
 	"github.com/udistrital/resoluciones_mid_v2/services"
 )
 
@@ -25,6 +26,7 @@ func (c *VincularRpController) URLMapping() {
 // @Failure 400 archivo inválido o error al procesar
 // @router / [post]
 func (c *VincularRpController) Post() {
+	defer helpers.ErrorController(c.Controller, "VincularRpController")
 	logs.Info("Inicio del endpoint /v1/vinculacion_rp/ [POST]")
 
 	file, header, err := c.GetFile("file")
