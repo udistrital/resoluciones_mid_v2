@@ -73,6 +73,36 @@ func coerceInt(value interface{}) int {
 	}
 }
 
+func safePanicValueToError(value interface{}) error {
+	if err, ok := value.(error); ok {
+		return err
+	}
+	return fmt.Errorf("%v", value)
+}
+
+func safeGetRequestNewRp(endpoint string, route string, target interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = safePanicValueToError(r)
+		}
+	}()
+	return helpers.GetRequestNew(endpoint, route, target)
+}
+
+func coerceIDString(value interface{}) (string, bool) {
+	switch v := value.(type) {
+	case float64:
+		return fmt.Sprintf("%.0f", v), true
+	case int:
+		return strconv.Itoa(v), true
+	case string:
+		v = strings.TrimSpace(v)
+		return v, v != ""
+	default:
+		return "", false
+	}
+}
+
 func normalizeHeader(h string) string {
 	replacements := map[string]string{
 		"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u",
@@ -91,7 +121,7 @@ func validarExistenciaVinculacion(crp string, vigenciaRp int) (bool, error) {
 	query := fmt.Sprintf("NumeroRp:%s,VigenciaRp:%d,Activo:true", crp, vigenciaRp)
 	url := "vinculacion_docente?query=" + query
 
-	if err := helpers.GetRequestNew("UrlCrudResoluciones", url, &vincs); err != nil {
+	if err := safeGetRequestNewRp("UrlCrudResoluciones", url, &vincs); err != nil {
 		return false, err
 	}
 
@@ -130,17 +160,30 @@ func construirRegistrosRp(rows [][]string, headers map[string]int) []models.Vinc
 			return ""
 		}
 
-		registros = append(registros, models.VinculacionRpResultado{
+		registro := models.VinculacionRpResultado{
 			CodResolucion: get("cod_resolucion"),
 			CodFacultad:   get("cod_facultad"),
 			Documento:     get("documento"),
 			CodProyecto:   get("cod_proyecto"),
 			CRP:           get("crp"),
 			FilaExcel:     i + 2,
-		})
+		}
+		if registroRpVacio(registro) {
+			continue
+		}
+
+		registros = append(registros, registro)
 	}
 
 	return registros
+}
+
+func registroRpVacio(registro models.VinculacionRpResultado) bool {
+	return registro.CodResolucion == "" &&
+		registro.CodFacultad == "" &&
+		registro.Documento == "" &&
+		registro.CodProyecto == "" &&
+		registro.CRP == ""
 }
 
 func detectarConflictosRp(registros []models.VinculacionRpResultado) map[string]*conflictoInfo {
@@ -188,7 +231,7 @@ func deduplicarRegistrosRp(registros []models.VinculacionRpResultado) []models.V
 
 func cargarPayloadVinculacionRp(idVinculacion string) (map[string]interface{}, error) {
 	var vincActual map[string]interface{}
-	if err := helpers.GetRequestNew("UrlCrudResoluciones", "vinculacion_docente/"+idVinculacion, &vincActual); err != nil {
+	if err := safeGetRequestNewRp("UrlCrudResoluciones", "vinculacion_docente/"+idVinculacion, &vincActual); err != nil {
 		return nil, fmt.Errorf("Error GET previo: %v", err)
 	}
 	if raw, ok := vincActual["Data"]; ok {
@@ -243,14 +286,18 @@ func resolverResolucionRp(res *models.VinculacionRpResultado, vigenciaRp int) er
 
 	var resoluciones []map[string]interface{}
 	queryRes := fmt.Sprintf("NumeroResolucion:%s,Vigencia:%d,DependenciaId:%s,Activo:true", resNum, vigenciaRp, res.CodFacultad)
-	if err := helpers.GetRequestNew("UrlCrudResoluciones", "resolucion?query="+queryRes, &resoluciones); err != nil {
+	if err := safeGetRequestNewRp("UrlCrudResoluciones", "resolucion?query="+queryRes, &resoluciones); err != nil {
 		return fmt.Errorf("Error consultando resolución: %v", err)
 	}
 	if len(resoluciones) == 0 {
 		return errors.New("Resolución no encontrada")
 	}
 
-	res.IdResolucion = fmt.Sprintf("%.0f", resoluciones[0]["Id"].(float64))
+	idResolucion, ok := coerceIDString(resoluciones[0]["Id"])
+	if !ok {
+		return errors.New("Respuesta inválida consultando resolución: Id no disponible")
+	}
+	res.IdResolucion = idResolucion
 	return nil
 }
 
@@ -258,7 +305,7 @@ func resolverVinculacionObjetivoRp(res *models.VinculacionRpResultado) error {
 	var vinculaciones []map[string]interface{}
 	queryVin := fmt.Sprintf("ResolucionVinculacionDocenteId:%s,PersonaId:%s,ProyectoCurricularId:%s",
 		res.IdResolucion, res.Documento, res.CodProyecto)
-	if err := helpers.GetRequestNew("UrlCrudResoluciones", "vinculacion_docente?query="+queryVin, &vinculaciones); err != nil {
+	if err := safeGetRequestNewRp("UrlCrudResoluciones", "vinculacion_docente?query="+queryVin, &vinculaciones); err != nil {
 		return fmt.Errorf("Error consultando vinculación: %v", err)
 	}
 	if len(vinculaciones) == 0 {
@@ -267,7 +314,11 @@ func resolverVinculacionObjetivoRp(res *models.VinculacionRpResultado) error {
 
 	for _, v := range vinculaciones {
 		if nc, ok := v["NumeroContrato"]; ok && nc != nil {
-			res.IdVinculacion = fmt.Sprintf("%.0f", v["Id"].(float64))
+			idVinculacion, ok := coerceIDString(v["Id"])
+			if !ok {
+				return errors.New("Respuesta inválida consultando vinculación: Id no disponible")
+			}
+			res.IdVinculacion = idVinculacion
 			return nil
 		}
 	}
