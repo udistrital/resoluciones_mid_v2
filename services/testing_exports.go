@@ -33,3 +33,21 @@ func TestHookResumirEstadoRp(vinculacion models.VinculacionDocente) resumenEstad
 func TestHookClasificarEstadoSemaforoVinculacion(vinculacion models.VinculacionDocente, titanPorContrato map[string]bool) models.EstadoSemaforoVinculacion {
 	return clasificarEstadoSemaforoVinculacion(vinculacion, titanPorContrato)
 }
+
+func TestHookCoerceIDString(value interface{}) (string, bool) {
+	return coerceIDString(value)
+}
+
+func TestHookSafePanicToError(fn func()) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = safePanicValueToError(r)
+		}
+	}()
+	fn()
+	return nil
+}
+
+func TestHookConstruirRegistrosRp(rows [][]string, headers map[string]int) []models.VinculacionRpResultado {
+	return construirRegistrosRp(rows, headers)
+}
