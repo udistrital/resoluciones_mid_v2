@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -112,4 +113,50 @@ func AlmacenarResolucionGestorDocumental(resolucionId int) (documento models.Doc
 		outputError = map[string]interface{}{"funcion": "/AlmacenarResolucionGestorDocumental ", "err": doc.Error, "status": doc.Status}
 	}
 	return doc.Res, outputError
+}
+
+// RecuperarDocumentoResolucion genera y almacena el PDF de una resolución que
+// ya fue expedida, y persiste el enlace devuelto por el gestor documental sin
+// modificar su estado ni volver a ejecutar el flujo de expedición.
+func RecuperarDocumentoResolucion(resolucionId int) (uid string, outputError map[string]interface{}) {
+	var resolucion models.Resolucion
+	url := ResolucionEndpoint + strconv.Itoa(resolucionId)
+
+	if err := GetRequestNew("UrlCrudResoluciones", url, &resolucion); err != nil {
+		return "", map[string]interface{}{
+			"funcion": "/RecuperarDocumentoResolucion",
+			"err":     err.Error(),
+			"status":  "500",
+		}
+	}
+
+	// Permite reintentar el endpoint de forma segura cuando el UID ya fue guardado.
+	if resolucion.NuxeoUid != "" {
+		return resolucion.NuxeoUid, nil
+	}
+
+	documento, errMap := AlmacenarResolucionGestorDocumental(resolucionId)
+	if errMap != nil {
+		return "", errMap
+	}
+	if documento.Enlace == "" {
+		return "", map[string]interface{}{
+			"funcion": "/RecuperarDocumentoResolucion",
+			"err":     "el gestor documental no devolvió el UID del documento",
+			"status":  "502",
+		}
+	}
+
+	resolucion.NuxeoUid = documento.Enlace
+	var response interface{}
+	if err := SendRequestNew("UrlCrudResoluciones", url, "PUT", &response, &resolucion); err != nil {
+		return documento.Enlace, map[string]interface{}{
+			"funcion": "/RecuperarDocumentoResolucion",
+			"err":     fmt.Sprintf("el documento fue creado con UID %s, pero no fue posible guardarlo en la resolución: %v", documento.Enlace, err),
+			"status":  "500",
+			"uid":     documento.Enlace,
+		}
+	}
+
+	return documento.Enlace, nil
 }

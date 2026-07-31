@@ -20,6 +20,7 @@ func (c *GestionResolucionesController) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 	c.Mapping("ConsultaDocente", c.ConsultaDocente)
 	c.Mapping("GenerarResolucion", c.GenerarResolucion)
+	c.Mapping("RecuperarDocumento", c.RecuperarDocumento)
 }
 
 // Post ...
@@ -179,6 +180,26 @@ func (c *GestionResolucionesController) GenerarResolucion() {
 		writeJSON(&c.Controller, 200, helpers.CargaResExito, r, nil)
 	} else {
 		panic(err2)
+	}
+}
+
+// RecuperarDocumento ...
+// @Title RecuperarDocumento
+// @Description Genera, almacena y vincula el documento de una resolución ya expedida sin modificar su estado
+// @Param	id		path 	string	true		"id de la resolución"
+// @Success 200 {object} string UID del documento en el gestor documental
+// @Failure 400 bad request
+// @Failure 500 Internal server error
+// @router /recuperar_documento/:id [post]
+func (c *GestionResolucionesController) RecuperarDocumento() {
+	defer helpers.ErrorController(c.Controller, "GestionResolucionesController")
+
+	id := parsePositivePathID(&c.Controller, ":id", "RecuperarDocumento")
+
+	if uid, err := helpers.RecuperarDocumentoResolucion(id); err == nil {
+		writeJSON(&c.Controller, 200, "Documento de la resolución recuperado con éxito", uid, nil)
+	} else {
+		panic(err)
 	}
 }
 
