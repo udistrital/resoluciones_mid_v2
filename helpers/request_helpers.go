@@ -15,7 +15,6 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/utils_oas/formatdata"
 	utilsrequest "github.com/udistrital/utils_oas/request"
-	"github.com/udistrital/utils_oas/xray"
 )
 
 func joinConfiguredURL(baseURL string, route string) string {
@@ -56,9 +55,7 @@ func SendRequestFull(endpoint string, route string, trequest string, target inte
 	req.Header.Set("Accept", AppJson)
 	req.Header.Add("Content-Type", AppJson)
 
-	seg := xray.BeginSegmentSec(req)
 	resp, err := client.Do(req)
-	xray.UpdateSegment(resp, err, seg)
 	if err != nil {
 		return fmt.Errorf("error ejecutando request: %v", err)
 	}
@@ -149,9 +146,7 @@ func SendJson(url string, trequest string, target interface{}, datajson interfac
 	req, err := http.NewRequest(trequest, url, b)
 	req.Header.Set("Accept", AppJson)
 	req.Header.Add("Content-Type", AppJson)
-	seg := xray.BeginSegmentSec(req)
 	r, err := client.Do(req)
-	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		beego.Error("error", err)
 		return err
@@ -175,10 +170,8 @@ func GetJson(url string, target interface{}) error {
 
 func GetXml(url string, target interface{}) error {
 	req, _ := http.NewRequest("GET", url, nil)
-	seg := xray.BeginSegmentSec(req)
 	client := &http.Client{}
 	r, err := client.Do(req)
-	xray.UpdateSegment(r, err, seg)
 	if err != nil {
 		return err
 	}
