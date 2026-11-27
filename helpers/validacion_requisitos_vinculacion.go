@@ -55,6 +55,8 @@ func consultarRequisitosVinculacion(ctx context.Context, datos models.ObjetoPrev
 		}
 	}
 
+	url = strings.TrimRight(url, "/") + "/previnculacion"
+
 	periodo, err := strconv.Atoi(strings.TrimSpace(datos.Docentes[0].Periodo))
 	if err != nil || periodo <= 0 {
 		return nil, map[string]interface{}{
