@@ -24,7 +24,7 @@ func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
 	calls := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
-		if r.Method != http.MethodPost || r.URL.RequestURI() != "/previnculacion" {
+		if r.Method != http.MethodPost || r.URL.RequestURI() != "/busservicios/urano_produccion/previnculacion" {
 			t.Errorf("petición inesperada: %s %s", r.Method, r.URL)
 		}
 		if r.Header.Get("Accept") != "application/json" || r.Header.Get("Content-Type") != "application/json" {
@@ -48,7 +48,7 @@ func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
 ]`))
 	}))
 	defer server.Close()
-	_ = beego.AppConfig.Set("UrlPrevinculaciones", server.URL+"/previnculacion")
+	_ = beego.AppConfig.Set("UrlPrevinculaciones", server.URL+"/busservicios/urano_produccion")
 	respuesta, errMap := consultarRequisitosVinculacion(context.Background(), datos)
 	if errMap != nil || len(respuesta) != 2 || respuesta[0].ResolucionVinculable != "S" {
 		t.Fatalf("respuesta incorrecta: %+v, %v", respuesta, errMap)
@@ -65,11 +65,19 @@ func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
 		t.Fatalf("se esperaba un único POST; llamadas: %d", calls)
 	}
 
+	_ = beego.AppConfig.Set("UrlPrevinculaciones", server.URL+"/busservicios/urano_produccion/")
+	if _, errMap := consultarRequisitosVinculacion(context.Background(), datos); errMap != nil {
+		t.Fatalf("URL base con barra final produjo error: %v", errMap)
+	}
+	if calls != 2 {
+		t.Fatalf("se esperaba un POST adicional con barra final; llamadas: %d", calls)
+	}
+
 	datos.Docentes[0].Periodo = "inválido"
 	if _, errMap = consultarRequisitosVinculacion(context.Background(), datos); errMap == nil || errMap["status"] != "400" {
 		t.Fatalf("se esperaba error de período: %v", errMap)
 	}
-	if calls != 1 {
+	if calls != 2 {
 		t.Fatal("período inválido produjo petición")
 	}
 	datos.Docentes[0].Periodo = "3"
