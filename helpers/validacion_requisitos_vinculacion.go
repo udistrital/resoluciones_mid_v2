@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -46,16 +47,17 @@ func consultarRequisitosVinculacion(ctx context.Context, datos models.ObjetoPrev
 		return nil, nil
 	}
 
-	url := strings.TrimSpace(beego.AppConfig.String("UrlPrevinculaciones"))
-	if url == "" {
+	endpoint, err := construirURLPrevinculacion(
+		beego.AppConfig.String("UrlcrudWSO2"),
+		beego.AppConfig.String("UrlPrevinculaciones"),
+	)
+	if err != nil {
 		return nil, map[string]interface{}{
 			"funcion": "/consultarRequisitosVinculacion",
-			"err":     "configuración RESOLUCIONES_MID_V2_PREVINCULACIONES requerida para validar el proceso Cargue de Soportes Previnculación",
+			"err":     err.Error(),
 			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
 		}
 	}
-
-	url = strings.TrimRight(url, "/") + "/previnculacion"
 
 	periodo, err := strconv.Atoi(strings.TrimSpace(datos.Docentes[0].Periodo))
 	if err != nil || periodo <= 0 {
@@ -72,7 +74,7 @@ func consultarRequisitosVinculacion(ctx context.Context, datos models.ObjetoPrev
 	}
 
 	var response interface{}
-	if _, err := request.PostWithContext(ctx, url, body, &response); err != nil {
+	if _, err := request.PostWithContext(ctx, endpoint, body, &response); err != nil {
 		return nil, map[string]interface{}{
 			"funcion": "/consultarRequisitosVinculacion",
 			"err":     fmt.Sprintf("error consultando el proceso Cargue de Soportes Previnculación: %v", err),
@@ -81,6 +83,42 @@ func consultarRequisitosVinculacion(ctx context.Context, datos models.ObjetoPrev
 	}
 
 	return normalizarRespuestaRequisitosPrevinculacion(response)
+}
+
+// construirURLPrevinculacion conserva la ruta base del bus y agrega el namespace
+// relativo y el recurso antes de permitir una petición al servicio externo.
+func construirURLPrevinculacion(baseURL, namespace string) (string, error) {
+	baseURL = strings.TrimSpace(baseURL)
+	namespace = strings.Trim(strings.TrimSpace(namespace), "/")
+	if baseURL == "" {
+		return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) requerida para consultar previnculación")
+	}
+	if namespace == "" {
+		return "", fmt.Errorf("configuración UrlPrevinculaciones (RESOLUCIONES_MID_V2_PREVINCULACIONES) requerida para consultar previnculación")
+	}
+
+	ruta, err := url.Parse(namespace)
+	if err != nil || ruta.IsAbs() || ruta.Host != "" || ruta.RawQuery != "" || ruta.ForceQuery || ruta.Fragment != "" || strings.Contains(namespace, "#") {
+		return "", fmt.Errorf("configuración UrlPrevinculaciones (RESOLUCIONES_MID_V2_PREVINCULACIONES) inválida: debe ser una ruta relativa sin consulta ni fragmento")
+	}
+
+	endpoint, err := url.JoinPath(baseURL, namespace, "previnculacion")
+	if err != nil {
+		return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) inválida: no permite construir la URL de previnculación")
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" || strings.Contains(baseURL, "#") {
+		return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) inválida: la URL de previnculación debe tener protocolo HTTP o HTTPS y dominio, sin credenciales, consulta ni fragmento")
+	}
+
+	if port := parsed.Port(); port != "" {
+		numero, err := strconv.Atoi(port)
+		if err != nil || numero < 1 || numero > 65535 {
+			return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) inválida: puerto fuera del rango 1-65535")
+		}
+	}
+
+	return endpoint, nil
 }
 
 func construirIdUsuariosPrevinculacion(docentes []models.CargaLectiva) []string {

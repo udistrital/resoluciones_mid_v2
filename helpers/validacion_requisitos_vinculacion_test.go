@@ -3,9 +3,11 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/astaxie/beego"
@@ -13,8 +15,7 @@ import (
 )
 
 func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
-	original := beego.AppConfig.String("UrlPrevinculaciones")
-	t.Cleanup(func() { _ = beego.AppConfig.Set("UrlPrevinculaciones", original) })
+	configurarPrevinculacionParaPrueba(t, "", "")
 	datos := models.ObjetoPrevinculaciones{Vigencia: 2026, Docentes: []models.CargaLectiva{
 		{DocDocente: "1015402605", Periodo: " 3 "},
 		{DocDocente: "79708124", Periodo: "3"},
@@ -48,7 +49,7 @@ func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
 ]`))
 	}))
 	defer server.Close()
-	_ = beego.AppConfig.Set("UrlPrevinculaciones", server.URL+"/busservicios/urano_produccion")
+	configurarPrevinculacionParaPrueba(t, server.URL+"/busservicios", "/urano_produccion")
 	respuesta, errMap := consultarRequisitosVinculacion(context.Background(), datos)
 	if errMap != nil || len(respuesta) != 2 || respuesta[0].ResolucionVinculable != "S" {
 		t.Fatalf("respuesta incorrecta: %+v, %v", respuesta, errMap)
@@ -65,7 +66,8 @@ func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
 		t.Fatalf("se esperaba un único POST; llamadas: %d", calls)
 	}
 
-	_ = beego.AppConfig.Set("UrlPrevinculaciones", server.URL+"/busservicios/urano_produccion/")
+	_ = beego.AppConfig.Set("UrlcrudWSO2", server.URL+"/busservicios/")
+	_ = beego.AppConfig.Set("UrlPrevinculaciones", "/urano_produccion/")
 	if _, errMap := consultarRequisitosVinculacion(context.Background(), datos); errMap != nil {
 		t.Fatalf("URL base con barra final produjo error: %v", errMap)
 	}
@@ -90,4 +92,118 @@ func TestConsultarRequisitosVinculacionContrato(t *testing.T) {
 	if _, errMap = consultarRequisitosVinculacion(context.Background(), datos); errMap == nil || errMap["status"] != "500" {
 		t.Fatalf("se esperaba error de configuración: %v", errMap)
 	}
+}
+
+func configurarPrevinculacionParaPrueba(t *testing.T, baseURL, namespace string) {
+	t.Helper()
+	for key, value := range map[string]string{"UrlcrudWSO2": baseURL, "UrlPrevinculaciones": namespace} {
+		original := beego.AppConfig.String(key)
+		t.Cleanup(func() { _ = beego.AppConfig.Set(key, original) })
+		if err := beego.AppConfig.Set(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestConstruirURLPrevinculacionBarras(t *testing.T) {
+	for _, scheme := range []string{"http", "https"} {
+		for _, baseSuffix := range []string{"", "/", "///"} {
+			for _, namespace := range []string{"urano_produccion", "/urano_produccion", "urano_produccion/", "/urano_produccion/", "///urano_produccion///"} {
+				baseURL := scheme + "://api.example.com/busservicios" + baseSuffix
+				t.Run(baseURL+"|"+namespace, func(t *testing.T) {
+					got, err := construirURLPrevinculacion(baseURL, namespace)
+					want := scheme + "://api.example.com/busservicios/urano_produccion/previnculacion"
+					if err != nil || got != want {
+						t.Fatalf("URL incorrecta: got=%q, want=%q, err=%v", got, want, err)
+					}
+				})
+			}
+		}
+	}
+	for _, tc := range []struct{ name, baseURL, namespace, want string }{
+		{"sin ruta base", "https://api.example.com", "/urano_produccion", "https://api.example.com/urano_produccion/previnculacion"},
+		{"espacios externos", " https://api.example.com/busservicios/ ", " /urano_produccion/ ", "https://api.example.com/busservicios/urano_produccion/previnculacion"},
+		{"puerto local", "http://localhost:8080/busservicios", "/urano_produccion", "http://localhost:8080/busservicios/urano_produccion/previnculacion"},
+		{"IPv6", "http://[::1]:8080/busservicios", "/urano_produccion", "http://[::1]:8080/busservicios/urano_produccion/previnculacion"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := construirURLPrevinculacion(tc.baseURL, tc.namespace)
+			if err != nil || got != tc.want {
+				t.Fatalf("URL incorrecta: got=%q, want=%q, err=%v", got, tc.want, err)
+			}
+		})
+	}
+}
+
+func TestConsultarRequisitosVinculacionConfiguracionInvalida(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	datos := models.ObjetoPrevinculaciones{Vigencia: 2026, Docentes: []models.CargaLectiva{{DocDocente: "1015402605", Periodo: "3"}}}
+	for _, tc := range []struct{ name, baseURL, namespace, key string }{
+		{"base vacía", "", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"base en blanco", "  ", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"namespace vacío", server.URL, "", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+		{"namespace en blanco", server.URL, "  ", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+		{"namespace sin segmento", server.URL, "///", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+		{"ambas vacías", "", "", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"base relativa", "/busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"sin protocolo", "api.example.com/busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"protocolo relativo", "//api.example.com/busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"protocolo no HTTP", "ftp://api.example.com/busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"sin dominio", "https:///busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"dominio vacío con puerto", "http://:8080/busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"URL opaca", "https:busservicios", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"dominio con espacios", "https://api example.com", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"puerto inválido", "https://api.example.com:abc", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"puerto fuera de rango", "https://api.example.com:65536", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"puerto cero", "https://api.example.com:0", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"escape inválido", "https://api.example.com/%zz", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"consulta en base", server.URL + "?q=1", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"fragmento en base", server.URL + "#ruta", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"credenciales en base", "https://user:pass@api.example.com", "/urano_produccion", "RESOLUCIONES_MID_V2_WSO2_URL"},
+		{"namespace absoluto", server.URL, "https://api.example.com/urano_produccion", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+		{"namespace con consulta", server.URL, "/urano_produccion?q=1", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+		{"namespace con fragmento", server.URL, "/urano_produccion#ruta", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+		{"namespace con escape inválido", server.URL, "/urano_%zz", "RESOLUCIONES_MID_V2_PREVINCULACIONES"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			configurarPrevinculacionParaPrueba(t, tc.baseURL, tc.namespace)
+			respuesta, errMap := consultarRequisitosVinculacion(context.Background(), datos)
+			if respuesta != nil || errMap == nil || errMap["status"] != "500" {
+				t.Fatalf("se esperaba error 500 de configuración: respuesta=%+v, error=%v", respuesta, errMap)
+			}
+			if !strings.Contains(fmt.Sprint(errMap["err"]), tc.key) {
+				t.Fatalf("error debe identificar configuración inválida %s: %v", tc.key, errMap)
+			}
+			if calls != 0 {
+				t.Fatal("configuración inválida produjo petición HTTP")
+			}
+		})
+	}
+}
+
+func TestConsultarRequisitosVinculacionErroresComunicacion(t *testing.T) {
+	datos := models.ObjetoPrevinculaciones{Vigencia: 2026, Docentes: []models.CargaLectiva{{DocDocente: "1015402605", Periodo: "3"}}}
+	t.Run("servicio no disponible", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+		configurarPrevinculacionParaPrueba(t, server.URL, "/urano_produccion")
+		if _, errMap := consultarRequisitosVinculacion(context.Background(), datos); errMap == nil || errMap["status"] != "502" {
+			t.Fatalf("se esperaba 502 del servicio externo: %v", errMap)
+		}
+	})
+	t.Run("conexión rechazada", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		server.Close()
+		configurarPrevinculacionParaPrueba(t, server.URL, "/urano_produccion")
+		if _, errMap := consultarRequisitosVinculacion(context.Background(), datos); errMap == nil || errMap["status"] != "502" {
+			t.Fatalf("se esperaba 502 de conexión: %v", errMap)
+		}
+	})
 }
