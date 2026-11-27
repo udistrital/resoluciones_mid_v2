@@ -8,7 +8,7 @@ import (
 	"github.com/udistrital/resoluciones_mid_v2/models"
 )
 
-func TestConstruirIdUsuariosOdin(t *testing.T) {
+func TestConstruirIdUsuariosPrevinculacion(t *testing.T) {
 	docentes := []models.CargaLectiva{
 		{DocDocente: "1015402605"},
 		{DocDocente: "79708124"},
@@ -16,16 +16,16 @@ func TestConstruirIdUsuariosOdin(t *testing.T) {
 		{DocDocente: " 79777053 "},
 	}
 
-	got := helperspkg.TestHookConstruirIdUsuariosOdin(docentes)
-	want := "'1015402605','79708124','79777053'"
+	got := helperspkg.TestHookConstruirIdUsuariosPrevinculacion(docentes)
+	want := []string{"1015402605", "79708124", "79777053"}
 
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("id_usuario incorrecto. got=%q want=%q", got, want)
 	}
 }
 
 func TestConstruirMotivosNoVinculable(t *testing.T) {
-	requisito := models.OdinRequisitoVinculacion{
+	requisito := models.RequisitoVinculacion{
 		ApruebaSoporte:      "N   ",
 		RegistroTercero:     "S   ",
 		RegistroProveedor:   "N   ",
@@ -55,7 +55,7 @@ func TestConstruirDocentesNoVinculables(t *testing.T) {
 		{DocDocente: "79708124", DocenteApellido: "Calvo", DocenteNombre: "Martha"},
 		{DocDocente: "555", DocenteApellido: "Sin", DocenteNombre: "Respuesta"},
 	}
-	respuesta := []models.OdinRequisitoVinculacion{
+	respuesta := []models.RequisitoVinculacion{
 		{
 			IdUsuario:            "1015402605              ",
 			ApruebaSoporte:       "N   ",
@@ -90,12 +90,12 @@ func TestConstruirDocentesNoVinculables(t *testing.T) {
 	}
 }
 
-func TestNormalizarRespuestaRequisitosODINSinDatos(t *testing.T) {
+func TestNormalizarRespuestaRequisitosPrevinculacionSinDatos(t *testing.T) {
 	raw := map[string]interface{}{
 		"Error": "No se encontrarón datos asociados al reporte",
 	}
 
-	got, errMap := helperspkg.TestHookNormalizarRespuestaRequisitosODIN(raw)
+	got, errMap := helperspkg.TestHookNormalizarRespuestaRequisitosPrevinculacion(raw)
 	if errMap != nil {
 		t.Fatalf("no se esperaba error y llegó: %+v", errMap)
 	}

@@ -4,7 +4,7 @@ services:
 
   resoluciones_mid_v2:
 
-    image: golang:1.15-alpine
+    image: golang:1.26-alpine
     container_name: ${API_NAME}
     volumes:
       - go_src:/go

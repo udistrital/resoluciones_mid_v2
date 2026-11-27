@@ -8,7 +8,6 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/utils_oas/requestresponse"
-	"github.com/udistrital/utils_oas/xray"
 )
 
 // Manejo único de errores para controladores sin repetir código
@@ -69,7 +68,6 @@ func ErrorController(c beego.Controller, controller string) {
 			}
 		}
 
-		xray.EndSegmentErr(statusCode, message)
 		c.Ctx.Output.SetStatus(statusCode)
 		c.Data["json"] = payload
 		c.ServeJSON()

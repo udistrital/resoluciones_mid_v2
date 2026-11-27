@@ -10,18 +10,18 @@ func TestHookConstruirResumenVinculacion(previnculacion models.VinculacionDocent
 	return construirResumenVinculacion(previnculacion, persona, ciudadExpedicion, proyectoCurricular, disponibilidad)
 }
 
-func TestHookConstruirIdUsuariosOdin(docentes []models.CargaLectiva) string {
-	return construirIdUsuariosOdin(docentes)
+func TestHookConstruirIdUsuariosPrevinculacion(docentes []models.CargaLectiva) []string {
+	return construirIdUsuariosPrevinculacion(docentes)
 }
 
-func TestHookConstruirMotivosNoVinculable(requisito models.OdinRequisitoVinculacion) []string {
+func TestHookConstruirMotivosNoVinculable(requisito models.RequisitoVinculacion) []string {
 	return construirMotivosNoVinculable(requisito)
 }
 
-func TestHookConstruirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []models.OdinRequisitoVinculacion) []models.DocenteNoVinculable {
+func TestHookConstruirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []models.RequisitoVinculacion) []models.DocenteNoVinculable {
 	return construirDocentesNoVinculables(docentes, respuesta)
 }
 
-func TestHookNormalizarRespuestaRequisitosODIN(raw interface{}) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
-	return normalizarRespuestaRequisitosODIN(raw)
+func TestHookNormalizarRespuestaRequisitosPrevinculacion(raw interface{}) ([]models.RequisitoVinculacion, map[string]interface{}) {
+	return normalizarRespuestaRequisitosPrevinculacion(raw)
 }

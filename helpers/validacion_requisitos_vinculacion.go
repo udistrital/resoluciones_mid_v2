@@ -5,50 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/udistrital/resoluciones_mid_v2/models"
 	"github.com/udistrital/utils_oas/request"
-	"github.com/udistrital/utils_oas/ssm"
 )
 
-const (
-	odinLoginPath                 = "auth/login"
-	odinRequisitosVinculacionPath = "gen/apis?api=api_requisitos_vinculacion&proc=vinculacion_docente"
-	odinSinDatosMessage           = "No se encontraron datos en el proceso Cargue de Soportes Previnculación para el docente"
-	odinUserKey                   = "OdinServicioOATIUser"
-	odinPasswordKey               = "OdinServicioOATIPassword"
-	odinVersionKey                = "OdinServicioOATIVersion"
-)
-
-type odinConfig struct {
-	BaseURL         string
-	Username        string
-	Password        string
-	Version         string
-	UsernameKeyPath string
-	PasswordKeyPath string
-	VersionKeyPath  string
-}
+const previnculacionSinDatosMessage = "No se encontraron datos en el proceso Cargue de Soportes Previnculación para el docente"
 
 func validarDocentesVinculables(ctx context.Context, datos models.ObjetoPrevinculaciones) map[string]interface{} {
 	if len(datos.Docentes) == 0 {
 		return nil
 	}
 
-	config, errMap := resolverConfiguracionOdin(ctx)
-	if errMap != nil {
-		return errMap
-	}
-
-	token, err := autenticarOdin(ctx, config.BaseURL, config.Username, config.Password, config.Version)
-	if err != nil {
-		return err
-	}
-
-	respuesta, err := consultarRequisitosVinculacion(ctx, config.BaseURL, token, datos)
+	respuesta, err := consultarRequisitosVinculacion(ctx, datos)
 	if err != nil {
 		return err
 	}
@@ -68,132 +42,39 @@ func validarDocentesVinculables(ctx context.Context, datos models.ObjetoPrevincu
 	}
 }
 
-func resolverConfiguracionOdin(ctx context.Context) (odinConfig, map[string]interface{}) {
-	config := odinConfig{
-		BaseURL: beego.AppConfig.String("UrlOdinServicioOATI"),
-	}
-
-	config.Username = beego.AppConfig.String(odinUserKey)
-	config.UsernameKeyPath = config.Username
-	config.Password = beego.AppConfig.String(odinPasswordKey)
-	config.PasswordKeyPath = config.Password
-	config.Version = beego.AppConfig.String(odinVersionKey)
-	config.VersionKeyPath = config.Version
-
-	if config.BaseURL == "" {
-		return odinConfig{}, map[string]interface{}{
-			"funcion": "/resolverConfiguracionOdin",
-			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
-			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
-		}
-	}
-
-	parameterStore := beego.AppConfig.String("parameterStore")
-	if parameterStore == "" {
-		if config.Username != "" && config.Password != "" && config.Version != "" {
-			return config, nil
-		}
-
-		return odinConfig{}, map[string]interface{}{
-			"funcion": "/resolverConfiguracionOdin",
-			"err":     "configuración incompleta para validar el proceso Cargue de Soportes Previnculación",
-			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
-		}
-	}
-
-	usernameValue, err := resolverParametroOdin(ctx, parameterStore, config.UsernameKeyPath)
-	if err != nil {
-		return odinConfig{}, err
-	}
-
-	passwordValue, err := resolverParametroOdin(ctx, parameterStore, config.PasswordKeyPath)
-	if err != nil {
-		return odinConfig{}, err
-	}
-
-	versionValue, err := resolverParametroOdin(ctx, parameterStore, config.VersionKeyPath)
-	if err != nil {
-		return odinConfig{}, err
-	}
-
-	config.Username = usernameValue
-	config.Password = passwordValue
-	config.Version = versionValue
-
-	return config, nil
-}
-
-func resolverParametroOdin(ctx context.Context, parameterStore, parameterKeyPath string) (string, map[string]interface{}) {
-	path := construirRutaParametroOdin(parameterStore, parameterKeyPath)
-	value, err := ssm.GetValueFromParameterStore(ctx, path)
-	if err != nil {
-		return "", map[string]interface{}{
-			"funcion": "/resolverCredencialesOdin",
-			"err":     fmt.Sprintf("error consultando %s en Parameter Store: %v", parameterKeyPath, err),
-			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
-		}
-	}
-
-	return strings.TrimSpace(value), nil
-}
-
-func construirRutaParametroOdin(parameterStore, parameterKeyPath string) string {
-	return fmt.Sprintf("/%s/%s/%s", parameterStore, beego.AppConfig.String("appname"), strings.TrimLeft(parameterKeyPath, "/"))
-}
-
-func autenticarOdin(ctx context.Context, baseURL, username, password, version string) (string, map[string]interface{}) {
-	loginURL := unirURL(baseURL, odinLoginPath)
-	body := models.OdinAuthRequest{
-		Username: username,
-		Password: password,
-		Version:  version,
-	}
-
-	var response models.OdinAuthResponse
-	_, err := request.PostWithContext(ctx, loginURL, body, &response)
-	if err != nil {
-		return "", map[string]interface{}{
-			"funcion": "/autenticarOdin",
-			"err":     fmt.Sprintf("error autenticando el proceso Cargue de Soportes Previnculación: %v", err),
-			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
-		}
-	}
-
-	token := strings.TrimSpace(response.Token)
-	if token == "" {
-		token = strings.TrimSpace(response.AccessToken)
-	}
-	if token == "" {
-		return "", map[string]interface{}{
-			"funcion": "/autenticarOdin",
-			"err":     "el servicio de Cargue de Soportes Previnculación no retornó token de autenticación",
-			"status":  fmt.Sprintf("%d", http.StatusBadGateway),
-		}
-	}
-
-	return token, nil
-}
-
-func consultarRequisitosVinculacion(ctx context.Context, baseURL, token string, datos models.ObjetoPrevinculaciones) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
+func consultarRequisitosVinculacion(ctx context.Context, datos models.ObjetoPrevinculaciones) ([]models.RequisitoVinculacion, map[string]interface{}) {
 	if len(datos.Docentes) == 0 {
 		return nil, nil
 	}
 
-	body := models.OdinRequisitosVinculacionRequest{
-		Parametros: models.OdinRequisitosVinculacionParametros{
-			Anio:      fmt.Sprintf("%d", datos.Vigencia),
-			Periodo:   strings.TrimSpace(datos.Docentes[0].Periodo),
-			IdUsuario: construirIdUsuariosOdin(datos.Docentes),
-		},
+	endpoint, err := construirURLPrevinculacion(
+		beego.AppConfig.String("UrlcrudWSO2"),
+		beego.AppConfig.String("UrlPrevinculaciones"),
+	)
+	if err != nil {
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     err.Error(),
+			"status":  fmt.Sprintf("%d", http.StatusInternalServerError),
+		}
 	}
 
-	url := unirURL(baseURL, odinRequisitosVinculacionPath)
-	var response interface{}
-	headerAnterior := request.GetHeader()
-	request.SetHeader("Bearer " + token)
-	defer request.SetHeader(headerAnterior)
+	periodo, err := strconv.Atoi(strings.TrimSpace(datos.Docentes[0].Periodo))
+	if err != nil || periodo <= 0 {
+		return nil, map[string]interface{}{
+			"funcion": "/consultarRequisitosVinculacion",
+			"err":     "período inválido para consultar previnculación",
+			"status":  fmt.Sprintf("%d", http.StatusBadRequest),
+		}
+	}
+	body := models.RequisitosVinculacionRequest{
+		Anio:      datos.Vigencia,
+		Periodo:   periodo,
+		IdUsuario: construirIdUsuariosPrevinculacion(datos.Docentes),
+	}
 
-	if err := request.SendJson(url, http.MethodPost, &response, body); err != nil {
+	var response interface{}
+	if _, err := request.PostWithContext(ctx, endpoint, body, &response); err != nil {
 		return nil, map[string]interface{}{
 			"funcion": "/consultarRequisitosVinculacion",
 			"err":     fmt.Sprintf("error consultando el proceso Cargue de Soportes Previnculación: %v", err),
@@ -201,15 +82,46 @@ func consultarRequisitosVinculacion(ctx context.Context, baseURL, token string, 
 		}
 	}
 
-	respuestaNormalizada, errMap := normalizarRespuestaRequisitosODIN(response)
-	if errMap != nil {
-		return nil, errMap
-	}
-
-	return respuestaNormalizada, nil
+	return normalizarRespuestaRequisitosPrevinculacion(response)
 }
 
-func construirIdUsuariosOdin(docentes []models.CargaLectiva) string {
+// construirURLPrevinculacion conserva la ruta base del bus y agrega el namespace
+// relativo y el recurso antes de permitir una petición al servicio externo.
+func construirURLPrevinculacion(baseURL, namespace string) (string, error) {
+	baseURL = strings.TrimSpace(baseURL)
+	namespace = strings.Trim(strings.TrimSpace(namespace), "/")
+	if baseURL == "" {
+		return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) requerida para consultar previnculación")
+	}
+	if namespace == "" {
+		return "", fmt.Errorf("configuración UrlPrevinculaciones (RESOLUCIONES_MID_V2_PREVINCULACIONES) requerida para consultar previnculación")
+	}
+
+	ruta, err := url.Parse(namespace)
+	if err != nil || ruta.IsAbs() || ruta.Host != "" || ruta.RawQuery != "" || ruta.ForceQuery || ruta.Fragment != "" || strings.Contains(namespace, "#") {
+		return "", fmt.Errorf("configuración UrlPrevinculaciones (RESOLUCIONES_MID_V2_PREVINCULACIONES) inválida: debe ser una ruta relativa sin consulta ni fragmento")
+	}
+
+	endpoint, err := url.JoinPath(baseURL, namespace, "previnculacion")
+	if err != nil {
+		return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) inválida: no permite construir la URL de previnculación")
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" || strings.Contains(baseURL, "#") {
+		return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) inválida: la URL de previnculación debe tener protocolo HTTP o HTTPS y dominio, sin credenciales, consulta ni fragmento")
+	}
+
+	if port := parsed.Port(); port != "" {
+		numero, err := strconv.Atoi(port)
+		if err != nil || numero < 1 || numero > 65535 {
+			return "", fmt.Errorf("configuración UrlcrudWSO2 (RESOLUCIONES_MID_V2_WSO2_URL) inválida: puerto fuera del rango 1-65535")
+		}
+	}
+
+	return endpoint, nil
+}
+
+func construirIdUsuariosPrevinculacion(docentes []models.CargaLectiva) []string {
 	ids := make([]string, 0, len(docentes))
 	seen := make(map[string]struct{}, len(docentes))
 
@@ -222,13 +134,13 @@ func construirIdUsuariosOdin(docentes []models.CargaLectiva) string {
 			continue
 		}
 		seen[documento] = struct{}{}
-		ids = append(ids, fmt.Sprintf("'%s'", documento))
+		ids = append(ids, documento)
 	}
 
-	return strings.Join(ids, ",")
+	return ids
 }
 
-func construirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []models.OdinRequisitoVinculacion) []models.DocenteNoVinculable {
+func construirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []models.RequisitoVinculacion) []models.DocenteNoVinculable {
 	docentesPorDocumento := make(map[string]models.CargaLectiva, len(docentes))
 	for _, docente := range docentes {
 		documento := strings.TrimSpace(docente.DocDocente)
@@ -240,7 +152,7 @@ func construirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []
 		}
 	}
 
-	respuestaPorDocumento := make(map[string]models.OdinRequisitoVinculacion, len(respuesta))
+	respuestaPorDocumento := make(map[string]models.RequisitoVinculacion, len(respuesta))
 	for _, requisito := range respuesta {
 		documento := strings.TrimSpace(requisito.IdUsuario)
 		if documento == "" {
@@ -263,7 +175,7 @@ func construirDocentesNoVinculables(docentes []models.CargaLectiva, respuesta []
 			noVinculables = append(noVinculables, models.DocenteNoVinculable{
 				Documento: documento,
 				Nombre:    construirNombreDocente(docente),
-				Motivos:   []string{odinSinDatosMessage},
+				Motivos:   []string{previnculacionSinDatosMessage},
 			})
 			continue
 		}
@@ -289,7 +201,7 @@ func construirNombreDocente(docente models.CargaLectiva) string {
 	}, " "))
 }
 
-func construirMotivosNoVinculable(requisito models.OdinRequisitoVinculacion) []string {
+func construirMotivosNoVinculable(requisito models.RequisitoVinculacion) []string {
 	motivos := make([]string, 0)
 
 	if estado := strings.TrimSpace(requisito.Estado); estado != "" && !strings.EqualFold(estado, "A") {
@@ -350,30 +262,24 @@ func banderaAprobada(valor string) bool {
 	return strings.EqualFold(strings.TrimSpace(valor), "S")
 }
 
-func unirURL(baseURL, path string) string {
-	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	segmento := strings.TrimLeft(strings.TrimSpace(path), "/")
-	return base + "/" + segmento
-}
-
-func normalizarRespuestaRequisitosODIN(raw interface{}) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
+func normalizarRespuestaRequisitosPrevinculacion(raw interface{}) ([]models.RequisitoVinculacion, map[string]interface{}) {
 	switch typed := raw.(type) {
 	case []interface{}:
-		return convertirRespuestaODIN(typed)
+		return convertirRespuestaPrevinculacion(typed)
 	case map[string]interface{}:
 		if data, ok := typed["Data"]; ok {
-			return normalizarRespuestaRequisitosODIN(data)
+			return normalizarRespuestaRequisitosPrevinculacion(data)
 		}
 		if data, ok := typed["data"]; ok {
-			return normalizarRespuestaRequisitosODIN(data)
+			return normalizarRespuestaRequisitosPrevinculacion(data)
 		}
 
-		detalle := extraerMensajeRespuestaODIN(typed)
-		if esRespuestaSinDatosODIN(detalle) {
-			return []models.OdinRequisitoVinculacion{}, nil
+		detalle := extraerMensajeRespuestaPrevinculacion(typed)
+		if esRespuestaSinDatosPrevinculacion(detalle) {
+			return []models.RequisitoVinculacion{}, nil
 		}
 		if detalle == "" {
-			detalle = fmt.Sprintf("respuesta inesperada de ODIN: %+v", typed)
+			detalle = fmt.Sprintf("respuesta inesperada de previnculación: %+v", typed)
 		}
 
 		return nil, map[string]interface{}{
@@ -396,7 +302,7 @@ func normalizarRespuestaRequisitosODIN(raw interface{}) ([]models.OdinRequisitoV
 	}
 }
 
-func convertirRespuestaODIN(raw interface{}) ([]models.OdinRequisitoVinculacion, map[string]interface{}) {
+func convertirRespuestaPrevinculacion(raw interface{}) ([]models.RequisitoVinculacion, map[string]interface{}) {
 	bytes, err := json.Marshal(raw)
 	if err != nil {
 		return nil, map[string]interface{}{
@@ -406,7 +312,7 @@ func convertirRespuestaODIN(raw interface{}) ([]models.OdinRequisitoVinculacion,
 		}
 	}
 
-	var response []models.OdinRequisitoVinculacion
+	var response []models.RequisitoVinculacion
 	if err := json.Unmarshal(bytes, &response); err != nil {
 		return nil, map[string]interface{}{
 			"funcion": "/consultarRequisitosVinculacion",
@@ -418,7 +324,7 @@ func convertirRespuestaODIN(raw interface{}) ([]models.OdinRequisitoVinculacion,
 	return response, nil
 }
 
-func extraerMensajeRespuestaODIN(data map[string]interface{}) string {
+func extraerMensajeRespuestaPrevinculacion(data map[string]interface{}) string {
 	keys := []string{"Message", "message", "error", "Error", "detalle", "Detalle"}
 	for _, key := range keys {
 		if value, ok := data[key]; ok {
@@ -430,7 +336,7 @@ func extraerMensajeRespuestaODIN(data map[string]interface{}) string {
 	return ""
 }
 
-func esRespuestaSinDatosODIN(mensaje string) bool {
+func esRespuestaSinDatosPrevinculacion(mensaje string) bool {
 	normalizado := strings.ToLower(strings.TrimSpace(mensaje))
 	return strings.Contains(normalizado, "no se encontrarón datos asociados al reporte") ||
 		strings.Contains(normalizado, "no se encontraron datos asociados al reporte")
