@@ -1,27 +1,12 @@
 package models
 
-type OdinAuthRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Version  string `json:"version"`
+type RequisitosVinculacionRequest struct {
+	Anio      int      `json:"anio"`
+	Periodo   int      `json:"periodo"`
+	IdUsuario []string `json:"id_usuario"`
 }
 
-type OdinAuthResponse struct {
-	Token       string `json:"token"`
-	AccessToken string `json:"access_token"`
-}
-
-type OdinRequisitosVinculacionRequest struct {
-	Parametros OdinRequisitosVinculacionParametros `json:"parametros"`
-}
-
-type OdinRequisitosVinculacionParametros struct {
-	Anio      string `json:"anio"`
-	Periodo   string `json:"periodo"`
-	IdUsuario string `json:"id_usuario"`
-}
-
-type OdinRequisitoVinculacion struct {
+type RequisitoVinculacion struct {
 	Id                   int    `json:"id"`
 	Anio                 int    `json:"anio"`
 	Periodo              int    `json:"periodo"`
